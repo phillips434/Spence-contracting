@@ -303,7 +303,7 @@ function openDetail(id){
   var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
   renderTabs(p);renderTabBody(p);
   var dp=document.getElementById("detailPage");
-  dp.classList.add("show");dp.scrollTop=0;
+  document.getElementById("mainView").style.display="none";dp.classList.add("show");dp.scrollTop=0;
 }
 
 function renderTabs(p){
@@ -530,7 +530,7 @@ function removeTag(key,i,elId){DD[key].splice(i,1);renderTagSet(elId,key);saveSe
 
 // Wire up
 document.getElementById("btnNew").onclick=openAdd;
-document.getElementById("backBtn").onclick=function(){document.getElementById("detailPage").classList.remove("show");};
+document.getElementById("backBtn").onclick=function(){document.getElementById("detailPage").classList.remove("show");document.getElementById("mainView").style.display="block";};
 document.getElementById("addBackBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("saveBtn").onclick=saveProject;
