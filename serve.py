@@ -7,10 +7,10 @@ PORT = 5000
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
-            self.path = '/Index.html'
+            self.path = '/index.html'
         return super().do_GET()
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public'))
 
 socketserver.TCPServer.allow_reuse_address = True
 

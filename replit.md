@@ -4,8 +4,8 @@
 A single-page web application for tracking construction and renovation projects for Spence Contracting. Built with pure vanilla HTML, CSS, and JavaScript — no build tools or external dependencies required.
 
 ## Project Structure
-- `Index.html` — The entire application (HTML, CSS, and JavaScript in one file)
-- `serve.py` — Lightweight Python HTTP server that serves `Index.html` at the root path
+- `public/index.html` — The entire application (HTML, CSS, and JavaScript in one file)
+- `serve.py` — Lightweight Python HTTP server that serves files from the `public/` folder
 
 ## Running the App
 The app is served via a Python HTTP server on port 5000:

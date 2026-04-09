@@ -35,4 +35,4 @@ externalPort = 80
 
 [deployment]
 deploymentTarget = "static"
-publicDir = "."
+publicDir = "public"
