@@ -5,14 +5,17 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>Spence Contracting – Project Manager</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;min-height:100vh}
 .topbar{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:50}
 .topbar h1{color:#fff;font-size:17px;font-weight:700}
-.topbar span{color:rgba(255,255,255,0.4);font-size:11px;margin-left:6px}
 .top-actions{display:flex;gap:8px;align-items:center}
 #btnNew{background:#E8713A;border:none;border-radius:9px;color:#fff;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer}
+.sync-bar{background:#1e2d4a;padding:6px 16px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.5)}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 12px 0}
 .scard{background:#fff;border-radius:11px;padding:11px 10px;border:1px solid #E8EAED}
 .scard .si{font-size:15px;margin-bottom:3px}
@@ -84,23 +87,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;
 .empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px;line-height:1.6}
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+.loading{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
 </style>
 </head>
 <body>
 
 <div id="mainView">
   <div class="topbar">
-    <div><h1 style="display:inline">🏗️ Spence Contracting</h1><span>Projects</span></div>
+    <div><h1 style="display:inline">🏗️ Spence Contracting</h1></div>
     <div class="top-actions">
       <button id="btnNew">+ New</button>
     </div>
+  </div>
+  <div class="sync-bar">
+    <div><span class="sync-dot" id="syncDot" style="background:#aaa"></span><span id="syncLabel">Connecting...</span></div>
+    <span id="syncTime"></span>
   </div>
   <div class="stats" id="stats"></div>
   <div class="controls">
     <input class="fi" id="searchInput" placeholder="Search by client or job type..." type="search"/>
     <div class="filters" id="filters"></div>
   </div>
-  <div id="cards"></div>
+  <div id="cards"><div class="loading">Loading projects...</div></div>
 </div>
 
 <div class="page" id="detailPage">
@@ -148,35 +156,83 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;
 <div class="toast" id="toast"></div>
 
 <script>
+// Firebase config
+var firebaseConfig = {
+  apiKey: "AIzaSyCnpDrdLOH_RhCFK9MSD--KWDy--vZmeao",
+  authDomain: "spence-contracting.firebaseapp.com",
+  projectId: "spence-contracting",
+  storageBucket: "spence-contracting.firebasestorage.app",
+  messagingSenderId: "696245066965",
+  appId: "1:696245066965:web:de13db6e678f40cf5ed65c"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+var projectsCol = db.collection("projects");
+
 var COLORS=["#E8713A","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var SS={"In Progress":{bg:"#FFF3EC",text:"#C4511A",dot:"#E8713A"},"Planning":{bg:"#EEF4FF",text:"#2855B8",dot:"#3A78E8"},"Completed":{bg:"#EDFAF4",text:"#1A7A4E",dot:"#2EAA72"},"On Hold":{bg:"#F5F5F5",text:"#666",dot:"#999"}};
 var CC={Confirmed:"#2EAA72",Ordered:"#3A78E8",Delivered:"#2EAA72",Installed:"#2EAA72","In Stock":"#3A78E8",Pending:"#E8B43A",Quoted:"#9B6BE8"};
 var selectedColor=0,currentId=null,currentTab="timeline",activeFilter="All";
-var projects=[
-  {id:1,client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",
+var projects=[];
+
+var SEED=[
+  {id:"seed1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",
    choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks"},{category:"Countertops",item:"Calacatta Gold Quartz",vendor:"MSI Surfaces",status:"Confirmed",notes:"Template Apr 20"},{category:"Flooring",item:"12x24 Porcelain Tile",vendor:"Floor & Decor",status:"In Stock",notes:""},{category:"Fixtures",item:"Matte Black Faucet",vendor:"Delta",status:"Delivered",notes:""},{category:"Appliances",item:"Samsung 36in Range",vendor:"Best Buy",status:"Pending",notes:"Client deciding"}],
    phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",complete:100},{name:"Rough-In",start:"2026-03-15",end:"2026-03-28",complete:100},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",complete:60},{name:"Countertops",start:"2026-04-21",end:"2026-04-28",complete:0},{name:"Tile & Flooring",start:"2026-04-29",end:"2026-05-07",complete:0},{name:"Finish & Paint",start:"2026-05-08",end:"2026-05-15",complete:0}],
    notes:"Client wants weekly updates every Friday. Key contact: Sarah Hargrove 555-0182."},
-  {id:2,client:"Vega Commercial",address:"110 Commerce Blvd, Suite 3",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",
+  {id:"seed2",client:"Vega Commercial",address:"110 Commerce Blvd, Suite 3",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",
    choices:[{category:"Flooring",item:"LVP Weathered Oak",vendor:"Shaw",status:"Confirmed",notes:""},{category:"Ceilings",item:"Exposed Grid w/ Black Tile",vendor:"Armstrong",status:"Pending",notes:"Awaiting approval"},{category:"Lighting",item:"LED Pendant Series",vendor:"Lithonia",status:"Pending",notes:""},{category:"Glass Walls",item:"Frameless Partition",vendor:"Avanti Systems",status:"Quoted",notes:"Quote valid 30 days"}],
    phases:[{name:"Permits",start:"2026-04-10",end:"2026-04-30",complete:70},{name:"Demo",start:"2026-05-01",end:"2026-05-07",complete:0},{name:"Framing",start:"2026-05-08",end:"2026-05-22",complete:0},{name:"MEP Rough-In",start:"2026-05-23",end:"2026-06-13",complete:0},{name:"Drywall",start:"2026-06-16",end:"2026-06-27",complete:0},{name:"Finishes",start:"2026-06-30",end:"2026-07-18",complete:0},{name:"Punch List",start:"2026-07-21",end:"2026-07-30",complete:0}],
    notes:"Coordinate with building management for freight elevator access. Noise restrictions 9am-5pm only."},
-  {id:3,client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath Addition",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",
+  {id:"seed3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath Addition",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",
    choices:[{category:"Tile",item:"Zellige Moroccan White",vendor:"Ann Sacks",status:"Installed",notes:""},{category:"Vanity",item:"Custom Walnut Double",vendor:"Local Millwork",status:"Installed",notes:""},{category:"Shower",item:"Frameless Glass Enclosure",vendor:"Century Shower Door",status:"Installed",notes:""},{category:"Plumbing",item:"Unlacquered Brass Fixtures",vendor:"Waterworks",status:"Installed",notes:""}],
    phases:[{name:"Demo",start:"2026-01-06",end:"2026-01-10",complete:100},{name:"Rough-In",start:"2026-01-13",end:"2026-01-31",complete:100},{name:"Tile Work",start:"2026-02-03",end:"2026-02-21",complete:100},{name:"Fixtures",start:"2026-02-24",end:"2026-03-14",complete:100},{name:"Punch List",start:"2026-03-17",end:"2026-03-28",complete:100}],
    notes:"Final walkthrough completed 3/28. Client signed off. Lien waiver filed."}
 ];
 
+function setSyncStatus(state){
+  var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");
+  if(state==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}
+  else if(state==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}
+  else if(state==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}
+  else{dot.style.background="#aaa";lbl.textContent="Connecting...";}
+}
+
+function showToast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
 function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2])+", "+p[0];}
 function daysLeft(e){return Math.ceil((new Date(e)-new Date())/86400000);}
 function getProgress(p){if(!p.phases||!p.phases.length)return 0;return Math.round(p.phases.reduce(function(a,ph){return a+ph.complete;},0)/p.phases.length);}
-function showToast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
+
+// Listen for real-time updates from Firestore
+function startRealtimeSync(){
+  setSyncStatus("connecting");
+  projectsCol.orderBy("client").onSnapshot(function(snapshot){
+    if(snapshot.empty){
+      // Seed the database on first run
+      var batch=db.batch();
+      SEED.forEach(function(p){
+        var ref=projectsCol.doc(p.id);
+        batch.set(ref,p);
+      });
+      batch.commit();
+      return;
+    }
+    projects=[];
+    snapshot.forEach(function(doc){projects.push(doc.data());});
+    setSyncStatus("live");
+    renderAll();
+  }, function(err){
+    setSyncStatus("error");
+    console.error(err);
+  });
+}
 
 function renderAll(){renderStats();renderFilters();renderCards();}
 
 function renderStats(){
   var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;
-  var budget=projects.reduce(function(a,p){return a+p.budget;},0),spent=projects.reduce(function(a,p){return a+p.spent;},0);
+  var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);
   var data=[["📁","Jobs",total],["⚡","Active",active],["💰","Budget","$"+(budget/1000).toFixed(0)+"k"],["📊","Spent","$"+(spent/1000).toFixed(0)+"k"]];
   document.getElementById("stats").innerHTML=data.map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");
 }
@@ -193,7 +249,7 @@ function renderCards(){
   var el=document.getElementById("cards");
   if(!filtered.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <strong>+ New</strong> to add one.</div>';return;}
   el.innerHTML=filtered.map(function(p){
-    var sc=SS[p.status]||SS["On Hold"],pct=Math.round(p.spent/p.budget*100)||0,pr=getProgress(p);
+    var sc=SS[p.status]||SS["On Hold"],pct=Math.round((p.spent||0)/(p.budget||1)*100)||0,pr=getProgress(p);
     var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#C4511A":"#333";
     var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";
     return'<div class="card" data-id="'+p.id+'">'
@@ -201,17 +257,18 @@ function renderCards(){
       +'<span class="badge" style="background:'+sc.bg+';color:'+sc.text+'"><span class="dot" style="background:'+sc.dot+'"></span>'+p.status+'</span></div>'
       +'<div class="meta"><div><div class="ml">PM</div><div class="mv">'+(p.pm||"—")+'</div></div>'
       +'<div><div class="ml">Deadline</div><div class="mv" style="color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
-      +'<div><div class="ml">Budget</div><div class="mv">$'+p.budget.toLocaleString()+'</div></div></div>'
-      +'<div class="brow"><div class="blr"><span>Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+p.color+'"></div></div></div>'
-      +'<div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'% · $'+p.spent.toLocaleString()+'</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div>'
+      +'<div><div class="ml">Budget</div><div class="mv">$'+(p.budget||0).toLocaleString()+'</div></div></div>'
+      +'<div class="brow"><div class="blr"><span>Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div>'
+      +'<div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'% · $'+(p.spent||0).toLocaleString()+'</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div>'
       +'</div>';
   }).join("");
-  document.querySelectorAll(".card").forEach(function(c){c.addEventListener("click",function(){openDetail(parseInt(this.getAttribute("data-id")));});});
+  document.querySelectorAll(".card").forEach(function(c){c.addEventListener("click",function(){openDetail(this.getAttribute("data-id"));});});
 }
 
 function openDetail(id){
   currentId=id;currentTab="timeline";
   var p=projects.find(function(x){return x.id===id;});
+  if(!p)return;
   var sc=SS[p.status]||SS["On Hold"];
   document.getElementById("dName").textContent=p.client;
   document.getElementById("dSub").textContent=p.type+" · "+p.address+(p.pm?" · PM: "+p.pm:"");
@@ -225,7 +282,7 @@ function renderTabs(p){
   var tabs=["timeline","choices","budget","notes"];
   document.getElementById("tabs").innerHTML=tabs.map(function(t){
     var on=t===currentTab;
-    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+p.color+";color:#1A1A2E":"")+'" data-tab="'+t+'">'+t.charAt(0).toUpperCase()+t.slice(1)+'</button>';
+    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+t+'">'+t.charAt(0).toUpperCase()+t.slice(1)+'</button>';
   }).join("");
   document.querySelectorAll(".ptab").forEach(function(b){b.addEventListener("click",function(){currentTab=this.getAttribute("data-tab");var p2=projects.find(function(x){return x.id===currentId;});renderTabs(p2);renderTabBody(p2);});});
 }
@@ -240,8 +297,8 @@ function renderTabBody(p){
     if(!p.choices||!p.choices.length){html='<div style="color:#bbb;font-size:13px">No client choices recorded.</div>';}
     else{html='<div style="overflow-x:auto"><table class="ctable"><thead><tr><th>Category</th><th>Item</th><th>Vendor</th><th>Status</th></tr></thead><tbody>';p.choices.forEach(function(ch){var cc=CC[ch.status]||"#999";html+='<tr><td style="font-weight:700;color:#333">'+ch.category+'</td><td>'+ch.item+'</td><td style="color:#888">'+ch.vendor+'</td><td><span class="cba" style="background:'+cc+'22;color:'+cc+'">'+ch.status+'</span>'+(ch.notes?'<div style="font-size:10px;color:#aaa;margin-top:3px">'+ch.notes+'</div>':'')+'</td></tr>';});html+='</tbody></table></div>';}
   } else if(currentTab==="budget"){
-    var rem=p.budget-p.spent,pct=p.budget>0?Math.round(p.spent/p.budget*100):0,bc=pct>90?"#E8713A":"#2EAA72";
-    html='<div class="bboxes"><div class="bbox"><div class="bbl">Budget</div><div class="bbv" style="color:#1A1A2E">$'+p.budget.toLocaleString()+'</div></div><div class="bbox"><div class="bbl">Spent</div><div class="bbv" style="color:#E8713A">$'+p.spent.toLocaleString()+'</div></div><div class="bbox"><div class="bbl">Left</div><div class="bbv" style="color:#2EAA72">$'+rem.toLocaleString()+'</div></div></div><div class="butil"><div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="font-weight:600;color:#333">Utilization</span><span>'+pct+'%</span></div><div style="background:#E0E0E0;border-radius:8px;height:12px"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+bc+';border-radius:8px"></div></div></div>';
+    var rem=(p.budget||0)-(p.spent||0),pct=p.budget>0?Math.round((p.spent||0)/p.budget*100):0,bc=pct>90?"#E8713A":"#2EAA72";
+    html='<div class="bboxes"><div class="bbox"><div class="bbl">Budget</div><div class="bbv" style="color:#1A1A2E">$'+(p.budget||0).toLocaleString()+'</div></div><div class="bbox"><div class="bbl">Spent</div><div class="bbv" style="color:#E8713A">$'+(p.spent||0).toLocaleString()+'</div></div><div class="bbox"><div class="bbl">Left</div><div class="bbv" style="color:#2EAA72">$'+rem.toLocaleString()+'</div></div></div><div class="butil"><div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="font-weight:600;color:#333">Utilization</span><span>'+pct+'%</span></div><div style="background:#E0E0E0;border-radius:8px;height:12px"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+bc+';border-radius:8px"></div></div></div>';
   } else {
     html='<div class="nbox"><div class="nl">Project Notes</div><div class="nt">'+(p.notes||"No notes added.")+'</div></div>';
   }
@@ -260,10 +317,28 @@ function openAdd(){
 function saveProject(){
   var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();
   if(!client||!type){alert("Please enter a client name and project type.");return;}
-  projects.push({id:Date.now(),client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selectedColor],choices:[],phases:[]});
-  document.getElementById("addPage").classList.remove("show");
-  renderAll();
-  showToast("✅ Project added!");
+  var newProject={
+    id:"proj_"+Date.now(),
+    client:client,type:type,
+    address:document.getElementById("fAddress").value.trim(),
+    pm:document.getElementById("fPm").value.trim(),
+    startDate:document.getElementById("fStart").value,
+    endDate:document.getElementById("fEnd").value,
+    budget:parseFloat(document.getElementById("fBudget").value)||0,
+    spent:0,
+    status:document.getElementById("fStatus").value,
+    notes:document.getElementById("fNotes").value.trim(),
+    color:COLORS[selectedColor],
+    choices:[],phases:[]
+  };
+  setSyncStatus("saving");
+  projectsCol.doc(newProject.id).set(newProject).then(function(){
+    showToast("✅ Project saved & synced!");
+    document.getElementById("addPage").classList.remove("show");
+  }).catch(function(e){
+    setSyncStatus("error");
+    showToast("❌ Error saving project");
+  });
 }
 
 document.getElementById("btnNew").addEventListener("click",openAdd);
@@ -273,7 +348,7 @@ document.getElementById("cancelBtn").addEventListener("click",function(){documen
 document.getElementById("saveBtn").addEventListener("click",saveProject);
 document.getElementById("searchInput").addEventListener("input",renderCards);
 
-renderAll();
+startRealtimeSync();
 </script>
 
 </body>
