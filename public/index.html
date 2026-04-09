@@ -431,15 +431,12 @@ function renderTabBody(p){
     html+='<div class="wcard">'
       +'<label class="fl" style="margin-bottom:8px">Project Notes</label>'
       +'<textarea class="fi" id="notesInput" rows="8" style="margin-bottom:10px">'+(p.notes||"")+'</textarea>'
-
-```
-  +'<button class="btn-green" onclick="saveNotes()">Save Notes</button>'
-  +'</div>'
-  +'<div class="wcard" style="margin-top:4px">'
-  +'<button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button>'
-  +'<button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button>'
-  +'</div>';
-```
+      +'<button class="btn-green" onclick="saveNotes()">Save Notes</button>'
+      +'</div>'
+      +'<div class="wcard" style="margin-top:4px">'
+      +'<button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button>'
+      +'<button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button>'
+      +'</div>';
 
 }
 
