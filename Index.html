@@ -10,199 +10,178 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;min-height:100vh}
-button{-webkit-appearance:none;cursor:pointer}
-.topbar{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:50}
+button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
+
+/* NAV */
+.topbar{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50}
 .topbar h1{color:#fff;font-size:17px;font-weight:700}
-#btnNew{background:#E8713A;border:none;border-radius:9px;color:#fff;padding:9px 15px;font-size:13px;font-weight:700}
-.sync-bar{background:#1e2d4a;padding:5px 16px;display:flex;align-items:center;font-size:11px;color:rgba(255,255,255,0.5);gap:6px}
-.sdot{width:7px;height:7px;border-radius:50%;background:#aaa;flex-shrink:0}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 12px 0}
-.scard{background:#fff;border-radius:11px;padding:11px 10px;border:1px solid #E8EAED}
-.scard .si{font-size:15px;margin-bottom:3px}
-.scard .sv{font-size:17px;font-weight:700;color:#1A1A2E}
-.scard .sl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.04em}
-.controls{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.fi{width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;color:#333;background:#fff;-webkit-appearance:none}
-.filters{display:flex;gap:6px;flex-wrap:wrap}
-.fb{border:1.5px solid #E0E0E0;background:#fff;color:#666;padding:6px 12px;border-radius:8px;font-size:12px}
-.fb.on{background:#1A1A2E;color:#fff;border-color:#1A1A2E;font-weight:700}
-#cards{padding:0 12px 80px;display:grid;gap:12px}
-.card{background:#fff;border-radius:14px;padding:16px;border:1.5px solid #E8EAED;cursor:pointer}
-.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px}
-.card-name{font-size:15px;font-weight:700;color:#1A1A2E}
-.card-sub{font-size:11px;color:#888;margin-top:3px}
-.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
-.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.meta{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-.ml{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.04em}
-.mv{font-size:12px;font-weight:600;color:#333}
-.brow{margin-bottom:7px}
-.blr{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;color:#aaa}
-.bt{background:#EEE;border-radius:5px;height:5px}
-.bf{height:100%;border-radius:5px}
+.sync-bar{background:#162236;padding:5px 16px;display:flex;align-items:center;font-size:11px;color:rgba(255,255,255,0.45);gap:6px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#aaa;flex-shrink:0;transition:background .3s}
+
+/* BUTTONS */
+.btn-orange{background:#E8713A;border:none;border-radius:9px;color:#fff;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-dark{background:#1A1A2E;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.btn-green{background:#2EAA72;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.btn-red{background:#E83A6C;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
+.btn-ghost{background:#fff;border:1.5px solid #E0E0E0;border-radius:10px;color:#666;padding:12px;font-size:14px;cursor:pointer;flex:1}
+.btn-dashed{width:100%;padding:12px;border:1.5px dashed #CCC;border-radius:10px;background:#fff;color:#888;font-size:13px;cursor:pointer;margin-top:6px;text-align:center}
+
+/* BACK BUTTON — large tap target */
+.back-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:#fff;font-size:20px;font-weight:700;width:44px;height:44px;cursor:pointer;flex-shrink:0;margin-right:8px}
 
 /* PAGES */
 .page{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:40;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .page.show{display:block}
-.phead{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;gap:8px;height:54px;position:sticky;top:0;z-index:10}
-.backbtn{background:none;border:none;color:#E8713A;font-size:22px;font-weight:700;padding:8px 12px 8px 0;min-width:44px;min-height:44px;display:flex;align-items:center}
-.phead h2{color:#fff;font-size:16px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pbadge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
-.ptabs{display:flex;background:#fff;border-bottom:1px solid #F0F0F0;overflow-x:auto;position:sticky;top:54px;z-index:9}
-.ptab{border:none;background:none;padding:13px 16px;font-size:13px;color:#999;border-bottom:3px solid transparent;white-space:nowrap;font-weight:400;min-height:44px}
-.ptab.on{color:#1A1A2E;font-weight:700}
-.pbody{padding:16px 16px 100px}
+.phead{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:10}
+.phead-title{color:#fff;font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbadge{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0;margin-left:8px}
 
-/* FORM PAGE */
+/* TABS */
+.ptabs{display:flex;background:#fff;border-bottom:1px solid #EBEBEB;overflow-x:auto;position:sticky;top:56px;z-index:9;-webkit-overflow-scrolling:touch}
+.ptab{border:none;background:none;padding:14px 16px;font-size:13px;color:#aaa;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;min-height:48px;cursor:pointer}
+.ptab.on{color:#1A1A2E;font-weight:700}
+.pbody{padding:14px 14px 100px}
+
+/* FORM PAGES */
 .fpage{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .fpage.show{display:block}
-.fg{display:grid;gap:10px;margin-bottom:16px}
+
+/* FORM FIELDS */
+.fi{width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:11px 12px;font-size:14px;outline:none;color:#333;background:#fff}
+.fl{font-size:10px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;display:block}
+.fg{display:grid;gap:12px;margin-bottom:16px}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fl{font-size:10px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 .fbtns{display:flex;gap:10px}
-.fbc{flex:1;padding:13px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;font-size:14px;color:#666}
-.fbs{flex:2;padding:13px;border:none;border-radius:10px;background:#1A1A2E;font-size:14px;color:#fff;font-weight:700}
 .cpick{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.cdot{width:32px;height:32px;border-radius:50%;border:3px solid transparent}
+.cdot{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+
+/* CARDS */
+.card{background:#fff;border-radius:14px;padding:16px;border:1.5px solid #EBEBEB;cursor:pointer;margin-bottom:12px}
+.card-name{font-size:15px;font-weight:700;color:#1A1A2E}
+.card-sub{font-size:11px;color:#888;margin-top:3px}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.brow{margin-bottom:8px}
+.blr{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;color:#aaa}
+.bt{background:#EEE;border-radius:5px;height:6px}
+.bf{height:100%;border-radius:5px;transition:width .3s}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 14px 0}
+.scard{background:#fff;border-radius:11px;padding:11px 10px;border:1px solid #EBEBEB}
+.scard .si{font-size:15px;margin-bottom:3px}
+.scard .sv{font-size:17px;font-weight:700;color:#1A1A2E}
+.scard .sl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.04em}
 
 /* DETAIL CONTENT */
-.white-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
-.sec-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
-.add-btn{width:100%;padding:12px;border:1.5px dashed #CCC;border-radius:10px;background:#fff;color:#888;font-size:13px;margin-top:4px}
+.wcard{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
+.sec-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px}
 .item-card{background:#fff;border-radius:12px;padding:13px;margin-bottom:10px;border:1px solid #F0F0F0}
-.del-btn{background:none;border:none;color:#E83A6C;font-size:20px;padding:0 4px;line-height:1;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center}
-.cba{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.del-btn{background:none;border:none;color:#E83A6C;font-size:22px;padding:2px 6px;line-height:1;cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bva-row{display:flex;gap:8px;margin-top:8px}
+.bva-box{flex:1;background:#F8F8F8;border-radius:8px;padding:8px 10px}
+.bva-label{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.bva-val{font-size:14px;font-weight:700}
+.bva-diff{font-size:10px;margin-top:2px}
+.inline-form{background:#EEF2F7;border-radius:12px;padding:14px;margin-top:8px;border:1.5px solid #DDE3EC;display:none}
 .iboxes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .ibox{background:#fff;border-radius:10px;padding:12px 14px}
 .ibl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.05em}
 .ibv{font-size:15px;font-weight:700;color:#1A1A2E;margin-top:2px}
-.bboxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
-.bbox{background:#fff;border-radius:10px;padding:12px}
-.bbl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.05em}
-.bbv{font-size:16px;font-weight:700;margin-top:4px}
-.green-btn{width:100%;padding:13px;border:none;border-radius:12px;background:#2EAA72;color:#fff;font-size:15px;font-weight:700;margin-top:10px}
-.red-btn{width:100%;padding:13px;border:none;border-radius:12px;background:#E83A6C;color:#fff;font-size:15px;font-weight:700;margin-top:8px}
-.dark-btn{width:100%;padding:13px;border:none;border-radius:12px;background:#1A1A2E;color:#fff;font-size:15px;font-weight:700}
-.inline-form{background:#F4F5F7;border-radius:12px;padding:14px;margin-top:10px;border:1.5px solid #E8EAED}
-
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.sbox{background:#fff;border-radius:10px;padding:12px}
+.sbox-label{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.05em}
+.sbox-val{font-size:16px;font-weight:700;margin-top:4px}
+.tag{display:inline-flex;align-items:center;gap:6px;background:#EEF4FF;color:#2855B8;border-radius:20px;padding:5px 12px;font-size:13px;margin:3px}
+.tag button{background:none;border:none;color:#E83A6C;font-size:17px;line-height:1;padding:0;cursor:pointer}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fb{border:1.5px solid #E0E0E0;background:#fff;color:#666;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer}
+.fb.on{background:#1A1A2E;color:#fff;border-color:#1A1A2E;font-weight:700}
+.controls{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+#cards{padding:0 14px 80px}
 .empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px;line-height:1.6}
-
-/* Settings page */
-.settings-item{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px}
-.tag{display:inline-flex;align-items:center;gap:6px;background:#EEF4FF;color:#2855B8;border-radius:20px;padding:5px 12px;font-size:13px;margin:4px}
-.tag button{background:none;border:none;color:#E83A6C;font-size:16px;line-height:1;padding:0}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
 </style>
 
 </head>
 <body>
 
-<!-- MAIN -->
+<!-- MAIN LIST -->
 
 <div id="mainView">
   <div class="topbar">
     <h1>🏗️ Spence Contracting</h1>
     <div style="display:flex;gap:8px">
-      <button onclick="openSettings()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:9px 12px;font-size:13px">⚙️</button>
-      <button id="btnNew">+ New</button>
+      <button class="btn-orange" style="background:rgba(255,255,255,0.15)" onclick="openSettings()">⚙️</button>
+      <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
   <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span></div>
   <div class="stats" id="stats"></div>
   <div class="controls">
-    <input class="fi" id="searchInput" placeholder="Search by client or job type..." type="search"/>
+    <input class="fi" id="searchInput" placeholder="Search projects..." type="search"/>
     <div class="filters" id="filters"></div>
   </div>
   <div id="cards"><div class="empty">Loading...</div></div>
 </div>
 
-<!-- DETAIL PAGE -->
+<!-- PROJECT DETAIL -->
 
 <div class="page" id="detailPage">
   <div class="phead">
-    <button class="backbtn" id="backBtn">‹</button>
-    <h2 id="dName"></h2>
+    <button class="back-btn" id="backBtn">‹</button>
+    <span class="phead-title" id="dName"></span>
     <span class="pbadge" id="dBadge"></span>
   </div>
   <div class="ptabs" id="tabs"></div>
   <div class="pbody" id="tabBody"></div>
 </div>
 
-<!-- ADD/EDIT PROJECT PAGE -->
+<!-- ADD / EDIT PROJECT -->
 
 <div class="fpage" id="addPage">
   <div class="phead">
-    <button class="backbtn" id="addBackBtn">‹</button>
-    <h2 id="addPageTitle">New Project</h2>
+    <button class="back-btn" id="addBackBtn">‹</button>
+    <span class="phead-title" id="addPageTitle">New Project</span>
   </div>
-  <div style="padding:16px">
+  <div style="padding:14px">
     <div class="fg">
-      <div><div class="fl">Client Name *</div><input class="fi" id="fClient" placeholder="e.g. Johnson Residence"/></div>
-      <div><div class="fl">Project Type *</div><input class="fi" id="fType" placeholder="e.g. Kitchen Remodel"/></div>
-      <div><div class="fl">Address</div><input class="fi" id="fAddress" placeholder="123 Main St"/></div>
-      <div><div class="fl">Project Manager</div><input class="fi" id="fPm" placeholder="Name"/></div>
+      <div><label class="fl">Client Name *</label><input class="fi" id="fClient" placeholder="e.g. Johnson Residence"/></div>
+      <div><label class="fl">Project Type *</label><input class="fi" id="fType" placeholder="e.g. Kitchen Remodel"/></div>
+      <div><label class="fl">Address</label><input class="fi" id="fAddress" placeholder="123 Main St"/></div>
+      <div><label class="fl">Project Manager</label><input class="fi" id="fPm" placeholder="Name"/></div>
       <div class="fr2">
-        <div><div class="fl">Start Date</div><input class="fi" id="fStart" type="date"/></div>
-        <div><div class="fl">End Date</div><input class="fi" id="fEnd" type="date"/></div>
+        <div><label class="fl">Start Date</label><input class="fi" id="fStart" type="date"/></div>
+        <div><label class="fl">End Date</label><input class="fi" id="fEnd" type="date"/></div>
       </div>
       <div class="fr2">
-        <div><div class="fl">Budget ($)</div><input class="fi" id="fBudget" type="number" placeholder="0"/></div>
-        <div><div class="fl">Spent ($)</div><input class="fi" id="fSpent" type="number" placeholder="0"/></div>
+        <div><label class="fl">Budget ($)</label><input class="fi" id="fBudget" type="number" placeholder="0"/></div>
+        <div><label class="fl">Spent ($)</label><input class="fi" id="fSpent" type="number" placeholder="0"/></div>
       </div>
-      <div><div class="fl">Status</div>
-        <select class="fi" id="fStatus"></select>
-      </div>
-      <div><div class="fl">Notes</div><textarea class="fi" id="fNotes" rows="3" placeholder="Key contacts, special instructions..."></textarea></div>
-      <div><div class="fl">Color</div><div class="cpick" id="cpick"></div></div>
+      <div><label class="fl">Status</label><select class="fi" id="fStatus"></select></div>
+      <div><label class="fl">Notes</label><textarea class="fi" id="fNotes" rows="3" placeholder="Key contacts, special instructions..."></textarea></div>
+      <div><label class="fl">Color</label><div class="cpick" id="cpick"></div></div>
     </div>
     <div class="fbtns">
-      <button class="fbc" id="cancelBtn">Cancel</button>
-      <button class="fbs" id="saveBtn">Save Project</button>
+      <button class="btn-ghost" id="cancelBtn">Cancel</button>
+      <button class="btn-dark" style="flex:2" id="saveBtn">Save Project</button>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS PAGE -->
+<!-- SETTINGS -->
 
 <div class="fpage" id="settingsPage">
   <div class="phead">
-    <button class="backbtn" onclick="closeSettings()">‹</button>
-    <h2>Settings & Dropdowns</h2>
+    <button class="back-btn" onclick="closeSettings()">‹</button>
+    <span class="phead-title">Settings & Dropdowns</span>
   </div>
-  <div style="padding:16px">
-    <div class="settings-item">
-      <div class="fl" style="margin-bottom:8px">Project Statuses</div>
-      <div id="projectStatusTags"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="fi" id="newProjectStatus" placeholder="Add status..." style="flex:1"/>
-        <button class="fbs" style="flex:0;padding:10px 16px" onclick="addDropdownItem('projectStatuses','newProjectStatus','projectStatusTags',renderProjectStatusTags)">Add</button>
-      </div>
-    </div>
-    <div class="settings-item">
-      <div class="fl" style="margin-bottom:8px">Phase Types</div>
-      <div id="phaseTypeTags"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="fi" id="newPhaseType" placeholder="Add phase..." style="flex:1"/>
-        <button class="fbs" style="flex:0;padding:10px 16px" onclick="addDropdownItem('phaseTypes','newPhaseType','phaseTypeTags',renderPhaseTypeTags)">Add</button>
-      </div>
-    </div>
-    <div class="settings-item">
-      <div class="fl" style="margin-bottom:8px">Selection Statuses</div>
-      <div id="choiceStatusTags"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="fi" id="newChoiceStatus" placeholder="Add status..." style="flex:1"/>
-        <button class="fbs" style="flex:0;padding:10px 16px" onclick="addDropdownItem('choiceStatuses','newChoiceStatus','choiceStatusTags',renderChoiceStatusTags)">Add</button>
-      </div>
-    </div>
-    <div class="settings-item">
-      <div class="fl" style="margin-bottom:8px">Trade / Cost Categories</div>
-      <div id="costCatTags"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="fi" id="newCostCat" placeholder="Add category..." style="flex:1"/>
-        <button class="fbs" style="flex:0;padding:10px 16px" onclick="addDropdownItem('costCategories','newCostCat','costCatTags',renderCostCatTags)">Add</button>
-      </div>
-    </div>
+  <div style="padding:14px">
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('projectStatuses','psInput','psTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Phase Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add phase..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('choiceStatuses','csInput','csTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
   </div>
 </div>
 
@@ -217,92 +196,67 @@ firebase.initializeApp({
   messagingSenderId:"696245066965",
   appId:"1:696245066965:web:de13db6e678f40cf5ed65c"
 });
-var db=firebase.firestore();
-var col=db.collection("projects");
-var settingsCol=db.collection("settings");
+var db=firebase.firestore(),col=db.collection("projects"),sCol=db.collection("settings");
 
-// Default dropdown values
-var DEFAULTS={
+var DD={
   projectStatuses:["Planning","In Progress","On Hold","Completed"],
   phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],
   choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],
   costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"]
 };
-var dropdowns=JSON.parse(JSON.stringify(DEFAULTS));
 
 var COLORS=["#E8713A","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
-var SS={};
-var projects=[],activeFilter="All",currentId=null,currentTab="timeline",selectedColor=0,editingId=null;
+var STATUS_COLORS=["#E8713A","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
+var projects=[],activeFilter="All",currentId=null,currentTab="timeline",selColor=0,editId=null;
 
-function buildSS(){
-  SS={};
-  var colors=["#E8713A","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
-  dropdowns.projectStatuses.forEach(function(s,i){
-    var c=colors[i%colors.length];
-    SS[s]={bg:c+"22",text:c,dot:c};
-  });
-}
-
-function showToast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
-function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2]);}
-function daysLeft(e){return Math.ceil((new Date(e)-new Date())/86400000);}
-function getProgress(p){if(!p.phases||!p.phases.length)return 0;var done=p.phases.filter(function(ph){return ph.complete==="Complete";}).length;return Math.round(done/p.phases.length*100);}
-function getProject(){return projects.find(function(x){return x.id===currentId;});}
-
-function setSyncStatus(s){
-  var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");
-  if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}
-  else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}
-  else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}
-  else{dot.style.background="#aaa";lbl.textContent="Connecting...";}
-}
-
-// Load settings from Firebase
-function loadSettings(cb){
-  settingsCol.doc("dropdowns").get().then(function(doc){
-    if(doc.exists){dropdowns=Object.assign({},DEFAULTS,doc.data());}
-    buildSS();
-    if(cb)cb();
-  }).catch(function(){buildSS();if(cb)cb();});
-}
-
-function saveSettings(){
-  settingsCol.doc("dropdowns").set(dropdowns).then(function(){showToast("✅ Settings saved!");});
-}
-
-// Sync projects
 var SEED=[
-  {id:"seed1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",
-   choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks"}],
-   phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",complete:"Complete"},{name:"Rough-In",start:"2026-03-15",end:"2026-03-28",complete:"Complete"},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",complete:"In Progress"},{name:"Punch List",start:"2026-05-08",end:"2026-05-15",complete:"Not Started"}],
-   notes:"Client wants weekly updates every Friday. Key contact: Sarah Hargrove 555-0182.",costs:[]},
-  {id:"seed2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",choices:[],phases:[],notes:"Coordinate with building management.",costs:[]},
-  {id:"seed3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",choices:[],phases:[],notes:"Final walkthrough completed 3/28.",costs:[]}
+  {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"Key contact: Sarah Hargrove 555-0182.",
+   phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete"},{name:"Rough-In",start:"2026-03-15",end:"2026-03-28",phaseBudget:8000,phaseActual:8200,complete:"Complete"},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress"},{name:"Punch List",start:"2026-05-08",end:"2026-05-15",phaseBudget:1500,phaseActual:0,complete:"Not Started"}],
+   choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],
+   costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200},{category:"Materials",description:"Lumber & drywall",budgetAmt:5000,actualAmt:4800}]},
+  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"Coordinate with building management.",phases:[],choices:[],costs:[]},
+  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"Final walkthrough completed 3/28.",phases:[],choices:[],costs:[]}
 ];
+
+// helpers
+function T(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
+function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2]);}
+function dl(e){return Math.ceil((new Date(e)-new Date())/86400000);}
+function gp(p){if(!p.phases||!p.phases.length)return 0;var d=p.phases.filter(function(x){return x.complete==="Complete";}).length;return Math.round(d/p.phases.length*100);}
+function gpr(){return projects.find(function(x){return x.id===currentId;});}
+function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
+function bva(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;return{b:b2,a:a2,diff:Math.abs(diff),over:over};}
+function bvaHtml(b,a,label){
+  var v=bva(b,a);
+  var diffColor=v.over?"#E83A6C":"#2EAA72";
+  var diffLabel=v.over?"$"+v.diff.toLocaleString()+" over":"$"+v.diff.toLocaleString()+" under";
+  return'<div class="bva-row">'
+    +'<div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+v.b.toLocaleString()+'</div></div>'
+    +'<div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+v.a.toLocaleString()+'</div></div>'
+    +'<div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+diffColor+'">'+diffLabel+'</div></div>'
+    +'</div>';
+}
+
+function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
+
+function loadSettings(cb){
+  sCol.doc("dropdowns").get().then(function(d){
+    if(d.exists)DD=Object.assign({},DD,d.data());
+    if(cb)cb();
+  }).catch(function(){if(cb)cb();});
+}
+function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("✅ Settings saved!");});}
+function saveP(p){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");}).catch(function(){T("❌ Error saving");setSS("error");});}
 
 function startSync(){
   col.orderBy("client").onSnapshot(function(snap){
-    if(snap.empty){
-      var b=db.batch();
-      SEED.forEach(function(p){b.set(col.doc(p.id),p);});
-      b.commit();return;
-    }
-    projects=[];
-    snap.forEach(function(d){projects.push(d.data());});
-    setSyncStatus("live");
-    renderAll();
-    if(currentId&&document.getElementById("detailPage").classList.contains("show")){
-      var p=getProject();if(p){renderTabs(p);renderTabBody(p);}
-    }
-  },function(){setSyncStatus("error");});
+    if(snap.empty){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}
+    projects=[];snap.forEach(function(d){projects.push(d.data());});
+    setSS("live");renderAll();
+    if(currentId&&document.getElementById("detailPage").classList.contains("show")){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
+  },function(){setSS("error");});
 }
 
-function saveP(p){
-  setSyncStatus("saving");
-  return col.doc(p.id).set(p).then(function(){showToast("✅ Saved!");}).catch(function(){showToast("❌ Error");});
-}
-
-// Render main
 function renderAll(){renderStats();renderFilters();renderCards();}
 
 function renderStats(){
@@ -312,26 +266,27 @@ function renderStats(){
 }
 
 function renderFilters(){
-  document.getElementById("filters").innerHTML=["All"].concat(dropdowns.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");
+  document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");
   document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});
 }
 
 function renderCards(){
-  var search=document.getElementById("searchInput").value.toLowerCase();
-  var filtered=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!search||(p.client||"").toLowerCase().includes(search)||(p.type||"").toLowerCase().includes(search));});
+  var q=document.getElementById("searchInput").value.toLowerCase();
+  var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});
   var el=document.getElementById("cards");
-  if(!filtered.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <strong>+ New</strong> to add one.</div>';return;}
-  el.innerHTML=filtered.map(function(p){
-    var sc=SS[p.status]||{bg:"#F5F5F5",text:"#666",dot:"#999"};
-    var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=getProgress(p);
-    var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#C4511A":"#333";
+  if(!f.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <b>+ New</b> to add one.</div>';return;}
+  el.innerHTML=f.map(function(p){
+    var s=sc(p.status),pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);
+    var days=dl(p.endDate),dc=p.status!=="Completed"&&days<14?"#C4511A":"#555";
     var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";
     return'<div class="card" data-id="'+p.id+'">'
-      +'<div class="card-top"><div><div class="card-name">'+p.client+'</div><div class="card-sub">'+p.type+' · '+(p.address||"")+'</div></div>'
-      +'<span class="badge" style="background:'+sc.bg+';color:'+sc.text+'"><span class="bdot" style="background:'+sc.dot+'"></span>'+p.status+'</span></div>'
-      +'<div class="meta"><div><div class="ml">PM</div><div class="mv">'+(p.pm||"—")+'</div></div>'
-      +'<div><div class="ml">Deadline</div><div class="mv" style="color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
-      +'<div><div class="ml">Budget</div><div class="mv">$'+(p.budget||0).toLocaleString()+'</div></div></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px">'
+      +'<div><div class="card-name">'+p.client+'</div><div class="card-sub">'+p.type+' · '+(p.address||"")+'</div></div>'
+      +'<span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div>'
+      +'<div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">'
+      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div>'
+      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
+      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div></div>'
       +'<div class="brow"><div class="blr"><span>Phase Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div>'
       +'<div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div>'
       +'</div>';
@@ -339,290 +294,239 @@ function renderCards(){
   document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});
 }
 
-// Detail
+// DETAIL
 function openDetail(id){
   currentId=id;currentTab="timeline";
-  var p=getProject();if(!p)return;
-  var sc=SS[p.status]||{bg:"#F5F5F5",text:"#666"};
+  var p=gpr();if(!p)return;
+  var s=sc(p.status);
   document.getElementById("dName").textContent=p.client;
-  var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=sc.bg;b.style.color=sc.text;
+  var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
   renderTabs(p);renderTabBody(p);
-  document.getElementById("detailPage").classList.add("show");
-  document.getElementById("detailPage").scrollTop=0;
+  var dp=document.getElementById("detailPage");
+  dp.classList.add("show");dp.scrollTop=0;
 }
 
 function renderTabs(p){
   document.getElementById("tabs").innerHTML=["Timeline","Choices","Budget","Notes"].map(function(t){
-    var key=t.toLowerCase(),on=key===currentTab;
-    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+key+'">'+t+'</button>';
+    var k=t.toLowerCase(),on=k===currentTab;
+    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';
   }).join("");
-  document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=getProject();if(p2){renderTabs(p2);renderTabBody(p2);}};});
+  document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});
 }
 
 function renderTabBody(p){
   var html="";
+
   if(currentTab==="timeline"){
-    html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Completion</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
-    html+='<div class="sec-label">Project Phases</div>';
+    html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
+    // Phase budget summary
+    var totalPB=0,totalPA=0;
+    (p.phases||[]).forEach(function(ph){totalPB+=(parseFloat(ph.phaseBudget)||0);totalPA+=(parseFloat(ph.phaseActual)||0);});
+    if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(totalPB,totalPA,"All Phases")+'</div>';}
+    html+='<div class="sec-label">Phases</div>';
     (p.phases||[]).forEach(function(ph,i){
-      var c=ph.complete||"Not Started";
+      var c=ph.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;
       var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";
-      var pct=c==="Complete"?100:c==="In Progress"?50:0;
       html+='<div class="item-card">'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-        +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#333">'+ph.name+'</div>'
-        +(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')
-        +'</div>'
-        +'<button class="del-btn" onclick="deletePhase('+i+')">×</button></div>'
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+        +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'
+        +(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')+'</div>'
+        +'<button class="del-btn" onclick="delPhase('+i+')">×</button></div>'
         +'<div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div>'
-        +'<select class="fi" style="font-size:13px;padding:8px" onchange="updatePhaseStatus('+i+',this.value)">'
-        +["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")
-        +'</select></div>';
+        +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'
+        +["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'
+        +bvaHtml(ph.phaseBudget||0,ph.phaseActual||0,"Phase")
+        +'<div class="fr2" style="margin-top:8px;gap:8px">'
+        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ph.phaseBudget||0)+'" onchange="updatePhaseBudget('+i+',\'phaseBudget\',this.value)" style="padding:8px"/></div>'
+        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ph.phaseActual||0)+'" onchange="updatePhaseBudget('+i+',\'phaseActual\',this.value)" style="padding:8px"/></div>'
+        +'</div></div>';
     });
-    html+='<button class="add-btn" onclick="toggleForm(\'addPhaseForm\')">+ Add Phase</button>';
-    html+='<div class="inline-form" id="addPhaseForm" style="display:none">'
-      +'<div class="fl" style="margin-bottom:6px">Phase Name</div>'
-      +'<select class="fi" id="pNameSelect" style="margin-bottom:8px">'
-      +dropdowns.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")
-      +'<option value="__custom__">Custom...</option>'
-      +'</select>'
-      +'<input class="fi" id="pNameCustom" placeholder="Custom phase name" style="display:none;margin-bottom:8px"/>'
-      +'<div class="fr2" style="margin-bottom:10px"><div><div class="fl">Start</div><input class="fi" id="pStart" type="date"/></div><div><div class="fl">End</div><input class="fi" id="pEnd" type="date"/></div></div>'
-      +'<div style="display:flex;gap:8px"><button class="fbc" onclick="toggleForm(\'addPhaseForm\')">Cancel</button><button class="fbs" onclick="addPhase()">Add Phase</button></div>'
+    html+='<button class="btn-dashed" onclick="showForm(\'phaseForm\')">+ Add Phase</button>';
+    html+='<div class="inline-form" id="phaseForm">'
+      +'<label class="fl" style="margin-bottom:6px">Phase</label>'
+      +'<select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'
+      +DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select>'
+      +'<input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/>'
+      +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div>'
+      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div>'
+      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div>'
       +'</div>';
 
   } else if(currentTab==="choices"){
+    var totalCB=0,totalCA=0;
+    (p.choices||[]).forEach(function(ch){totalCB+=(parseFloat(ch.budgetAmt)||0);totalCA+=(parseFloat(ch.actualAmt)||0);});
+    if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(totalCB,totalCA,"All Selections")+'</div>';}
     html+='<div class="sec-label">Client Selections</div>';
     (p.choices||[]).forEach(function(ch,i){
-      var cc=getChoiceColor(ch.status);
+      var cc=choiceColor(ch.status);
       html+='<div class="item-card">'
-        +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">'
-        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#333">'+ch.category+'</div>'
+        +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div>'
         +'<div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'
-        +(ch.vendor?'<div style="font-size:11px;color:#aaa;margin-top:1px">'+ch.vendor+'</div>':'')
-        +(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')
-        +'</div>'
-        +'<button class="del-btn" onclick="deleteChoice('+i+')">×</button></div>'
-        +'<select class="fi" style="font-size:13px;padding:8px" onchange="updateChoiceStatus('+i+',this.value)">'
-        +dropdowns.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")
-        +'</select></div>';
+        +(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')
+        +(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div>'
+        +'<button class="del-btn" onclick="delChoice('+i+')">×</button></div>'
+        +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'
+        +DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'
+        +bvaHtml(ch.budgetAmt||0,ch.actualAmt||0,"Selection")
+        +'<div class="fr2" style="margin-top:8px;gap:8px">'
+        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ch.budgetAmt||0)+'" onchange="updateChoiceAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div>'
+        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ch.actualAmt||0)+'" onchange="updateChoiceAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div>'
+        +'</div></div>';
     });
-    html+='<button class="add-btn" onclick="toggleForm(\'addChoiceForm\')">+ Add Selection</button>';
-    html+='<div class="inline-form" id="addChoiceForm" style="display:none">'
-      +'<div class="fl" style="margin-bottom:6px">Category</div><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/>'
-      +'<div class="fl" style="margin-bottom:6px">Item / Description</div><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/>'
-      +'<div class="fl" style="margin-bottom:6px">Vendor</div><input class="fi" id="cVendor" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<div class="fl" style="margin-bottom:6px">Notes</div><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<div class="fl" style="margin-bottom:6px">Status</div>'
-      +'<select class="fi" id="cStatus" style="margin-bottom:10px">'+dropdowns.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<div style="display:flex;gap:8px"><button class="fbc" onclick="toggleForm(\'addChoiceForm\')">Cancel</button><button class="fbs" onclick="addChoice()">Add</button></div>'
+    html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
+    html+='<div class="inline-form" id="choiceForm">'
+      +'<label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/>'
+      +'<label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/>'
+      +'<label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/>'
+      +'<label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/>'
+      +'<label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
+      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div>'
+      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div>'
       +'</div>';
 
   } else if(currentTab==="budget"){
-    var rem=(p.budget||0)-(p.spent||0),pct=p.budget>0?Math.round((p.spent||0)/p.budget*100):0,bc=pct>90?"#E8713A":"#2EAA72";
-    html+='<div class="bboxes">'
-      +'<div class="bbox"><div class="bbl">Budget</div><div class="bbv" style="color:#1A1A2E">$'+(p.budget||0).toLocaleString()+'</div></div>'
-      +'<div class="bbox"><div class="bbl">Spent</div><div class="bbv" style="color:#E8713A">$'+(p.spent||0).toLocaleString()+'</div></div>'
-      +'<div class="bbox"><div class="bbl">Left</div><div class="bbv" style="color:#2EAA72">$'+rem.toLocaleString()+'</div></div></div>'
-      +'<div class="white-card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="font-weight:600">Utilization</span><span>'+pct+'%</span></div>'
-      +'<div style="background:#E0E0E0;border-radius:8px;height:12px"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+bc+';border-radius:8px"></div></div></div>'
-      +'<div class="sec-label">Cost Breakdown</div>';
+    // Roll up all budget vs actual from phases + choices + costs
+    var tPB=0,tPA=0,tCB=0,tCA=0,tXB=0,tXA=0;
+    (p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});
+    (p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
+    (p.costs||[]).forEach(function(c){tXB+=(parseFloat(c.budgetAmt)||0);tXA+=(parseFloat(c.actualAmt)||0);});
+    var grandB=(p.budget||0),grandA=(p.spent||0);
+
+    html+='<div class="wcard"><div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Overall Budget vs Actual</div>'+bvaHtml(grandB,grandA,"Total")+'</div>';
+
+    html+='<div class="summary-grid">'
+      +'<div class="sbox"><div class="sbox-label">Budget</div><div class="sbox-val" style="color:#1A1A2E">$'+grandB.toLocaleString()+'</div></div>'
+      +'<div class="sbox"><div class="sbox-label">Spent</div><div class="sbox-val" style="color:#E8713A">$'+grandA.toLocaleString()+'</div></div>'
+      +'<div class="sbox"><div class="sbox-label">Remaining</div><div class="sbox-val" style="color:#2EAA72">$'+(grandB-grandA).toLocaleString()+'</div></div>'
+      +'</div>';
+
+    if(tPB||tPA){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Phases</div>'+bvaHtml(tPB,tPA,"Phases")+'</div>';}
+    if(tCB||tCA){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">🎨 From Selections</div>'+bvaHtml(tCB,tCA,"Choices")+'</div>';}
+
+    html+='<div class="sec-label">Cost Line Items</div>';
     (p.costs||[]).forEach(function(c,i){
-      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px">'
-        +'<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#333">'+c.category+'</div>'
-        +(c.description?'<div style="font-size:11px;color:#aaa">'+c.description+'</div>':'')+'</div>'
-        +'<div style="font-size:15px;font-weight:700;color:#333">$'+parseFloat(c.amount||0).toLocaleString()+'</div>'
-        +'<button class="del-btn" onclick="deleteCost('+i+')">×</button>'
+      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'
+        +(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div>'
+        +'<button class="del-btn" onclick="delCost('+i+')">×</button></div>'
+        +bvaHtml(c.budgetAmt||0,c.actualAmt||0,"Cost")
+        +'<div class="fr2" style="margin-top:8px;gap:8px">'
+        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div>'
+        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div>'
         +'</div></div>';
     });
-    html+='<button class="add-btn" onclick="toggleForm(\'addCostForm\')">+ Add Cost Entry</button>';
-    html+='<div class="inline-form" id="addCostForm" style="display:none">'
-      +'<div class="fl" style="margin-bottom:6px">Category</div>'
-      +'<select class="fi" id="costCat" style="margin-bottom:8px">'+dropdowns.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<div class="fl" style="margin-bottom:6px">Description</div><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<div class="fl" style="margin-bottom:6px">Amount ($)</div><input class="fi" id="costAmt" type="number" placeholder="0" style="margin-bottom:10px"/>'
-      +'<div style="display:flex;gap:8px"><button class="fbc" onclick="toggleForm(\'addCostForm\')">Cancel</button><button class="fbs" onclick="addCost()">Add</button></div>'
+    html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
+    html+='<div class="inline-form" id="costForm">'
+      +'<label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
+      +'<label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/>'
+      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div>'
+      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div>'
       +'</div>'
-      +'<div class="white-card" style="margin-top:14px">'
-      +'<div class="fl" style="margin-bottom:8px">Update Totals</div>'
-      +'<div class="fr2"><div><div class="fl">Budget ($)</div><input class="fi" id="bBudget" type="number" value="'+(p.budget||0)+'"/></div>'
-      +'<div><div class="fl">Spent ($)</div><input class="fi" id="bSpent" type="number" value="'+(p.spent||0)+'"/></div></div>'
-      +'<button class="green-btn" onclick="saveBudget()">Update Budget</button></div>';
+      +'<div class="wcard" style="margin-top:12px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label>'
+      +'<div class="fr2"><div><label class="fl">Total Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Total Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div>'
+      +'<button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
 
   } else if(currentTab==="notes"){
-    html+='<div class="white-card">'
-      +'<div class="fl" style="margin-bottom:8px">Project Notes</div>'
+    html+='<div class="wcard">'
+      +'<label class="fl" style="margin-bottom:8px">Project Notes</label>'
       +'<textarea class="fi" id="notesInput" rows="8" style="margin-bottom:10px">'+(p.notes||"")+'</textarea>'
 
 ```
-  +'<button class="green-btn" onclick="saveNotes()">Save Notes</button>'
+  +'<button class="btn-green" onclick="saveNotes()">Save Notes</button>'
   +'</div>'
-  +'<div class="white-card" style="margin-top:4px">'
-  +'<button class="dark-btn" onclick="openEditProject()">✏️ Edit Project Details</button>'
-  +'<button class="red-btn" onclick="deleteProject()">🗑️ Delete Project</button>'
+  +'<div class="wcard" style="margin-top:4px">'
+  +'<button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button>'
+  +'<button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button>'
   +'</div>';
 ```
 
 }
+
 document.getElementById(“tabBody”).innerHTML=html;
-
-// Wire up phase name custom toggle
-if(currentTab===“timeline”){
-var sel=document.getElementById(“pNameSelect”);
-if(sel){sel.onchange=function(){document.getElementById(“pNameCustom”).style.display=this.value===”**custom**”?“block”:“none”;};}
-}
 }
 
-function getChoiceColor(s){
-var map={Confirmed:”#2EAA72”,Installed:”#2EAA72”,Delivered:”#2EAA72”,“In Stock”:”#3A78E8”,Ordered:”#3A78E8”,Pending:”#E8B43A”,Quoted:”#9B6BE8”,Rejected:”#E83A6C”};
-return map[s]||”#999”;
-}
+function choiceColor(s){return{Confirmed:”#2EAA72”,Installed:”#2EAA72”,Delivered:”#2EAA72”,“In Stock”:”#3A78E8”,Ordered:”#3A78E8”,Pending:”#E8B43A”,Quoted:”#9B6BE8”,Rejected:”#E83A6C”}[s]||”#999”;}
+function showForm(id){var el=document.getElementById(id);if(el)el.style.display=“block”;}
+function hideForm(id){var el=document.getElementById(id);if(el)el.style.display=“none”;}
 
-function toggleForm(id){
-var el=document.getElementById(id);
-if(el)el.style.display=el.style.display===“none”?“block”:“none”;
-}
-
-// Phase actions
+// Phase
 function addPhase(){
-var sel=document.getElementById(“pNameSelect”);
-var name=sel.value===”**custom**”?document.getElementById(“pNameCustom”).value.trim():sel.value;
-if(!name){alert(“Please enter a phase name.”);return;}
-var p=getProject();p.phases=p.phases||[];
-p.phases.push({name:name,start:document.getElementById(“pStart”).value,end:document.getElementById(“pEnd”).value,complete:“Not Started”});
+var sel=document.getElementById(“pSel”),name=sel.value===”**c**”?document.getElementById(“pCustom”).value.trim():sel.value;
+if(!name){alert(“Enter a phase name.”);return;}
+var p=gpr();p.phases=p.phases||[];
+p.phases.push({name:name,start:document.getElementById(“pSt”).value,end:document.getElementById(“pEn”).value,phaseBudget:parseFloat(document.getElementById(“pBud”).value)||0,phaseActual:parseFloat(document.getElementById(“pAct”).value)||0,complete:“Not Started”});
 saveP(p);
 }
-function deletePhase(i){if(!confirm(“Delete this phase?”))return;var p=getProject();p.phases.splice(i,1);saveP(p);}
-function updatePhaseStatus(i,val){var p=getProject();p.phases[i].complete=val;saveP(p);}
+function delPhase(i){if(!confirm(“Delete phase?”))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
+function updatePhaseStatus(i,v){var p=gpr();p.phases[i].complete=v;saveP(p);}
+function updatePhaseBudget(i,k,v){var p=gpr();p.phases[i][k]=parseFloat(v)||0;saveP(p);}
 
-// Choice actions
+// Choice
 function addChoice(){
 var cat=document.getElementById(“cCat”).value.trim(),item=document.getElementById(“cItem”).value.trim();
-if(!cat||!item){alert(“Please enter a category and item.”);return;}
-var p=getProject();p.choices=p.choices||[];
-p.choices.push({category:cat,item:item,vendor:document.getElementById(“cVendor”).value.trim(),notes:document.getElementById(“cNotes”).value.trim(),status:document.getElementById(“cStatus”).value});
+if(!cat||!item){alert(“Enter category and item.”);return;}
+var p=gpr();p.choices=p.choices||[];
+p.choices.push({category:cat,item:item,vendor:document.getElementById(“cVend”).value.trim(),notes:document.getElementById(“cNotes”).value.trim(),status:document.getElementById(“cStat”).value,budgetAmt:parseFloat(document.getElementById(“cBud”).value)||0,actualAmt:parseFloat(document.getElementById(“cAct”).value)||0});
 saveP(p);
 }
-function deleteChoice(i){if(!confirm(“Delete this selection?”))return;var p=getProject();p.choices.splice(i,1);saveP(p);}
-function updateChoiceStatus(i,val){var p=getProject();p.choices[i].status=val;saveP(p);}
+function delChoice(i){if(!confirm(“Delete selection?”))return;var p=gpr();p.choices.splice(i,1);saveP(p);}
+function updateChoiceStatus(i,v){var p=gpr();p.choices[i].status=v;saveP(p);}
+function updateChoiceAmt(i,k,v){var p=gpr();p.choices[i][k]=parseFloat(v)||0;saveP(p);}
 
-// Cost actions
+// Cost
 function addCost(){
-var amt=parseFloat(document.getElementById(“costAmt”).value)||0;
-var p=getProject();p.costs=p.costs||[];
-p.costs.push({category:document.getElementById(“costCat”).value,description:document.getElementById(“costDesc”).value.trim(),amount:amt});
-p.spent=(p.costs.reduce(function(a,c){return a+(c.amount||0);},0));
+var p=gpr();p.costs=p.costs||[];
+var b=parseFloat(document.getElementById(“costB”).value)||0,a=parseFloat(document.getElementById(“costA”).value)||0;
+p.costs.push({category:document.getElementById(“costCat”).value,description:document.getElementById(“costDesc”).value.trim(),budgetAmt:b,actualAmt:a});
+p.spent=(p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0));
 saveP(p);
 }
-function deleteCost(i){if(!confirm(“Delete this cost?”))return;var p=getProject();p.costs.splice(i,1);p.spent=p.costs.reduce(function(a,c){return a+(c.amount||0);},0);saveP(p);}
-function saveBudget(){var p=getProject();p.budget=parseFloat(document.getElementById(“bBudget”).value)||0;p.spent=parseFloat(document.getElementById(“bSpent”).value)||0;saveP(p);}
+function delCost(i){if(!confirm(“Delete cost?”))return;var p=gpr();p.costs.splice(i,1);p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
+function updateCostAmt(i,k,v){var p=gpr();p.costs[i][k]=parseFloat(v)||0;p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
+function saveBudgetTotals(){var p=gpr();p.budget=parseFloat(document.getElementById(“bBud”).value)||0;p.spent=parseFloat(document.getElementById(“bSpt”).value)||0;saveP(p);}
+function saveNotes(){var p=gpr();p.notes=document.getElementById(“notesInput”).value;saveP(p);}
+function deleteProject(){if(!confirm(“Delete project? Cannot be undone.”))return;col.doc(currentId).delete().then(function(){document.getElementById(“detailPage”).classList.remove(“show”);T(“Deleted”);});}
 
-// Notes
-function saveNotes(){var p=getProject();p.notes=document.getElementById(“notesInput”).value;saveP(p);}
-
-// Delete project
-function deleteProject(){
-if(!confirm(“Delete this project? Cannot be undone.”))return;
-col.doc(currentId).delete().then(function(){document.getElementById(“detailPage”).classList.remove(“show”);showToast(“Deleted”);});
+// Add / Edit project
+function populateStatus(val){
+var s=document.getElementById(“fStatus”);
+s.innerHTML=DD.projectStatuses.map(function(x){return’<option’+(x===(val||DD.projectStatuses[0])?” selected”:””)+’>’+x+’</option>’;}).join(””);
 }
-
-// Add/Edit project form
-function renderColorPicker(){
-document.getElementById(“cpick”).innerHTML=COLORS.map(function(c,i){return’<div class=“cdot” style=“background:’+c+’;border-color:’+(i===selectedColor?”#1A1A2E”:“transparent”)+’” data-ci=”’+i+’”></div>’;}).join(””);
-document.querySelectorAll(”.cdot”).forEach(function(d){d.onclick=function(){selectedColor=parseInt(this.getAttribute(“data-ci”));renderColorPicker();};});
-}
-function populateStatusDropdown(){
-var sel=document.getElementById(“fStatus”);
-sel.innerHTML=dropdowns.projectStatuses.map(function(s){return’<option>’+s+’</option>’;}).join(””);
+function renderCP(){
+document.getElementById(“cpick”).innerHTML=COLORS.map(function(c,i){return’<div class=“cdot” style=“background:’+c+’;border-color:’+(i===selColor?”#1A1A2E”:“transparent”)+’” data-ci=”’+i+’”></div>’;}).join(””);
+document.querySelectorAll(”.cdot”).forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute(“data-ci”));renderCP();};});
 }
 function openAdd(){
-editingId=null;
-document.getElementById(“addPageTitle”).textContent=“New Project”;
+editId=null;document.getElementById(“addPageTitle”).textContent=“New Project”;
 [“fClient”,“fType”,“fAddress”,“fPm”,“fStart”,“fEnd”,“fBudget”,“fSpent”,“fNotes”].forEach(function(id){document.getElementById(id).value=””;});
-populateStatusDropdown();
-selectedColor=0;renderColorPicker();
-document.getElementById(“addPage”).classList.add(“show”);
-document.getElementById(“addPage”).scrollTop=0;
+populateStatus();selColor=0;renderCP();
+var ap=document.getElementById(“addPage”);ap.classList.add(“show”);ap.scrollTop=0;
 }
 function openEditProject(){
-var p=getProject();editingId=p.id;
-document.getElementById(“addPageTitle”).textContent=“Edit Project”;
-document.getElementById(“fClient”).value=p.client||””;
-document.getElementById(“fType”).value=p.type||””;
-document.getElementById(“fAddress”).value=p.address||””;
-document.getElementById(“fPm”).value=p.pm||””;
-document.getElementById(“fStart”).value=p.startDate||””;
-document.getElementById(“fEnd”).value=p.endDate||””;
-document.getElementById(“fBudget”).value=p.budget||””;
-document.getElementById(“fSpent”).value=p.spent||””;
+var p=gpr();editId=p.id;document.getElementById(“addPageTitle”).textContent=“Edit Project”;
+document.getElementById(“fClient”).value=p.client||””;document.getElementById(“fType”).value=p.type||””;
+document.getElementById(“fAddress”).value=p.address||””;document.getElementById(“fPm”).value=p.pm||””;
+document.getElementById(“fStart”).value=p.startDate||””;document.getElementById(“fEnd”).value=p.endDate||””;
+document.getElementById(“fBudget”).value=p.budget||””;document.getElementById(“fSpent”).value=p.spent||””;
 document.getElementById(“fNotes”).value=p.notes||””;
-populateStatusDropdown();
-document.getElementById(“fStatus”).value=p.status||dropdowns.projectStatuses[0];
-selectedColor=Math.max(0,COLORS.indexOf(p.color));
-renderColorPicker();
-document.getElementById(“addPage”).classList.add(“show”);
-document.getElementById(“addPage”).scrollTop=0;
+populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();
+var ap=document.getElementById(“addPage”);ap.classList.add(“show”);ap.scrollTop=0;
 }
 function saveProject(){
 var client=document.getElementById(“fClient”).value.trim(),type=document.getElementById(“fType”).value.trim();
-if(!client||!type){alert(“Please enter a client name and project type.”);return;}
-var id=editingId||(“proj_”+Date.now());
-var existing=editingId?(getProject()||{}):{};
-var p=Object.assign({},existing,{
-id:id,client:client,type:type,
-address:document.getElementById(“fAddress”).value.trim(),
-pm:document.getElementById(“fPm”).value.trim(),
-startDate:document.getElementById(“fStart”).value,
-endDate:document.getElementById(“fEnd”).value,
-budget:parseFloat(document.getElementById(“fBudget”).value)||0,
-spent:parseFloat(document.getElementById(“fSpent”).value)||0,
-status:document.getElementById(“fStatus”).value,
-notes:document.getElementById(“fNotes”).value.trim(),
-color:COLORS[selectedColor],
-choices:existing.choices||[],
-phases:existing.phases||[],
-costs:existing.costs||[]
-});
-col.doc(id).set(p).then(function(){
-showToast(editingId?“✅ Updated!”:“✅ Project added!”);
-document.getElementById(“addPage”).classList.remove(“show”);
-if(editingId){currentId=id;}
-}).catch(function(){showToast(“❌ Error saving”);});
+if(!client||!type){alert(“Client name and project type required.”);return;}
+var id=editId||(“p”+Date.now()),existing=editId?(gpr()||{}):{};
+var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById(“fAddress”).value.trim(),pm:document.getElementById(“fPm”).value.trim(),startDate:document.getElementById(“fStart”).value,endDate:document.getElementById(“fEnd”).value,budget:parseFloat(document.getElementById(“fBudget”).value)||0,spent:parseFloat(document.getElementById(“fSpent”).value)||0,status:document.getElementById(“fStatus”).value,notes:document.getElementById(“fNotes”).value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[]});
+col.doc(id).set(p).then(function(){T(editId?“✅ Updated!”:“✅ Added!”);document.getElementById(“addPage”).classList.remove(“show”);if(editId)currentId=id;}).catch(function(){T(“❌ Error”);});
 }
 
-// Settings / dropdowns
-function openSettings(){
-renderProjectStatusTags();renderPhaseTypeTags();renderChoiceStatusTags();renderCostCatTags();
-document.getElementById(“settingsPage”).classList.add(“show”);
-}
+// Settings
+function openSettings(){renderTagSet(“psTagsEl”,“projectStatuses”);renderTagSet(“ptTagsEl”,“phaseTypes”);renderTagSet(“csTagsEl”,“choiceStatuses”);renderTagSet(“ccTagsEl”,“costCategories”);document.getElementById(“settingsPage”).classList.add(“show”);}
 function closeSettings(){document.getElementById(“settingsPage”).classList.remove(“show”);}
-
-function renderTags(containerId,arr,key,renderFn){
-document.getElementById(containerId).innerHTML=arr.map(function(s,i){
-return’<span class="tag">’+s+’<button onclick="removeDropdownItem(\''+key+'\','+i+',\''+containerId+'\','+renderFn.name+')">×</button></span>’;
-}).join(””);
-}
-function renderProjectStatusTags(){renderTags(“projectStatusTags”,dropdowns.projectStatuses,“projectStatuses”,renderProjectStatusTags);}
-function renderPhaseTypeTags(){renderTags(“phaseTypeTags”,dropdowns.phaseTypes,“phaseTypes”,renderPhaseTypeTags);}
-function renderChoiceStatusTags(){renderTags(“choiceStatusTags”,dropdowns.choiceStatuses,“choiceStatuses”,renderChoiceStatusTags);}
-function renderCostCatTags(){renderTags(“costCatTags”,dropdowns.costCategories,“costCategories”,renderCostCatTags);}
-
-function addDropdownItem(key,inputId,containerId,renderFn){
-var val=document.getElementById(inputId).value.trim();
-if(!val)return;
-if(dropdowns[key].indexOf(val)>=0){alert(“Already exists.”);return;}
-dropdowns[key].push(val);
-document.getElementById(inputId).value=””;
-renderFn();
-saveSettings();
-buildSS();
-}
-function removeDropdownItem(key,i,containerId,renderFn){
-dropdowns[key].splice(i,1);
-renderFn();
-saveSettings();
-buildSS();
-}
+function renderTagSet(elId,key){document.getElementById(elId).innerHTML=DD[key].map(function(s,i){return’<span class="tag">’+s+’<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>’;}).join(””);}
+function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||DD[key].indexOf(v)>=0)return;DD[key].push(v);document.getElementById(inputId).value=””;renderTagSet(elId,key);saveSettings();}
+function removeTag(key,i,elId){DD[key].splice(i,1);renderTagSet(elId,key);saveSettings();}
 
 // Wire up
 document.getElementById(“btnNew”).onclick=openAdd;
@@ -632,7 +536,6 @@ document.getElementById(“cancelBtn”).onclick=function(){document.getElementB
 document.getElementById(“saveBtn”).onclick=saveProject;
 document.getElementById(“searchInput”).oninput=renderCards;
 
-// Init
 loadSettings(function(){startSync();});
 </script>
 
