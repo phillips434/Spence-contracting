@@ -298,7 +298,7 @@ function renderCards(){
 function openDetail(id){
   currentId=id;currentTab="timeline";
   var p=gpr();if(!p)return;
-  var s=sc(p.status);
+  var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A",dot:"#E8713A"};
   document.getElementById("dName").textContent=p.client;
   var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
   renderTabs(p);renderTabBody(p);
