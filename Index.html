@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -11,42 +10,27 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;min-height:100vh}
 button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
-
-/* NAV */
 .topbar{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50}
 .topbar h1{color:#fff;font-size:17px;font-weight:700}
 .sync-bar{background:#162236;padding:5px 16px;display:flex;align-items:center;font-size:11px;color:rgba(255,255,255,0.45);gap:6px}
 .sdot{width:7px;height:7px;border-radius:50%;background:#aaa;flex-shrink:0;transition:background .3s}
-
-/* BUTTONS */
 .btn-orange{background:#E8713A;border:none;border-radius:9px;color:#fff;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
 .btn-dark{background:#1A1A2E;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
 .btn-green{background:#2EAA72;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
 .btn-red{background:#E83A6C;border:none;border-radius:10px;color:#fff;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
 .btn-ghost{background:#fff;border:1.5px solid #E0E0E0;border-radius:10px;color:#666;padding:12px;font-size:14px;cursor:pointer;flex:1}
 .btn-dashed{width:100%;padding:12px;border:1.5px dashed #CCC;border-radius:10px;background:#fff;color:#888;font-size:13px;cursor:pointer;margin-top:6px;text-align:center}
-
-/* BACK BUTTON — large tap target */
-.back-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:#fff;font-size:20px;font-weight:700;width:44px;height:44px;cursor:pointer;flex-shrink:0;margin-right:8px}
-
-/* PAGES */
 .page{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:40;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .page.show{display:block}
 .phead{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:10}
 .phead-title{color:#fff;font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pbadge{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0;margin-left:8px}
-
-/* TABS */
 .ptabs{display:flex;background:#fff;border-bottom:1px solid #EBEBEB;overflow-x:auto;position:sticky;top:56px;z-index:9;-webkit-overflow-scrolling:touch}
-.ptab{border:none;background:none;padding:14px 16px;font-size:13px;color:#aaa;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;min-height:48px;cursor:pointer}
+.ptab{border:none;background:none;padding:14px 14px;font-size:12px;color:#aaa;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;min-height:48px;cursor:pointer}
 .ptab.on{color:#1A1A2E;font-weight:700}
 .pbody{padding:14px 14px 100px}
-
-/* FORM PAGES */
 .fpage{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .fpage.show{display:block}
-
-/* FORM FIELDS */
 .fi{width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:11px 12px;font-size:14px;outline:none;color:#333;background:#fff}
 .fl{font-size:10px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;display:block}
 .fg{display:grid;gap:12px;margin-bottom:16px}
@@ -54,8 +38,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .fbtns{display:flex;gap:10px}
 .cpick{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .cdot{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer}
-
-/* CARDS */
 .card{background:#fff;border-radius:14px;padding:16px;border:1.5px solid #EBEBEB;cursor:pointer;margin-bottom:12px}
 .card-name{font-size:15px;font-weight:700;color:#1A1A2E}
 .card-sub{font-size:11px;color:#888;margin-top:3px}
@@ -64,16 +46,12 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .brow{margin-bottom:8px}
 .blr{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;color:#aaa}
 .bt{background:#EEE;border-radius:5px;height:6px}
-.bf{height:100%;border-radius:5px;transition:width .3s}
-
-/* STATS */
+.bf{height:100%;border-radius:5px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 14px 0}
 .scard{background:#fff;border-radius:11px;padding:11px 10px;border:1px solid #EBEBEB}
 .scard .si{font-size:15px;margin-bottom:3px}
 .scard .sv{font-size:17px;font-weight:700;color:#1A1A2E}
 .scard .sl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.04em}
-
-/* DETAIL CONTENT */
 .wcard{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
 .sec-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px}
 .item-card{background:#fff;border-radius:12px;padding:13px;margin-bottom:10px;border:1px solid #F0F0F0}
@@ -82,7 +60,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .bva-box{flex:1;background:#F8F8F8;border-radius:8px;padding:8px 10px}
 .bva-label{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
 .bva-val{font-size:14px;font-weight:700}
-.bva-diff{font-size:10px;margin-top:2px}
 .inline-form{background:#EEF2F7;border-radius:12px;padding:14px;margin-top:8px;border:1.5px solid #DDE3EC;display:none}
 .iboxes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .ibox{background:#fff;border-radius:10px;padding:12px 14px}
@@ -102,12 +79,20 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px;line-height:1.6}
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+/* Punch list */
+.punch-item{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #F0F0F0}
+.punch-cb{width:22px;height:22px;border-radius:6px;border:2px solid #CCC;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.punch-cb.done{background:#2EAA72;border-color:#2EAA72;color:#fff}
+.punch-text{flex:1;font-size:14px;color:#333}
+.punch-text.done{text-decoration:line-through;color:#aaa}
+/* Change orders */
+.co-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+/* Daily logs */
+.log-date{font-size:11px;color:#aaa;margin-bottom:4px}
+.log-text{font-size:13px;color:#444;line-height:1.5}
 </style>
-
 </head>
 <body>
-
-<!-- MAIN LIST -->
 
 <div id="mainView">
   <div class="topbar">
@@ -127,10 +112,9 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 </div>
 
 <!-- PROJECT DETAIL -->
-
 <div class="page" id="detailPage">
   <div class="phead">
-    <button class="back-btn" id="backBtn">‹</button>
+    <a href="#" id="backBtn" onclick="document.getElementById('detailPage').classList.remove('show');return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
     <span class="phead-title" id="dName"></span>
     <span class="pbadge" id="dBadge"></span>
   </div>
@@ -138,11 +122,10 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   <div class="pbody" id="tabBody"></div>
 </div>
 
-<!-- ADD / EDIT PROJECT -->
-
+<!-- ADD/EDIT PROJECT -->
 <div class="fpage" id="addPage">
   <div class="phead">
-    <button class="back-btn" id="addBackBtn">‹</button>
+    <a href="#" onclick="document.getElementById('addPage').classList.remove('show');return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
     <span class="phead-title" id="addPageTitle">New Project</span>
   </div>
   <div style="padding:14px">
@@ -171,10 +154,9 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 </div>
 
 <!-- SETTINGS -->
-
 <div class="fpage" id="settingsPage">
   <div class="phead">
-    <button class="back-btn" onclick="closeSettings()">‹</button>
+    <a href="#" onclick="closeSettings();return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
     <span class="phead-title">Settings & Dropdowns</span>
   </div>
   <div style="padding:14px">
@@ -182,6 +164,8 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Phase Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add phase..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('choiceStatuses','csInput','csTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('changeOrderTypes','coInput','coTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Punch List Categories</label><div id="plTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="plInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('punchCategories','plInput','plTagsEl')">Add</button></div></div>
   </div>
 </div>
 
@@ -202,7 +186,9 @@ var DD={
   projectStatuses:["Planning","In Progress","On Hold","Completed"],
   phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],
   choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],
-  costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"]
+  costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],
+  changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],
+  punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"]
 };
 
 var COLORS=["#E8713A","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
@@ -211,32 +197,27 @@ var projects=[],activeFilter="All",currentId=null,currentTab="timeline",selColor
 
 var SEED=[
   {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"Key contact: Sarah Hargrove 555-0182.",
-   phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete"},{name:"Rough-In",start:"2026-03-15",end:"2026-03-28",phaseBudget:8000,phaseActual:8200,complete:"Complete"},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress"},{name:"Punch List",start:"2026-05-08",end:"2026-05-15",phaseBudget:1500,phaseActual:0,complete:"Not Started"}],
+   phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete"},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress"}],
    choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],
-   costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200},{category:"Materials",description:"Lumber & drywall",budgetAmt:5000,actualAmt:4800}]},
-  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"Coordinate with building management.",phases:[],choices:[],costs:[]},
-  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"Final walkthrough completed 3/28.",phases:[],choices:[],costs:[]}
+   costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],
+   punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"},{text:"Install cabinet hardware",done:true,category:"Cabinetry"}],
+   changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips under all upper cabinets",date:"2026-03-28"}],
+   dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz, Mike T.",weather:"Clear 72°F",work:"Installed upper cabinet boxes. 60% complete.",issues:"Waiting on hardware delivery.",photos:""}]},
+  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"Coordinate with building management.",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[]},
+  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"Final walkthrough completed 3/28.",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[]}
 ];
 
-// helpers
 function T(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
 function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2]);}
 function dl(e){return Math.ceil((new Date(e)-new Date())/86400000);}
 function gp(p){if(!p.phases||!p.phases.length)return 0;var d=p.phases.filter(function(x){return x.complete==="Complete";}).length;return Math.round(d/p.phases.length*100);}
 function gpr(){return projects.find(function(x){return x.id===currentId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
-function bva(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;return{b:b2,a:a2,diff:Math.abs(diff),over:over};}
-function bvaHtml(b,a,label){
-  var v=bva(b,a);
-  var diffColor=v.over?"#E83A6C":"#2EAA72";
-  var diffLabel=v.over?"$"+v.diff.toLocaleString()+" over":"$"+v.diff.toLocaleString()+" under";
-  return'<div class="bva-row">'
-    +'<div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+v.b.toLocaleString()+'</div></div>'
-    +'<div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+v.a.toLocaleString()+'</div></div>'
-    +'<div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+diffColor+'">'+diffLabel+'</div></div>'
-    +'</div>';
+function bvaHtml(b,a){
+  var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;
+  var dc=over?"#E83A6C":"#2EAA72",dl2=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";
+  return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl2+'</div></div></div>';
 }
-
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
 
 function loadSettings(cb){
@@ -246,7 +227,7 @@ function loadSettings(cb){
   }).catch(function(){if(cb)cb();});
 }
 function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("✅ Settings saved!");});}
-function saveP(p){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");}).catch(function(){T("❌ Error saving");setSS("error");});}
+function saveP(p){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");}).catch(function(){T("❌ Error");setSS("error");});}
 
 function startSync(){
   col.orderBy("client").onSnapshot(function(snap){
@@ -276,17 +257,23 @@ function renderCards(){
   var el=document.getElementById("cards");
   if(!f.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <b>+ New</b> to add one.</div>';return;}
   el.innerHTML=f.map(function(p){
-    var s=sc(p.status),pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);
+    var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A",dot:"#E8713A"};
+    var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);
     var days=dl(p.endDate),dc=p.status!=="Completed"&&days<14?"#C4511A":"#555";
     var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";
+    var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;
+    var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;
     return'<div class="card" data-id="'+p.id+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px">'
       +'<div><div class="card-name">'+p.client+'</div><div class="card-sub">'+p.type+' · '+(p.address||"")+'</div></div>'
       +'<span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div>'
       +'<div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">'
-      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div>'
-      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
-      +'<div><div class="sl" style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div></div>'
+      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div>'
+      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
+      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'
+      +(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')
+      +(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')
+      +'</div>'
       +'<div class="brow"><div class="blr"><span>Phase Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div>'
       +'<div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div>'
       +'</div>';
@@ -294,21 +281,20 @@ function renderCards(){
   document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});
 }
 
-// DETAIL
 function openDetail(id){
   currentId=id;currentTab="timeline";
   var p=gpr();if(!p)return;
-  var s=sc(p.status);
+  var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A"};
   document.getElementById("dName").textContent=p.client;
   var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
   renderTabs(p);renderTabBody(p);
-  var dp=document.getElementById("detailPage");
-  dp.classList.add("show");dp.scrollTop=0;
+  var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;
 }
 
 function renderTabs(p){
-  document.getElementById("tabs").innerHTML=["Timeline","Choices","Budget","Notes"].map(function(t){
-    var k=t.toLowerCase(),on=k===currentTab;
+  var tabs=["Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];
+  document.getElementById("tabs").innerHTML=tabs.map(function(t){
+    var k=t.toLowerCase().replace(/ /g,"-"),on=k===currentTab;
     return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';
   }).join("");
   document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});
@@ -319,225 +305,153 @@ function renderTabBody(p){
 
   if(currentTab==="timeline"){
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
-    // Phase budget summary
-    var totalPB=0,totalPA=0;
-    (p.phases||[]).forEach(function(ph){totalPB+=(parseFloat(ph.phaseBudget)||0);totalPA+=(parseFloat(ph.phaseActual)||0);});
-    if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(totalPB,totalPA,"All Phases")+'</div>';}
+    var tPB=0,tPA=0;
+    (p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});
+    if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tPB,tPA)+'</div>';}
     html+='<div class="sec-label">Phases</div>';
     (p.phases||[]).forEach(function(ph,i){
       var c=ph.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;
       var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";
-      html+='<div class="item-card">'
-        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
-        +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'
-        +(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')+'</div>'
-        +'<button class="del-btn" onclick="delPhase('+i+')">×</button></div>'
-        +'<div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div>'
-        +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'
-        +["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'
-        +bvaHtml(ph.phaseBudget||0,ph.phaseActual||0,"Phase")
-        +'<div class="fr2" style="margin-top:8px;gap:8px">'
-        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ph.phaseBudget||0)+'" onchange="updatePhaseBudget('+i+',\'phaseBudget\',this.value)" style="padding:8px"/></div>'
-        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ph.phaseActual||0)+'" onchange="updatePhaseBudget('+i+',\'phaseActual\',this.value)" style="padding:8px"/></div>'
-        +'</div></div>';
+      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'+(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')+'</div><button class="del-btn" onclick="delPhase('+i+')">×</button></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ph.phaseBudget||0,ph.phaseActual||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ph.phaseBudget||0)+'" onchange="updatePhaseAmt('+i+',\'phaseBudget\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ph.phaseActual||0)+'" onchange="updatePhaseAmt('+i+',\'phaseActual\',this.value)" style="padding:8px"/></div></div></div>';
     });
     html+='<button class="btn-dashed" onclick="showForm(\'phaseForm\')">+ Add Phase</button>';
-    html+='<div class="inline-form" id="phaseForm">'
-      +'<label class="fl" style="margin-bottom:6px">Phase</label>'
-      +'<select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'
-      +DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select>'
-      +'<input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/>'
-      +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div>'
-      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div>'
-      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div>'
-      +'</div>';
+    html+='<div class="inline-form" id="phaseForm"><label class="fl" style="margin-bottom:6px">Phase</label><select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div></div>';
 
   } else if(currentTab==="choices"){
-    var totalCB=0,totalCA=0;
-    (p.choices||[]).forEach(function(ch){totalCB+=(parseFloat(ch.budgetAmt)||0);totalCA+=(parseFloat(ch.actualAmt)||0);});
-    if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(totalCB,totalCA,"All Selections")+'</div>';}
+    var tCB=0,tCA=0;
+    (p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
+    if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';}
     html+='<div class="sec-label">Client Selections</div>';
     (p.choices||[]).forEach(function(ch,i){
-      var cc=choiceColor(ch.status);
-      html+='<div class="item-card">'
-        +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'
-        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div>'
-        +'<div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'
-        +(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')
-        +(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div>'
-        +'<button class="del-btn" onclick="delChoice('+i+')">×</button></div>'
-        +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'
-        +DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'
-        +bvaHtml(ch.budgetAmt||0,ch.actualAmt||0,"Selection")
-        +'<div class="fr2" style="margin-top:8px;gap:8px">'
-        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ch.budgetAmt||0)+'" onchange="updateChoiceAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div>'
-        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ch.actualAmt||0)+'" onchange="updateChoiceAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div>'
-        +'</div></div>';
+      html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="del-btn" onclick="delChoice('+i+')">×</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(ch.budgetAmt||0)+'" onchange="updateChoiceAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(ch.actualAmt||0)+'" onchange="updateChoiceAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';
     });
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
-    html+='<div class="inline-form" id="choiceForm">'
-      +'<label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div>'
-      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div>'
-      +'</div>';
+    html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
 
   } else if(currentTab==="budget"){
-    // Roll up all budget vs actual from phases + choices + costs
-    var tPB=0,tPA=0,tCB=0,tCA=0,tXB=0,tXA=0;
-    (p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});
-    (p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
+    var tPB2=0,tPA2=0,tCB2=0,tCA2=0,tXB=0,tXA=0;
+    (p.phases||[]).forEach(function(ph){tPB2+=(parseFloat(ph.phaseBudget)||0);tPA2+=(parseFloat(ph.phaseActual)||0);});
+    (p.choices||[]).forEach(function(ch){tCB2+=(parseFloat(ch.budgetAmt)||0);tCA2+=(parseFloat(ch.actualAmt)||0);});
     (p.costs||[]).forEach(function(c){tXB+=(parseFloat(c.budgetAmt)||0);tXA+=(parseFloat(c.actualAmt)||0);});
-    var grandB=(p.budget||0),grandA=(p.spent||0);
-
-    html+='<div class="wcard"><div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Overall Budget vs Actual</div>'+bvaHtml(grandB,grandA,"Total")+'</div>';
-
-    html+='<div class="summary-grid">'
-      +'<div class="sbox"><div class="sbox-label">Budget</div><div class="sbox-val" style="color:#1A1A2E">$'+grandB.toLocaleString()+'</div></div>'
-      +'<div class="sbox"><div class="sbox-label">Spent</div><div class="sbox-val" style="color:#E8713A">$'+grandA.toLocaleString()+'</div></div>'
-      +'<div class="sbox"><div class="sbox-label">Remaining</div><div class="sbox-val" style="color:#2EAA72">$'+(grandB-grandA).toLocaleString()+'</div></div>'
-      +'</div>';
-
-    if(tPB||tPA){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Phases</div>'+bvaHtml(tPB,tPA,"Phases")+'</div>';}
-    if(tCB||tCA){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">🎨 From Selections</div>'+bvaHtml(tCB,tCA,"Choices")+'</div>';}
-
+    var grandB=p.budget||0,grandA=p.spent||0;
+    // Change order impact
+    var coImpact=(p.changeOrders||[]).filter(function(c){return c.status==="Approved";}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
+    html+='<div class="wcard"><div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Overall Budget vs Actual</div>'+bvaHtml(grandB,grandA)+'</div>';
+    if(coImpact){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">⚠️ Approved Change Orders</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+coImpact.toLocaleString()+' added to scope</div></div>';}
+    html+='<div class="summary-grid"><div class="sbox"><div class="sbox-label">Budget</div><div class="sbox-val" style="color:#1A1A2E">$'+grandB.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Spent</div><div class="sbox-val" style="color:#E8713A">$'+grandA.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Remaining</div><div class="sbox-val" style="color:#2EAA72">$'+(grandB-grandA).toLocaleString()+'</div></div></div>';
+    if(tPB2||tPA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Phases</div>'+bvaHtml(tPB2,tPA2)+'</div>';}
+    if(tCB2||tCA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">🎨 From Selections</div>'+bvaHtml(tCB2,tCA2)+'</div>';}
     html+='<div class="sec-label">Cost Line Items</div>';
     (p.costs||[]).forEach(function(c,i){
-      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'
-        +(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div>'
-        +'<button class="del-btn" onclick="delCost('+i+')">×</button></div>'
-        +bvaHtml(c.budgetAmt||0,c.actualAmt||0,"Cost")
-        +'<div class="fr2" style="margin-top:8px;gap:8px">'
-        +'<div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div>'
-        +'<div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div>'
-        +'</div></div>';
+      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">×</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';
     });
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
-    html+='<div class="inline-form" id="costForm">'
-      +'<label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div>'
-      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div>'
-      +'</div>'
-      +'<div class="wcard" style="margin-top:12px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label>'
-      +'<div class="fr2"><div><label class="fl">Total Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Total Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div>'
-      +'<button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
+    html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
+    html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
+
+  } else if(currentTab==="punch-list"){
+    var done=(p.punchList||[]).filter(function(i){return i.done;}).length;
+    var total=(p.punchList||[]).length;
+    if(total>0){
+      var pct2=Math.round(done/total*100);
+      html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct2+'%;background:#2EAA72;border-radius:6px"></div></div></div>';
+    }
+    html+='<div class="sec-label">Punch List Items</div>';
+    (p.punchList||[]).forEach(function(item,i){
+      html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"✓":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">×</button></div>';
+    });
+    html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
+    html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
+
+  } else if(currentTab==="change-orders"){
+    var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
+    if(p.changeOrders&&p.changeOrders.length){
+      html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL CHANGE ORDERS</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' total</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';
+    }
+    html+='<div class="sec-label">Change Orders</div>';
+    (p.changeOrders||[]).forEach(function(co,i){
+      var sc2=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";
+      html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' · '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">×</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc2+'22;color:'+sc2+'">'+co.status+'</span></div></div>';
+    });
+    html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
+    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" placeholder="Details..." style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
+
+  } else if(currentTab==="daily-log"){
+    html+='<div class="sec-label">Daily Logs</div>';
+    var logs=(p.dailyLogs||[]).slice().reverse();
+    logs.forEach(function(log,i){
+      var ri=p.dailyLogs.length-1-i;
+      html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' · '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">×</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">⚠️ '+log.issues+'</div>':'')+'</div>';
+    });
+    html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
+    html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72°F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:10px"></textarea><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
 
   } else if(currentTab==="notes"){
-    html+='<div class="wcard">'
-      +'<label class="fl" style="margin-bottom:8px">Project Notes</label>'
-      +'<textarea class="fi" id="notesInput" rows="8" style="margin-bottom:10px">'+(p.notes||"")+'</textarea>'
+    html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">Project Notes</label><textarea class="fi" id="notesInput" rows="8" style="margin-bottom:10px">'+(p.notes||"")+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div><div class="wcard" style="margin-top:4px"><button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button><button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button></div>';
+  }
 
-```
-  +'<button class="btn-green" onclick="saveNotes()">Save Notes</button>'
-  +'</div>'
-  +'<div class="wcard" style="margin-top:4px">'
-  +'<button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button>'
-  +'<button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button>'
-  +'</div>';
-```
-
+  document.getElementById("tabBody").innerHTML=html;
 }
 
-document.getElementById(“tabBody”).innerHTML=html;
-}
-
-function choiceColor(s){return{Confirmed:”#2EAA72”,Installed:”#2EAA72”,Delivered:”#2EAA72”,“In Stock”:”#3A78E8”,Ordered:”#3A78E8”,Pending:”#E8B43A”,Quoted:”#9B6BE8”,Rejected:”#E83A6C”}[s]||”#999”;}
-function showForm(id){var el=document.getElementById(id);if(el)el.style.display=“block”;}
-function hideForm(id){var el=document.getElementById(id);if(el)el.style.display=“none”;}
+function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
+function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
 
 // Phase
-function addPhase(){
-var sel=document.getElementById(“pSel”),name=sel.value===”**c**”?document.getElementById(“pCustom”).value.trim():sel.value;
-if(!name){alert(“Enter a phase name.”);return;}
-var p=gpr();p.phases=p.phases||[];
-p.phases.push({name:name,start:document.getElementById(“pSt”).value,end:document.getElementById(“pEn”).value,phaseBudget:parseFloat(document.getElementById(“pBud”).value)||0,phaseActual:parseFloat(document.getElementById(“pAct”).value)||0,complete:“Not Started”});
-saveP(p);
-}
-function delPhase(i){if(!confirm(“Delete phase?”))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
+function addPhase(){var sel=document.getElementById("pSel"),name=sel.value==="__c__"?document.getElementById("pCustom").value.trim():sel.value;if(!name){alert("Enter a phase name.");return;}var p=gpr();p.phases=p.phases||[];p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started"});saveP(p);}
+function delPhase(i){if(!confirm("Delete phase?"))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
 function updatePhaseStatus(i,v){var p=gpr();p.phases[i].complete=v;saveP(p);}
-function updatePhaseBudget(i,k,v){var p=gpr();p.phases[i][k]=parseFloat(v)||0;saveP(p);}
+function updatePhaseAmt(i,k,v){var p=gpr();p.phases[i][k]=parseFloat(v)||0;saveP(p);}
 
 // Choice
-function addChoice(){
-var cat=document.getElementById(“cCat”).value.trim(),item=document.getElementById(“cItem”).value.trim();
-if(!cat||!item){alert(“Enter category and item.”);return;}
-var p=gpr();p.choices=p.choices||[];
-p.choices.push({category:cat,item:item,vendor:document.getElementById(“cVend”).value.trim(),notes:document.getElementById(“cNotes”).value.trim(),status:document.getElementById(“cStat”).value,budgetAmt:parseFloat(document.getElementById(“cBud”).value)||0,actualAmt:parseFloat(document.getElementById(“cAct”).value)||0});
-saveP(p);
-}
-function delChoice(i){if(!confirm(“Delete selection?”))return;var p=gpr();p.choices.splice(i,1);saveP(p);}
+function addChoice(){var cat=document.getElementById("cCat").value.trim(),item=document.getElementById("cItem").value.trim();if(!cat||!item){alert("Enter category and item.");return;}var p=gpr();p.choices=p.choices||[];p.choices.push({category:cat,item:item,vendor:document.getElementById("cVend").value.trim(),notes:document.getElementById("cNotes").value.trim(),status:document.getElementById("cStat").value,budgetAmt:parseFloat(document.getElementById("cBud").value)||0,actualAmt:parseFloat(document.getElementById("cAct").value)||0});saveP(p);}
+function delChoice(i){if(!confirm("Delete?"))return;var p=gpr();p.choices.splice(i,1);saveP(p);}
 function updateChoiceStatus(i,v){var p=gpr();p.choices[i].status=v;saveP(p);}
 function updateChoiceAmt(i,k,v){var p=gpr();p.choices[i][k]=parseFloat(v)||0;saveP(p);}
 
 // Cost
-function addCost(){
-var p=gpr();p.costs=p.costs||[];
-var b=parseFloat(document.getElementById(“costB”).value)||0,a=parseFloat(document.getElementById(“costA”).value)||0;
-p.costs.push({category:document.getElementById(“costCat”).value,description:document.getElementById(“costDesc”).value.trim(),budgetAmt:b,actualAmt:a});
-p.spent=(p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0));
-saveP(p);
-}
-function delCost(i){if(!confirm(“Delete cost?”))return;var p=gpr();p.costs.splice(i,1);p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
+function addCost(){var p=gpr();p.costs=p.costs||[];var b=parseFloat(document.getElementById("costB").value)||0,a=parseFloat(document.getElementById("costA").value)||0;p.costs.push({category:document.getElementById("costCat").value,description:document.getElementById("costDesc").value.trim(),budgetAmt:b,actualAmt:a});p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
+function delCost(i){if(!confirm("Delete?"))return;var p=gpr();p.costs.splice(i,1);p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function updateCostAmt(i,k,v){var p=gpr();p.costs[i][k]=parseFloat(v)||0;p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
-function saveBudgetTotals(){var p=gpr();p.budget=parseFloat(document.getElementById(“bBud”).value)||0;p.spent=parseFloat(document.getElementById(“bSpt”).value)||0;saveP(p);}
-function saveNotes(){var p=gpr();p.notes=document.getElementById(“notesInput”).value;saveP(p);}
-function deleteProject(){if(!confirm(“Delete project? Cannot be undone.”))return;col.doc(currentId).delete().then(function(){document.getElementById(“detailPage”).classList.remove(“show”);T(“Deleted”);});}
+function saveBudgetTotals(){var p=gpr();p.budget=parseFloat(document.getElementById("bBud").value)||0;p.spent=parseFloat(document.getElementById("bSpt").value)||0;saveP(p);}
 
-// Add / Edit project
-function populateStatus(val){
-var s=document.getElementById(“fStatus”);
-s.innerHTML=DD.projectStatuses.map(function(x){return’<option’+(x===(val||DD.projectStatuses[0])?” selected”:””)+’>’+x+’</option>’;}).join(””);
-}
-function renderCP(){
-document.getElementById(“cpick”).innerHTML=COLORS.map(function(c,i){return’<div class=“cdot” style=“background:’+c+’;border-color:’+(i===selColor?”#1A1A2E”:“transparent”)+’” data-ci=”’+i+’”></div>’;}).join(””);
-document.querySelectorAll(”.cdot”).forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute(“data-ci”));renderCP();};});
-}
-function openAdd(){
-editId=null;document.getElementById(“addPageTitle”).textContent=“New Project”;
-[“fClient”,“fType”,“fAddress”,“fPm”,“fStart”,“fEnd”,“fBudget”,“fSpent”,“fNotes”].forEach(function(id){document.getElementById(id).value=””;});
-populateStatus();selColor=0;renderCP();
-var ap=document.getElementById(“addPage”);ap.classList.add(“show”);ap.scrollTop=0;
-}
-function openEditProject(){
-var p=gpr();editId=p.id;document.getElementById(“addPageTitle”).textContent=“Edit Project”;
-document.getElementById(“fClient”).value=p.client||””;document.getElementById(“fType”).value=p.type||””;
-document.getElementById(“fAddress”).value=p.address||””;document.getElementById(“fPm”).value=p.pm||””;
-document.getElementById(“fStart”).value=p.startDate||””;document.getElementById(“fEnd”).value=p.endDate||””;
-document.getElementById(“fBudget”).value=p.budget||””;document.getElementById(“fSpent”).value=p.spent||””;
-document.getElementById(“fNotes”).value=p.notes||””;
-populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();
-var ap=document.getElementById(“addPage”);ap.classList.add(“show”);ap.scrollTop=0;
-}
-function saveProject(){
-var client=document.getElementById(“fClient”).value.trim(),type=document.getElementById(“fType”).value.trim();
-if(!client||!type){alert(“Client name and project type required.”);return;}
-var id=editId||(“p”+Date.now()),existing=editId?(gpr()||{}):{};
-var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById(“fAddress”).value.trim(),pm:document.getElementById(“fPm”).value.trim(),startDate:document.getElementById(“fStart”).value,endDate:document.getElementById(“fEnd”).value,budget:parseFloat(document.getElementById(“fBudget”).value)||0,spent:parseFloat(document.getElementById(“fSpent”).value)||0,status:document.getElementById(“fStatus”).value,notes:document.getElementById(“fNotes”).value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[]});
-col.doc(id).set(p).then(function(){T(editId?“✅ Updated!”:“✅ Added!”);document.getElementById(“addPage”).classList.remove(“show”);if(editId)currentId=id;}).catch(function(){T(“❌ Error”);});
-}
+// Punch List
+function addPunch(){var text=document.getElementById("plText").value.trim();if(!text){alert("Enter an item.");return;}var p=gpr();p.punchList=p.punchList||[];p.punchList.push({text:text,category:document.getElementById("plCat").value,done:false});saveP(p);}
+function delPunch(i){if(!confirm("Delete?"))return;var p=gpr();p.punchList.splice(i,1);saveP(p);}
+function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p);}
+
+// Change Orders
+function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p);}
+function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
+function updateCOStatus(i,v){var p=gpr();p.changeOrders[i].status=v;saveP(p);}
+
+// Daily Log
+function addLog(){var work=document.getElementById("logWork").value.trim();if(!work){alert("Enter work completed.");return;}var p=gpr();p.dailyLogs=p.dailyLogs||[];p.dailyLogs.push({date:document.getElementById("logDate").value,weather:document.getElementById("logWeather").value.trim(),crew:document.getElementById("logCrew").value.trim(),work:work,issues:document.getElementById("logIssues").value.trim()});saveP(p);}
+function delLog(i){if(!confirm("Delete?"))return;var p=gpr();p.dailyLogs.splice(i,1);saveP(p);}
+
+// Notes
+function saveNotes(){var p=gpr();p.notes=document.getElementById("notesInput").value;saveP(p);}
+function deleteProject(){if(!confirm("Delete project? Cannot be undone."))return;col.doc(currentId).delete().then(function(){document.getElementById("detailPage").classList.remove("show");T("Deleted");});}
+
+// Add/Edit project
+function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.projectStatuses.map(function(x){return'<option'+(x===(val||DD.projectStatuses[0])?" selected":"")+'>'+x+'</option>';}).join("");}
+function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
+function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
+function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
+function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
 
 // Settings
-function openSettings(){renderTagSet(“psTagsEl”,“projectStatuses”);renderTagSet(“ptTagsEl”,“phaseTypes”);renderTagSet(“csTagsEl”,“choiceStatuses”);renderTagSet(“ccTagsEl”,“costCategories”);document.getElementById(“settingsPage”).classList.add(“show”);}
-function closeSettings(){document.getElementById(“settingsPage”).classList.remove(“show”);}
-function renderTagSet(elId,key){document.getElementById(elId).innerHTML=DD[key].map(function(s,i){return’<span class="tag">’+s+’<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>’;}).join(””);}
-function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||DD[key].indexOf(v)>=0)return;DD[key].push(v);document.getElementById(inputId).value=””;renderTagSet(elId,key);saveSettings();}
+function openSettings(){renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");document.getElementById("settingsPage").classList.add("show");}
+function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
+function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>';}).join("");}
+function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||(DD[key]||[]).indexOf(v)>=0)return;DD[key]=DD[key]||[];DD[key].push(v);document.getElementById(inputId).value="";renderTagSet(elId,key);saveSettings();}
 function removeTag(key,i,elId){DD[key].splice(i,1);renderTagSet(elId,key);saveSettings();}
 
-// Wire up
-document.getElementById(“btnNew”).onclick=openAdd;
-document.getElementById(“backBtn”).onclick=function(){document.getElementById(“detailPage”).classList.remove(“show”);};
-document.getElementById(“addBackBtn”).onclick=function(){document.getElementById(“addPage”).classList.remove(“show”);};
-document.getElementById(“cancelBtn”).onclick=function(){document.getElementById(“addPage”).classList.remove(“show”);};
-document.getElementById(“saveBtn”).onclick=saveProject;
-document.getElementById(“searchInput”).oninput=renderCards;
+document.getElementById("btnNew").onclick=openAdd;
+document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
+document.getElementById("saveBtn").onclick=saveProject;
+document.getElementById("searchInput").oninput=renderCards;
 
 loadSettings(function(){startSync();});
 </script>
-
 </body>
 </html>
