@@ -192,7 +192,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('changeOrderTypes','coInput','coTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Punch List Categories</label><div id="plTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="plInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('punchCategories','plInput','plTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Subcontractors / Employees</label><div id="subTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="subInput" placeholder="Name, phone, email..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('subcontractors','subInput','subTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Subcontractors / Employees</label><div id="subTagsEl"></div><div style="display:grid;gap:8px;margin-top:10px"><input class="fi" id="subName" placeholder="Name *"/><div class="fr2"><input class="fi" id="subPhone" placeholder="Phone"/><input class="fi" id="subEmail" placeholder="Email"/></div><button class="btn-orange" style="width:100%;padding:10px" onclick="addSubcontractor()">Add Subcontractor</button></div></div>
   </div>
 </div>
 
@@ -481,9 +481,14 @@ function openEditPhase(i){
   document.getElementById("epPhone").value=ph.assignPhone||"";
   document.getElementById("epEmail").value=ph.assignEmail||"";
   // Populate assign dropdown
-  var opts='<option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){return'<option'+(s===ph.assignTo?" selected":"")+'>'+s+'</option>';}).join("");
+  var opts='<option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){var n=typeof s==="object"?s.name:s;return'<option value="'+n+'"'+(n===ph.assignTo?" selected":"")+'>'+n+'</option>';}).join("");
   document.getElementById("epAssign").innerHTML=opts;
-  document.getElementById("epAssign").value=ph.assignTo||"";
+  document.getElementById("epAssign").onchange=function(){
+    var name=this.value;
+    var sub=(DD.subcontractors||[]).find(function(s){return(typeof s==="object"?s.name:s)===name;});
+    if(sub&&typeof sub==="object"){document.getElementById("epPhone").value=sub.phone||"";document.getElementById("epEmail").value=sub.email||"";}
+    else{document.getElementById("epPhone").value="";document.getElementById("epEmail").value="";}
+  };
   document.getElementById("editPhaseModal").classList.add("show");
 }
 function closeEditPhase(){document.getElementById("editPhaseModal").classList.remove("show");}
@@ -583,7 +588,7 @@ function renderTabBody(p){
       +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div>'
       +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div>'
       +'<label class="fl" style="margin-bottom:6px">Assign To</label>'
-      +'<select class="fi" id="pAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
+      +'<select class="fi" id="pAssign" style="margin-bottom:10px" onchange="autoFillSubPh(this.value)"><option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){var n=typeof s==="object"?s.name:s;return'<option value="'+n+'">'+n+'</option>';}).join("")+'</select>'
       +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div>'
       +'</div>';
 
@@ -686,7 +691,9 @@ function addPhase(){
   var sel=document.getElementById("pSel"),name=sel.value==="__c__"?document.getElementById("pCustom").value.trim():sel.value;
   if(!name){alert("Enter a phase name.");return;}
   var p=gpr();p.phases=p.phases||[];
-  p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started",assignTo:document.getElementById("pAssign").value,assignPhone:"",assignEmail:""});
+  var pAssignName=document.getElementById("pAssign").value;
+  var pSub=(DD.subcontractors||[]).find(function(s){return(typeof s==="object"?s.name:s)===pAssignName;});
+  p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started",assignTo:pAssignName,assignPhone:(pSub&&typeof pSub==="object"?pSub.phone||"":""),assignEmail:(pSub&&typeof pSub==="object"?pSub.email||"":"")});
   saveP(p);
 }
 function delPhase(i){if(!confirm("Delete phase?"))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
@@ -729,11 +736,15 @@ function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addP
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
 
 // Settings
-function openSettings(){renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("subTagsEl","subcontractors");document.getElementById("settingsPage").classList.add("show");}
+function openSettings(){renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderSubTags();document.getElementById("settingsPage").classList.add("show");}
 function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
 function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>';}).join("");}
 function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||(DD[key]||[]).indexOf(v)>=0)return;DD[key]=DD[key]||[];DD[key].push(v);document.getElementById(inputId).value="";renderTagSet(elId,key);saveSettings();}
 function removeTag(key,i,elId){DD[key].splice(i,1);renderTagSet(elId,key);saveSettings();}
+function renderSubTags(){document.getElementById("subTagsEl").innerHTML=(DD.subcontractors||[]).map(function(s,i){var n=typeof s==="object"?s.name:s;var ph=typeof s==="object"?(s.phone||""):"";var em=typeof s==="object"?(s.email||""):"";return'<div class="item-card" style="margin-bottom:6px;padding:10px 12px"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+n+'</div>'+(ph||em?'<div style="font-size:11px;color:#888;margin-top:2px">'+(ph?'📞 '+ph:'')+(ph&&em?' · ':'')+(em?'✉️ '+em:'')+'</div>':'')+'</div><button class="del-btn" onclick="removeSub('+i+')">×</button></div></div>';}).join("");}
+function addSubcontractor(){var name=document.getElementById("subName").value.trim();if(!name){alert("Name is required.");return;}var phone=document.getElementById("subPhone").value.trim();var email=document.getElementById("subEmail").value.trim();DD.subcontractors=DD.subcontractors||[];DD.subcontractors.push({name:name,phone:phone,email:email});document.getElementById("subName").value="";document.getElementById("subPhone").value="";document.getElementById("subEmail").value="";renderSubTags();saveSettings();}
+function removeSub(i){DD.subcontractors.splice(i,1);renderSubTags();saveSettings();}
+function autoFillSubPh(name){}
 
 document.getElementById("btnNew").onclick=openAdd;
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
