@@ -618,7 +618,6 @@ async function generateAIEstimate(){
     var text=data.content&&data.content[0]&&data.content[0].text||"";
     var clean=text.replace(/```json\n?|```\n?/g,"").trim();
     var parsed=JSON.parse(clean);
-    console.log('[AI Estimate] Parsed JSON before adding line items:', JSON.stringify(parsed, null, 2));
     if(parsed.lineItems&&parsed.lineItems.length){
       e.lineItems=(e.lineItems||[]).concat(parsed.lineItems);
       await eCol.doc(e.id).set(e);
@@ -629,7 +628,7 @@ async function generateAIEstimate(){
       alert("AI couldn't generate items. Try a more specific description.");
     }
   }catch(err){
-    console.error('Full error:', err.message, err.stack);
+    console.error(err);
     alert("Error generating estimate. Please try again.");
   }finally{
     document.getElementById("aiLoading").style.display="none";
