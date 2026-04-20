@@ -12,8 +12,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/estimate', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) {
+    console.error('[/api/estimate] ERROR: ANTHROPIC_KEY is not set');
     return res.status(500).json({ error: 'ANTHROPIC_KEY secret is not configured.' });
   }
+  console.log('[/api/estimate] Request received:', JSON.stringify(req.body, null, 2));
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -24,10 +26,16 @@ app.post('/api/estimate', async (req, res) => {
       },
       body: JSON.stringify(req.body)
     });
+    console.log('[/api/estimate] Anthropic response status:', response.status);
     const data = await response.json();
+    if (!response.ok) {
+      console.error('[/api/estimate] Anthropic error body:', JSON.stringify(data, null, 2));
+    } else {
+      console.log('[/api/estimate] Success — tokens used:', data.usage);
+    }
     res.status(response.status).json(data);
   } catch (err) {
-    console.error('Anthropic API error:', err);
+    console.error('[/api/estimate] Fetch/network error:', err.message);
     res.status(500).json({ error: 'Failed to reach Anthropic API.' });
   }
 });
