@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/estimate', async (req, res) => {
+  console.log('[/api/estimate] REQUEST RECEIVED', new Date().toISOString());
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) {
     console.error('[/api/estimate] ERROR: ANTHROPIC_KEY is not set');
