@@ -628,8 +628,8 @@ async function generateAIEstimate(){
       alert("AI couldn't generate items. Try a more specific description.");
     }
   }catch(err){
-    console.error(err);
-    alert("Error generating estimate. Please try again.");
+    console.error('AI Estimate error:', err.message, err.stack);
+    alert("Error: " + (err.message || err));
   }finally{
     document.getElementById("aiLoading").style.display="none";
     document.querySelector(".btn-ai").disabled=false;
