@@ -22,13 +22,16 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .btn-dashed{width:100%;padding:12px;border:1.5px dashed #CCC;border-radius:10px;background:#fff;color:#888;font-size:13px;cursor:pointer;margin-top:6px;text-align:center}
 .btn-blue{background:#3A78E8;border:none;border-radius:8px;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .btn-notify{background:#9B6BE8;border:none;border-radius:8px;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-sm{border:none;border-radius:8px;color:#fff;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-ai{background:linear-gradient(135deg,#9B6BE8,#3A78E8);border:none;border-radius:10px;color:#fff;padding:13px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.back-btn{display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0;line-height:1}
 .page{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:40;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .page.show{display:block}
-.phead{background:#1A1A2E;padding:0 16px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:10}
+.phead{background:#1A1A2E;padding:0 12px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:10;gap:8px}
 .phead-title{color:#fff;font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pbadge{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0;margin-left:8px}
+.pbadge{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .ptabs{display:flex;background:#fff;border-bottom:1px solid #EBEBEB;overflow-x:auto;position:sticky;top:56px;z-index:9;-webkit-overflow-scrolling:touch}
-.ptab{border:none;background:none;padding:14px 14px;font-size:12px;color:#aaa;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;min-height:48px;cursor:pointer}
+.ptab{border:none;background:none;padding:14px 12px;font-size:12px;color:#aaa;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;min-height:48px;cursor:pointer}
 .ptab.on{color:#1A1A2E;font-weight:700}
 .pbody{padding:14px 14px 100px}
 .fpage{display:none;position:fixed;inset:0;background:#F4F5F7;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -37,12 +40,11 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .fl{font-size:10px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;display:block}
 .fg{display:grid;gap:12px;margin-bottom:16px}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .fbtns{display:flex;gap:10px}
 .cpick{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .cdot{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer}
 .card{background:#fff;border-radius:14px;padding:16px;border:1.5px solid #EBEBEB;cursor:pointer;margin-bottom:12px}
-.card-name{font-size:15px;font-weight:700;color:#1A1A2E}
-.card-sub{font-size:11px;color:#888;margin-top:3px}
 .badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .brow{margin-bottom:8px}
@@ -81,6 +83,13 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px;line-height:1.6}
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+.notif-banner{position:fixed;top:0;left:0;right:0;z-index:998;background:#2EAA72;color:#fff;padding:12px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;transform:translateY(-100%);transition:transform .4s;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.notif-banner.show{transform:translateY(0)}
+.bell-btn{position:relative;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer}
+.bell-badge{position:absolute;top:-4px;right:-4px;background:#E83A6C;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center}
+.notif-item{background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid #2EAA72}
+.notif-item.unread{background:#F0FBF5}
+.notif-time{font-size:10px;color:#aaa;margin-top:4px}
 .punch-item{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #F0F0F0}
 .punch-cb{width:22px;height:22px;border-radius:6px;border:2px solid #CCC;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
 .punch-cb.done{background:#2EAA72;border-color:#2EAA72;color:#fff}
@@ -89,19 +98,18 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .co-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
 .log-date{font-size:11px;color:#aaa;margin-bottom:4px}
 .log-text{font-size:13px;color:#444;line-height:1.5}
-/* View toggle */
+.note-item{background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #F0F0F0}
+.note-ts{font-size:10px;color:#aaa;margin-top:4px}
+.note-cb{width:20px;height:20px;border-radius:5px;border:2px solid #CCC;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.note-cb.done{background:#2EAA72;border-color:#2EAA72;color:#fff}
 .view-toggle{display:flex;gap:6px;margin-bottom:14px}
 .vt-btn{flex:1;padding:9px;border:1.5px solid #E0E0E0;border-radius:9px;background:#fff;font-size:12px;font-weight:600;color:#666;cursor:pointer}
 .vt-btn.on{background:#1A1A2E;color:#fff;border-color:#1A1A2E}
-/* Gantt */
 .gantt-wrap{overflow-x:auto;background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
-.gantt-header{display:flex;margin-bottom:8px;padding-left:120px}
-.gantt-month{font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;flex-shrink:0;text-align:center}
 .gantt-row{display:flex;align-items:center;margin-bottom:8px;min-height:32px}
-.gantt-label{width:120px;font-size:12px;font-weight:600;color:#333;flex-shrink:0;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gantt-track{flex:1;background:#F0F0F0;border-radius:20px;height:24px;position:relative;min-width:200px}
+.gantt-label{width:110px;font-size:11px;font-weight:600;color:#333;flex-shrink:0;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-track{flex:1;background:#F0F0F0;border-radius:20px;height:24px;position:relative;min-width:180px}
 .gantt-bar{position:absolute;height:100%;border-radius:20px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;min-width:4px}
-/* Calendar */
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-title{font-size:15px;font-weight:700;color:#1A1A2E}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
@@ -111,36 +119,85 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .cal-day.today{border-color:#E8713A;background:#FFF8F5}
 .cal-day-num{font-weight:700;color:#333;margin-bottom:2px}
 .cal-event{border-radius:3px;padding:1px 4px;font-size:9px;font-weight:600;color:#fff;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Edit modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:80;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
-.modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
 .modal-title{font-size:16px;font-weight:700;color:#1A1A2E;margin-bottom:14px}
+.sub-card{background:#F8F8F8;border-radius:10px;padding:10px 12px;margin-bottom:8px;border:1px solid #EBEBEB;display:flex;align-items:center;gap:10px}
+.sub-type-badge{padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.main-nav{display:flex;background:#fff;border-bottom:2px solid #F0F0F0;position:sticky;top:56px;z-index:49}
+.nav-tab{flex:1;padding:12px 8px;border:none;background:none;font-size:12px;font-weight:600;color:#aaa;cursor:pointer;border-bottom:3px solid transparent}
+.nav-tab.on{color:#1A1A2E;border-bottom-color:#E8713A}
+.est-card{background:#fff;border-radius:14px;padding:16px;border:1.5px solid #EBEBEB;cursor:pointer;margin-bottom:12px}
+.est-status{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.li-row{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid #F5F5F5}
+.li-name{flex:2;font-size:13px;color:#333;font-weight:600}
+.li-total{font-size:13px;font-weight:700;color:#1A1A2E;text-align:right;white-space:nowrap}
+.est-summary{background:#1A1A2E;border-radius:12px;padding:16px;margin-top:14px}
+.est-sum-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:rgba(255,255,255,0.7)}
+.est-sum-row.total{color:#fff;font-weight:700;font-size:16px;border-top:1px solid rgba(255,255,255,0.2);margin-top:6px;padding-top:12px}
+.est-sum-row.profit{color:#2EAA72;font-weight:600}
+.client-view{max-width:600px;margin:0 auto;padding:20px}
+.client-header{background:#1A1A2E;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
+.sig-canvas{border:2px dashed #CCC;border-radius:10px;width:100%;height:160px;cursor:crosshair;touch-action:none;background:#FAFAFA}
+/* AI */
+.ai-box{background:linear-gradient(135deg,#1A1A2E,#2A1A4E);border-radius:14px;padding:16px;margin-bottom:14px}
+.ai-title{color:#fff;font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.ai-sub{color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:12px}
+.ai-input{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:11px 12px;font-size:14px;color:#fff;outline:none;resize:none}
+.ai-input::placeholder{color:rgba(255,255,255,0.35)}
+.ai-loading{display:none;text-align:center;padding:20px;color:rgba(255,255,255,0.7);font-size:13px}
+.ai-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Line item table */
+.li-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.li-table th{text-align:left;padding:6px 4px;font-size:9px;color:#aaa;text-transform:uppercase;border-bottom:2px solid #F0F0F0;font-weight:700}
+.li-table td{padding:8px 4px;border-bottom:1px solid #F8F8F8;vertical-align:middle}
+.li-edit-input{border:1px solid #E0E0E0;border-radius:6px;padding:4px 6px;font-size:12px;width:100%;background:#fff}
 </style>
 </head>
 <body>
 
+<div class="notif-banner" id="notifBanner">
+  <span id="notifBannerText"></span>
+  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">×</button>
+</div>
+
 <div id="mainView">
   <div class="topbar">
     <h1>🏗️ Spence Contracting</h1>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="bell-btn" onclick="openNotifications()">🔔<span class="bell-badge" id="bellBadge">0</span></button>
       <button class="btn-orange" style="background:rgba(255,255,255,0.15)" onclick="openSettings()">⚙️</button>
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
   <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span></div>
-  <div class="stats" id="stats"></div>
-  <div class="controls">
-    <input class="fi" id="searchInput" placeholder="Search projects..." type="search"/>
-    <div class="filters" id="filters"></div>
+  <div class="main-nav">
+    <button class="nav-tab on" id="navProjects" onclick="switchMainTab('projects')">📁 Projects</button>
+    <button class="nav-tab" id="navEstimates" onclick="switchMainTab('estimates')">📋 Estimates</button>
   </div>
-  <div id="cards"><div class="empty">Loading...</div></div>
+  <div id="projectsView">
+    <div class="stats" id="stats"></div>
+    <div class="controls">
+      <input class="fi" id="searchInput" placeholder="Search projects..." type="search"/>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div id="cards"><div class="empty">Loading...</div></div>
+  </div>
+  <div id="estimatesView" style="display:none;padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:700;color:#1A1A2E">Estimates</div>
+      <button class="btn-orange" onclick="openNewEstimate()">+ New Estimate</button>
+    </div>
+    <div id="estCards"><div class="empty">No estimates yet.</div></div>
+  </div>
 </div>
 
 <!-- PROJECT DETAIL -->
 <div class="page" id="detailPage">
   <div class="phead">
-    <a href="#" onclick="document.getElementById('detailPage').classList.remove('show');return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
+    <a href="#" class="back-btn" onclick="document.getElementById('detailPage').classList.remove('show');return false;">‹</a>
     <span class="phead-title" id="dName"></span>
     <span class="pbadge" id="dBadge"></span>
   </div>
@@ -148,10 +205,20 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   <div class="pbody" id="tabBody"></div>
 </div>
 
+<!-- ESTIMATE DETAIL -->
+<div class="page" id="estDetailPage">
+  <div class="phead">
+    <a href="#" class="back-btn" onclick="document.getElementById('estDetailPage').classList.remove('show');return false;">‹</a>
+    <span class="phead-title" id="edName"></span>
+    <span class="pbadge" id="edBadge"></span>
+  </div>
+  <div class="pbody" id="estDetailBody"></div>
+</div>
+
 <!-- ADD/EDIT PROJECT -->
 <div class="fpage" id="addPage">
   <div class="phead">
-    <a href="#" onclick="document.getElementById('addPage').classList.remove('show');return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
+    <a href="#" class="back-btn" onclick="document.getElementById('addPage').classList.remove('show');return false;">‹</a>
     <span class="phead-title" id="addPageTitle">New Project</span>
   </div>
   <div style="padding:14px">
@@ -179,20 +246,74 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 </div>
 
+<!-- ADD/EDIT ESTIMATE -->
+<div class="fpage" id="estFormPage">
+  <div class="phead">
+    <a href="#" class="back-btn" onclick="document.getElementById('estFormPage').classList.remove('show');return false;">‹</a>
+    <span class="phead-title" id="estFormTitle">New Estimate</span>
+  </div>
+  <div style="padding:14px">
+    <div class="fg">
+      <div><label class="fl">Client Name *</label><input class="fi" id="efClient" placeholder="e.g. Johnson Residence"/></div>
+      <div><label class="fl">Project Type *</label><input class="fi" id="efType" placeholder="e.g. Kitchen Remodel"/></div>
+      <div><label class="fl">Address</label><input class="fi" id="efAddress" placeholder="123 Main St"/></div>
+      <div class="fr2">
+        <div><label class="fl">Date</label><input class="fi" id="efDate" type="date"/></div>
+        <div><label class="fl">Valid Until</label><input class="fi" id="efValidUntil" type="date"/></div>
+      </div>
+      <div><label class="fl">Client Email</label><input class="fi" id="efClientEmail" placeholder="client@email.com"/></div>
+      <div><label class="fl">Client Phone</label><input class="fi" id="efClientPhone" placeholder="555-0100"/></div>
+      <div><label class="fl">Notes / Scope Summary</label><textarea class="fi" id="efNotes" rows="3" placeholder="Brief description of work..."></textarea></div>
+      <div class="fr2">
+        <div><label class="fl">Default Markup %</label><input class="fi" id="efMarkup" type="number" placeholder="20" value="20"/></div>
+        <div><label class="fl">Tax %</label><input class="fi" id="efTax" type="number" placeholder="0" value="0"/></div>
+      </div>
+      <div><label class="fl">Status</label><select class="fi" id="efStatus">
+        <option>Draft</option><option>Sent to Client</option><option>Approved</option><option>Declined</option><option>Expired</option>
+      </select></div>
+    </div>
+    <div class="fbtns">
+      <button class="btn-ghost" onclick="document.getElementById('estFormPage').classList.remove('show')">Cancel</button>
+      <button class="btn-dark" style="flex:2" onclick="saveEstimate()">Save Estimate</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="page" id="notifsPage">
+  <div class="phead">
+    <a href="#" class="back-btn" onclick="document.getElementById('notifsPage').classList.remove('show');clearBellBadge();return false;">‹</a>
+    <span class="phead-title">Notifications</span>
+    <button onclick="clearAllNotifs()" style="background:none;border:none;color:#E83A6C;font-size:12px;font-weight:700;cursor:pointer">Clear All</button>
+  </div>
+  <div style="padding:14px" id="notifsList"></div>
+</div>
+
 <!-- SETTINGS -->
 <div class="fpage" id="settingsPage">
   <div class="phead">
-    <a href="#" onclick="closeSettings();return false;" style="display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0">‹</a>
+    <a href="#" class="back-btn" onclick="closeSettings();return false;">‹</a>
     <span class="phead-title">Settings & Dropdowns</span>
   </div>
   <div style="padding:14px">
+    <div class="wcard">
+      <label class="fl" style="margin-bottom:8px">Team — Subs & Employees</label>
+      <div id="teamList"></div>
+      <div class="fg" style="margin-top:10px;margin-bottom:0">
+        <div class="fr2"><div><label class="fl">Type</label><select class="fi" id="tmType"><option>Subcontractor</option><option>Employee</option></select></div><div><label class="fl">Trade / Role</label><input class="fi" id="tmTrade" placeholder="e.g. Electrician"/></div></div>
+        <div class="fr2"><div><label class="fl">Name</label><input class="fi" id="tmName" placeholder="Full name"/></div><div><label class="fl">Company</label><input class="fi" id="tmCompany" placeholder="Company name"/></div></div>
+        <div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="tmPhone" placeholder="555-0100"/></div><div><label class="fl">Email</label><input class="fi" id="tmEmail" placeholder="email@example.com"/></div></div>
+        <button class="btn-dark" onclick="addTeamMember()">Add Team Member</button>
+      </div>
+    </div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName" placeholder="Your Company Name"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('projectStatuses','psInput','psTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Phase Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add phase..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('choiceStatuses','csInput','csTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('changeOrderTypes','coInput','coTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Punch List Categories</label><div id="plTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="plInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('punchCategories','plInput','plTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Subcontractors / Employees</label><div id="subTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="subInput" placeholder="Name, phone, email..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('subcontractors','subInput','subTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Estimate Line Item Categories</label><div id="elTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="elInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('estCategories','elInput','elTagsEl')">Add</button></div></div>
   </div>
 </div>
 
@@ -202,27 +323,13 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <div class="modal-title">Edit Phase</div>
     <div class="fg">
       <div><label class="fl">Phase Name</label><input class="fi" id="epName"/></div>
-      <div class="fr2">
-        <div><label class="fl">Start</label><input class="fi" id="epStart" type="date"/></div>
-        <div><label class="fl">End</label><input class="fi" id="epEnd" type="date"/></div>
-      </div>
-      <div class="fr2">
-        <div><label class="fl">Budget ($)</label><input class="fi" id="epBudget" type="number"/></div>
-        <div><label class="fl">Actual ($)</label><input class="fi" id="epActual" type="number"/></div>
-      </div>
-      <div><label class="fl">Status</label>
-        <select class="fi" id="epStatus">
-          <option>Not Started</option><option>In Progress</option><option>Complete</option>
-        </select>
-      </div>
-      <div><label class="fl">Assign To</label><select class="fi" id="epAssign"></select></div>
-      <div><label class="fl">Assignee Phone</label><input class="fi" id="epPhone" placeholder="e.g. 555-0100"/></div>
-      <div><label class="fl">Assignee Email</label><input class="fi" id="epEmail" placeholder="e.g. sub@email.com"/></div>
+      <div class="fr2"><div><label class="fl">Start</label><input class="fi" id="epStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="epEnd" type="date"/></div></div>
+      <div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="epBudget" type="number"/></div><div><label class="fl">Actual/Bid ($)</label><input class="fi" id="epActual" type="number"/></div></div>
+      <div><label class="fl">Status</label><select class="fi" id="epStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div>
+      <div><label class="fl">Assign To</label><select class="fi" id="epAssign" onchange="autoFillAssignee()"><option value="">-- Unassigned --</option></select></div>
+      <div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="epPhone" placeholder="Auto-filled"/></div><div><label class="fl">Email</label><input class="fi" id="epEmail" placeholder="Auto-filled"/></div></div>
     </div>
-    <div class="fbtns">
-      <button class="btn-ghost" onclick="closeEditPhase()">Cancel</button>
-      <button class="btn-dark" style="flex:2" onclick="saveEditPhase()">Save Changes</button>
-    </div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeEditPhase()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditPhase()">Save Changes</button></div>
   </div>
 </div>
 
@@ -236,15 +343,41 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div>
       <div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div>
       <div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div>
-      <div class="fr2">
-        <div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div>
-        <div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div>
+      <div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div>
+    </div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeEditChoice()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- ADD LINE ITEM MODAL -->
+<div class="modal-overlay" id="addLineItemModal">
+  <div class="modal-box">
+    <div class="modal-title">Add Line Item</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="vt-btn on" id="liTabDetailed" onclick="switchLiTab('detailed')">Detailed</button>
+      <button class="vt-btn" id="liTabSimple" onclick="switchLiTab('simple')">Quick Add</button>
+    </div>
+    <div id="liDetailedForm">
+      <div class="fg">
+        <div><label class="fl">Category</label><select class="fi" id="liCat"></select></div>
+        <div><label class="fl">Description *</label><input class="fi" id="liDesc" placeholder="e.g. Framing labor - 3 days"/></div>
+        <div class="fr3">
+          <div><label class="fl">Qty</label><input class="fi" id="liQty" type="number" placeholder="1" value="1"/></div>
+          <div><label class="fl">Unit</label><input class="fi" id="liUnit" placeholder="hrs, sqft"/></div>
+          <div><label class="fl">Unit Cost ($)</label><input class="fi" id="liUnitCost" type="number" placeholder="0"/></div>
+        </div>
+        <div><label class="fl">Markup %</label><input class="fi" id="liMarkup" type="number" placeholder="20"/></div>
       </div>
     </div>
-    <div class="fbtns">
-      <button class="btn-ghost" onclick="closeEditChoice()">Cancel</button>
-      <button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save Changes</button>
+    <div id="liSimpleForm" style="display:none">
+      <div class="fg">
+        <div><label class="fl">Category</label><select class="fi" id="liCatS"></select></div>
+        <div><label class="fl">Description *</label><input class="fi" id="liDescS" placeholder="e.g. Electrical rough-in"/></div>
+        <div><label class="fl">Cost ($)</label><input class="fi" id="liCostS" type="number" placeholder="0"/></div>
+        <div><label class="fl">Markup %</label><input class="fi" id="liMarkupS" type="number" placeholder="20"/></div>
+      </div>
     </div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeAddLineItem()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveLineItem()">Add Item</button></div>
   </div>
 </div>
 
@@ -259,7 +392,7 @@ firebase.initializeApp({
   messagingSenderId:"696245066965",
   appId:"1:696245066965:web:de13db6e678f40cf5ed65c"
 });
-var db=firebase.firestore(),col=db.collection("projects"),sCol=db.collection("settings");
+var db=firebase.firestore(),col=db.collection("projects"),sCol=db.collection("settings"),nCol=db.collection("notifications"),eCol=db.collection("estimates");
 
 var DD={
   projectStatuses:["Planning","In Progress","On Hold","Completed"],
@@ -268,45 +401,86 @@ var DD={
   costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],
   changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],
   punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],
-  subcontractors:[]
+  estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Overhead","Other"],
+  team:[],
+  companyName:"Spence Contracting"
 };
 
 var COLORS=["#E8713A","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#E8713A","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
-var projects=[],activeFilter="All",currentId=null,currentTab="timeline",selColor=0,editId=null;
-var timelineView="list"; // list, gantt, calendar
-var calMonth=new Date();
-var editPhaseIdx=-1,editChoiceIdx=-1;
+var EST_SC={Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
+var projects=[],estimates=[],activeFilter="All",currentId=null,currentTab="timeline",selColor=0,editId=null;
+var timelineView="list",calMonth=new Date(),editPhaseIdx=-1,editChoiceIdx=-1;
+var notifications=[],unreadCount=0;
+var currentEstId=null,editEstId=null,liTabMode="detailed";
+var mainTabMode="projects";
 
 var SEED=[
-  {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"Key contact: Sarah Hargrove 555-0182.",
-   phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete",assignTo:"",assignPhone:"",assignEmail:""},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress",assignTo:"",assignPhone:"",assignEmail:""}],
-   choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],
-   costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],
-   punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"},{text:"Install cabinet hardware",done:true,category:"Cabinetry"}],
-   changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips",date:"2026-03-28"}],
-   dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz, Mike T.",weather:"Clear 72°F",work:"Installed upper cabinet boxes.",issues:"Waiting on hardware delivery."}]},
-  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"Coordinate with building management.",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[]},
-  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"Final walkthrough completed 3/28.",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[]}
+  {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"",phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete",assignTo:"",assignPhone:"",assignEmail:""},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress",assignTo:"",assignPhone:"",assignEmail:""}],choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"}],changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips",date:"2026-03-28"}],dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz",weather:"Clear 72°F",work:"Installed upper cabinet boxes.",issues:""}],notesLog:[]},
+  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]},
+  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]}
 ];
 
+// HELPERS
 function T(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
 function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2]);}
 function fmtFull(d){if(!d)return"";var p=d.split("-");return["January","February","March","April","May","June","July","August","September","October","November","December"][parseInt(p[1])-1]+" "+parseInt(p[2])+", "+p[0];}
+function fmtTS(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString()+" "+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});}
 function daysLeft(e){return Math.ceil((new Date(e)-new Date())/86400000);}
 function gp(p){if(!p.phases||!p.phases.length)return 0;var d=p.phases.filter(function(x){return x.complete==="Complete";}).length;return Math.round(d/p.phases.length*100);}
 function gpr(){return projects.find(function(x){return x.id===currentId;});}
+function ger(){return estimates.find(function(x){return x.id===currentEstId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
-function bvaHtml(b,a){
-  var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;
-  var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";
-  return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';
-}
+function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
 
+// ESTIMATE CALCULATIONS — per line item markup
+function calcLineItemTotal(li){
+  var cost=parseFloat(li.total)||0;
+  var markup=parseFloat(li.markup)||0;
+  return cost*(1+markup/100);
+}
+function calcEstimate(est){
+  var items=est.lineItems||[];
+  var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);
+  var clientTotal=items.reduce(function(a,li){return a+calcLineItemTotal(li);},0);
+  var tax=parseFloat(est.tax)||0;
+  var taxAmt=clientTotal*(tax/100);
+  var grandTotal=clientTotal+taxAmt;
+  var profit=grandTotal-subtotal-taxAmt;
+  var margin=grandTotal>0?(profit/grandTotal*100):0;
+  return{subtotal:subtotal,clientTotal:clientTotal,taxAmt:taxAmt,grandTotal:grandTotal,profit:profit,margin:margin};
+}
+
+// MAIN NAV
+function switchMainTab(tab){
+  mainTabMode=tab;
+  document.getElementById("navProjects").classList.toggle("on",tab==="projects");
+  document.getElementById("navEstimates").classList.toggle("on",tab==="estimates");
+  document.getElementById("projectsView").style.display=tab==="projects"?"block":"none";
+  document.getElementById("estimatesView").style.display=tab==="estimates"?"block":"none";
+  document.getElementById("btnNew").textContent=tab==="projects"?"+ New":"+ New Est";
+  document.getElementById("btnNew").onclick=tab==="projects"?openAdd:openNewEstimate;
+  if(tab==="estimates")renderEstCards();
+}
+
+// NOTIFICATIONS
+function pushNotification(text,proj){nCol.add({text:text,project:proj||"",ts:Date.now(),read:false});}
+function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
+function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
+function startNotifSync(){nCol.orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
+function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n){return'<div class="notif-item'+(n.read?"":" unread")+'"><div style="font-size:13px;font-weight:'+(n.read?"400":"700")+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#9B6BE8;margin-top:3px">📁 '+n.project+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join("");notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
+function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
+function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
+
+// SETTINGS
 function loadSettings(cb){sCol.doc("dropdowns").get().then(function(d){if(d.exists)DD=Object.assign({},DD,d.data());if(cb)cb();}).catch(function(){if(cb)cb();});}
 function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("✅ Settings saved!");});}
-function saveP(p){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");}).catch(function(){T("❌ Error");setSS("error");});}
+function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Spence Contracting";saveSettings();}
+function saveP(p,notifText){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");if(notifText){pushNotification(notifText,p.client);showBanner("🔔 "+notifText);}}).catch(function(){T("❌ Error");setSS("error");});}
+function addTeamMember(){var type=document.getElementById("tmType").value,trade=document.getElementById("tmTrade").value.trim(),name=document.getElementById("tmName").value.trim(),company=document.getElementById("tmCompany").value.trim(),phone=document.getElementById("tmPhone").value.trim(),email=document.getElementById("tmEmail").value.trim();if(!name){alert("Please enter a name.");return;}DD.team=DD.team||[];DD.team.push({type:type,trade:trade,name:name,company:company,phone:phone,email:email});["tmTrade","tmName","tmCompany","tmPhone","tmEmail"].forEach(function(id){document.getElementById(id).value="";});renderTeamList();saveSettings();}
+function removeTeamMember(i){DD.team.splice(i,1);renderTeamList();saveSettings();}
+function renderTeamList(){var el=document.getElementById("teamList");if(!el)return;if(!(DD.team||[]).length){el.innerHTML='<div style="color:#bbb;font-size:13px;margin-bottom:8px">No team members added yet.</div>';return;}el.innerHTML=(DD.team||[]).map(function(m,i){var tc=m.type==="Employee"?"#2EAA72":"#9B6BE8";return'<div class="sub-card"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span class="sub-type-badge" style="background:'+tc+'22;color:'+tc+'">'+m.type+'</span>'+(m.trade?'<span style="font-size:11px;color:#888">'+m.trade+'</span>':'')+'</div><div style="font-size:13px;font-weight:700;color:#333">'+m.name+(m.company?' · '+m.company:'')+'</div>'+(m.phone||m.email?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+(m.phone||"")+(m.phone&&m.email?" · ":"")+(m.email||"")+'</div>':'')+'</div><button class="del-btn" onclick="removeTeamMember('+i+')">×</button></div>';}).join("");}
 
 function startSync(){
   col.orderBy("client").onSnapshot(function(snap){
@@ -315,21 +489,12 @@ function startSync(){
     setSS("live");renderAll();
     if(currentId&&document.getElementById("detailPage").classList.contains("show")){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
   },function(){setSS("error");});
+  eCol.orderBy("createdAt","desc").onSnapshot(function(snap){estimates=[];snap.forEach(function(d){estimates.push(d.data());});if(mainTabMode==="estimates")renderEstCards();});
 }
 
 function renderAll(){renderStats();renderFilters();renderCards();}
-
-function renderStats(){
-  var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;
-  var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);
-  document.getElementById("stats").innerHTML=[["📁","Jobs",total],["⚡","Active",active],["💰","Budget","$"+(budget/1000).toFixed(0)+"k"],["📊","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");
-}
-
-function renderFilters(){
-  document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");
-  document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});
-}
-
+function renderStats(){var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["📁","Jobs",total],["⚡","Active",active],["💰","Budget","$"+(budget/1000).toFixed(0)+"k"],["📊","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
+function renderFilters(){document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
 function renderCards(){
   var q=document.getElementById("searchInput").value.toLowerCase();
   var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});
@@ -342,394 +507,366 @@ function renderCards(){
     var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";
     var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;
     var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;
-    return'<div class="card" data-id="'+p.id+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+p.client+'</div><div class="card-sub">'+p.type+' · '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div>'
-      +'<div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">'
-      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div>'
-      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div>'
-      +'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'
-      +(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')
-      +(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')
-      +'</div>'
-      +'<div class="brow"><div class="blr"><span>Phase Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div>'
-      +'<div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div>'
-      +'</div>';
+    return'<div class="card" data-id="'+p.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' · '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Phase Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div></div>';
   }).join("");
   document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});
 }
 
-function openDetail(id){
-  currentId=id;currentTab="timeline";timelineView="list";
-  var p=gpr();if(!p)return;
-  var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A"};
-  document.getElementById("dName").textContent=p.client;
-  var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
-  renderTabs(p);renderTabBody(p);
-  var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;
-}
-
-function renderTabs(p){
-  var tabs=["Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];
-  document.getElementById("tabs").innerHTML=tabs.map(function(t){
-    var k=t.toLowerCase().replace(/ /g,"-"),on=k===currentTab;
-    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';
+// ESTIMATES
+function renderEstCards(){
+  var el=document.getElementById("estCards");
+  if(!estimates.length){el.innerHTML='<div class="empty">No estimates yet.<br>Tap <b>+ New Estimate</b> to create one.</div>';return;}
+  el.innerHTML=estimates.map(function(e){
+    var sc2=EST_SC[e.status]||"#888";
+    var calc=calcEstimate(e);
+    return'<div class="est-card" data-eid="'+e.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' · '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">✓ Signed</div></div>':'')+'</div></div>';
   }).join("");
-  document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});
+  document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});
 }
 
-// ---- GANTT CHART ----
-function renderGantt(p){
-  var phases=p.phases||[];
-  if(!phases.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No phases added yet.</div>';
-  // Find date range
-  var minD=null,maxD=null;
-  phases.forEach(function(ph){
-    if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}
-    if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}
-  });
-  if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to phases to see Gantt chart.</div>';
-  var totalDays=(maxD-minD)/86400000+1;
-  // Build month headers
-  var months=[],cur=new Date(minD);cur.setDate(1);
-  while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}
-  var html='<div class="gantt-wrap"><div style="overflow-x:auto">';
+function openEstDetail(id){
+  currentEstId=id;
+  var e=ger();if(!e)return;
+  var sc2=EST_SC[e.status]||"#888";
+  document.getElementById("edName").textContent=e.client+" — "+e.type;
+  var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;
+  renderEstDetailBody(e);
+  var dp=document.getElementById("estDetailPage");dp.classList.add("show");dp.scrollTop=0;
+}
+
+function renderEstDetailBody(e){
+  var calc=calcEstimate(e);
+  var html='';
+  // AI Generator
+  html+='<div class="ai-box">'
+    +'<div class="ai-title">✨ AI Estimate Generator</div>'
+    +'<div class="ai-sub">Describe the job and AI will generate line items with pricing</div>'
+    +'<textarea class="ai-input" id="aiPrompt" rows="3" placeholder="e.g. Kitchen remodel 200 sqft, mid-range finishes, new cabinets, countertops, flooring, paint. Houston TX area."></textarea>'
+    +'<button class="btn-ai" style="margin-top:10px" onclick="generateAIEstimate()">✨ Generate Estimate with AI</button>'
+    +'<div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>AI is generating your estimate...</div>'
+    +'</div>';
   // Header
-  html+='<div style="display:flex;margin-bottom:8px;padding-left:130px">';
-  months.forEach(function(m){
-    var mStart=new Date(m);var mEnd=new Date(m);mEnd.setMonth(mEnd.getMonth()+1);mEnd.setDate(0);
-    var s=Math.max(0,(mStart-minD)/86400000);var e=Math.min(totalDays,(mEnd-minD)/86400000+1);
-    var w=((e-s)/totalDays*100).toFixed(1);
-    html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';
-  });
+  html+='<div class="wcard"><div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div><div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>';
+  if(e.address)html+='<div style="font-size:12px;color:#888;margin-top:8px">📍 '+e.address+'</div>';
+  if(e.validUntil)html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
+  if(e.notes)html+='<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>';
   html+='</div>';
-  // Rows
-  phases.forEach(function(ph,i){
-    if(!ph.start||!ph.end){html+='<div class="gantt-row"><div class="gantt-label">'+ph.name+'</div><div style="font-size:11px;color:#aaa;flex:1">No dates set</div></div>';return;}
-    var s=Math.max(0,(new Date(ph.start)-minD)/86400000);
-    var e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);
-    var left=(s/totalDays*100).toFixed(1);
-    var width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);
-    var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";
-    html+='<div class="gantt-row"><div class="gantt-label" title="'+ph.name+'">'+ph.name+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+ph.name+'</div></div></div>';
-  });
-  html+='</div></div>';
-  return html;
+  // Actions
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+  html+='<button class="btn-sm" style="background:#3A78E8" onclick="openEditEstimate()">✏️ Edit</button>';
+  html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">+ Line Item</button>';
+  html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">🔗 Share</button>';
+  html+='<button class="btn-sm" style="background:#E8713A" onclick="sendEstimate()">📤 Send</button>';
+  if(e.status==="Approved"&&!e.signedAt)html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">🏗️ Convert</button>';
+  if(e.signedAt)html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:8px 12px;font-size:12px;color:#1A7A4E;width:100%">✅ Signed by '+e.signedBy+' · '+fmtTS(e.signedAt)+'</div>';
+  html+='</div>';
+  // Status
+  html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" onchange="updateEstStatus(this.value)">'+["Draft","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select></div>';
+  // Line items
+  html+='<div class="sec-label">Line Items</div>';
+  if(!(e.lineItems||[]).length){html+='<div class="wcard" style="color:#bbb;font-size:13px;text-align:center;padding:20px">No line items yet.<br>Use <b>✨ AI Generate</b> or tap <b>+ Line Item</b></div>';}
+  else{
+    var byCategory={};
+    (e.lineItems||[]).forEach(function(li,i){var cat=li.category||"Other";if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});
+    html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Markup</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>';
+    Object.keys(byCategory).forEach(function(cat){
+      html+='<tr><td colspan="5" style="font-size:10px;font-weight:700;color:#9B6BE8;text-transform:uppercase;padding:10px 4px 4px">'+cat+'</td></tr>';
+      byCategory[cat].forEach(function(obj){
+        var li=obj.li,i=obj.i;
+        var cost=parseFloat(li.total)||0;
+        var markup=parseFloat(li.markup)||0;
+        var clientAmt=cost*(1+markup/100);
+        html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+'</div>'+(li.qty&&li.unit?'<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+' × $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>':'')+'</td><td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td><td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td><button class="del-btn" onclick="delLineItem('+i+')" style="font-size:16px">×</button></td></tr>';
+      });
+    });
+    html+='</tbody></table></div>';
+  }
+  // Summary
+  html+='<div class="est-summary">';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row"><span>Client Total</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  if(calc.taxAmt)html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div>';
+  html+='</div>';
+  if(e.signedAt){html+='<div class="wcard" style="margin-top:14px;text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">✅ Digitally Signed</div><div style="font-size:12px;color:#888">By: '+e.signedBy+'</div><div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>'+(e.signatureData?'<img src="'+e.signatureData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px"/>':'')+'</div>';}
+  html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">🗑️ Delete Estimate</button>';
+  document.getElementById("estDetailBody").innerHTML=html;
 }
 
-// ---- CALENDAR ----
-function renderCalendar(p){
-  var phases=p.phases||[];
-  var y=calMonth.getFullYear(),mo=calMonth.getMonth();
-  var monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  var html='<div class="wcard">';
-  html+='<div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">‹</button><span class="cal-title">'+monthNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">›</button></div>';
-  html+='<div class="cal-grid">';
-  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});
-  var firstDay=new Date(y,mo,1).getDay();
-  var daysInMonth=new Date(y,mo+1,0).getDate();
-  var today=new Date();today.setHours(0,0,0,0);
-  for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';
-  for(var d=1;d<=daysInMonth;d++){
-    var thisDate=new Date(y,mo,d);thisDate.setHours(0,0,0,0);
-    var isToday=thisDate.getTime()===today.getTime();
-    html+='<div class="cal-day'+(isToday?" today":"")+'"><div class="cal-day-num">'+d+'</div>';
-    phases.forEach(function(ph){
-      if(!ph.start||!ph.end)return;
-      var s=new Date(ph.start);s.setHours(0,0,0,0);
-      var e=new Date(ph.end);e.setHours(0,0,0,0);
-      if(thisDate>=s&&thisDate<=e){
-        var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";
-        html+='<div class="cal-event" style="background:'+clr+'" title="'+ph.name+'">'+ph.name+'</div>';
-      }
+// AI ESTIMATE GENERATOR
+async function generateAIEstimate(){
+  var prompt=document.getElementById("aiPrompt").value.trim();
+  if(!prompt){alert("Please describe the project first.");return;}
+  var e=ger();if(!e)return;
+  document.getElementById("aiLoading").style.display="block";
+  document.querySelector(".btn-ai").disabled=true;
+  var defaultMarkup=parseFloat(e.markup)||20;
+  var systemPrompt="You are an expert construction estimator with 20 years of experience. Generate a detailed construction estimate based on the job description. Return ONLY valid JSON, no markdown, no explanation. Format: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description of work\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":85,\"total\":85,\"markup\":20}]} Categories must be from: Labor, Materials, Subcontractor, Equipment, Permits & Fees, Other. Use realistic current market pricing for the described location. Include all necessary line items for the scope described. Default markup is "+defaultMarkup+"% but adjust per trade (labor typically higher, materials lower). Return 8-15 line items.";
+  try{
+    var response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        system:systemPrompt,
+        messages:[{role:"user",content:"Generate a construction estimate for: "+prompt}]
+      })
+    });
+    var data=await response.json();
+    var text=data.content&&data.content[0]&&data.content[0].text||"";
+    var clean=text.replace(/```json|```/g,"").trim();
+    var parsed=JSON.parse(clean);
+    if(parsed.lineItems&&parsed.lineItems.length){
+      e.lineItems=(e.lineItems||[]).concat(parsed.lineItems);
+      await eCol.doc(e.id).set(e);
+      T("✅ "+parsed.lineItems.length+" line items added!");
+      document.getElementById("aiPrompt").value="";
+      renderEstDetailBody(e);
+    } else {
+      alert("AI couldn't generate items. Try a more specific description.");
+    }
+  }catch(err){
+    console.error(err);
+    alert("Error generating estimate. Please try again.");
+  }finally{
+    document.getElementById("aiLoading").style.display="none";
+    document.querySelector(".btn-ai").disabled=false;
+  }
+}
+
+function openNewEstimate(){
+  editEstId=null;
+  document.getElementById("estFormTitle").textContent="New Estimate";
+  ["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone"].forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("efMarkup").value="20";document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";
+  var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;
+  var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];
+  document.getElementById("estFormPage").classList.add("show");
+}
+function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
+function saveEstimate(){
+  var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim();
+  if(!client||!type){alert("Client name and project type required.");return;}
+  var id=editEstId||("est"+Date.now());var existing=editEstId?(ger()||{}):{};
+  var est=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],createdAt:existing.createdAt||Date.now()});
+  eCol.doc(id).set(est).then(function(){T(editEstId?"✅ Updated!":"✅ Created!");document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{renderEstDetailBody(ger()||est);}});
+}
+function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("✅ Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstDetailBody(e);renderEstCards();});}
+
+// LINE ITEMS
+function openAddLineItem(){
+  populateLiCats();
+  ["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";
+  var defaultMarkup=(ger()||{}).markup||20;
+  document.getElementById("liMarkup").value=defaultMarkup;document.getElementById("liMarkupS").value=defaultMarkup;
+  document.getElementById("addLineItemModal").classList.add("show");
+}
+function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
+function populateLiCats(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;}
+function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
+function saveLineItem(){
+  var e=ger();if(!e)return;e.lineItems=e.lineItems||[];
+  if(liTabMode==="detailed"){
+    var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}
+    var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;
+    e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});
+  } else {
+    var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}
+    var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;
+    e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});
+  }
+  eCol.doc(e.id).set(e).then(function(){T("✅ Added!");closeAddLineItem();renderEstDetailBody(e);});
+}
+function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("✅ Deleted!");renderEstDetailBody(e);});}
+
+// SHARE / SEND
+function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("🔗 Link copied!");}).catch(function(){alert("Share this link:\n\n"+url);});}
+function sendEstimate(){
+  var e=ger();if(!e)return;
+  var url=window.location.href.split("?")[0]+"?est="+e.id;
+  var calc=calcEstimate(e);
+  var msg="Hi, please review and sign your estimate from "+(DD.companyName||"Spence Contracting")+":\n\nProject: "+e.type+"\nAddress: "+(e.address||"")+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;
+  if(e.clientPhone){window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));}
+  if(e.clientEmail){setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject="+encodeURIComponent("Your Estimate from "+(DD.companyName||"Spence Contracting"))+"&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);}
+  if(!e.clientPhone&&!e.clientEmail){alert("No client contact info found.");}
+  if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}
+}
+function convertToProject(){
+  var e=ger();if(!e)return;if(!confirm("Convert to project?"))return;
+  var calc=calcEstimate(e);
+  var newProj={id:"p"+Date.now(),client:e.client,type:e.type,address:e.address||"",pm:"",startDate:"",endDate:"",budget:Math.round(calc.grandTotal),spent:0,status:DD.projectStatuses[0]||"Planning",notes:"Converted from estimate. "+e.notes,color:COLORS[Math.floor(Math.random()*COLORS.length)],choices:[],phases:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[],estimateId:e.id};
+  col.doc(newProj.id).set(newProj).then(function(){e.projectId=newProj.id;eCol.doc(e.id).set(e);T("✅ Project created!");pushNotification("Estimate converted: "+e.client);document.getElementById("estDetailPage").classList.remove("show");switchMainTab("projects");setTimeout(function(){openDetail(newProj.id);},500);});
+}
+function deleteEstimate(){if(!confirm("Delete?"))return;eCol.doc(currentEstId).delete().then(function(){document.getElementById("estDetailPage").classList.remove("show");T("Deleted");renderEstCards();});}
+
+// CLIENT SIGNATURE VIEW
+function checkClientView(){
+  var params=new URLSearchParams(window.location.search);var estId=params.get("est");if(!estId)return;
+  document.getElementById("mainView").style.display="none";document.body.style.background="#fff";
+  var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);
+  eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}renderClientView(doc.data(),wrapper);});
+}
+function renderClientView(e,wrapper){
+  var calc=calcEstimate(e);
+  var html='<div class="client-view">';
+  html+='<div class="client-header"><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Spence Contracting")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Project Estimate</div></div>';
+  html+='<div class="wcard"><div style="font-size:20px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+e.client+'</div><div style="font-size:14px;color:#888">'+e.type+(e.address?' · '+e.address:'')+'</div>'+(e.notes?'<div style="font-size:13px;color:#555;margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0">'+e.notes+'</div>':'')+'</div>';
+  if((e.lineItems||[]).length){
+    html+='<div class="wcard">';
+    var byCategory={};
+    (e.lineItems||[]).forEach(function(li){var cat=li.category||"Other";if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push(li);});
+    Object.keys(byCategory).forEach(function(cat){
+      html+='<div style="font-size:11px;font-weight:700;color:#9B6BE8;text-transform:uppercase;margin:10px 0 6px">'+cat+'</div>';
+      byCategory[cat].forEach(function(li){var clientAmt=calcLineItemTotal(li);html+='<div class="li-row"><div class="li-name">'+li.desc+'</div><div class="li-total">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';});
     });
     html+='</div>';
   }
-  html+='</div></div>';
-  return html;
+  // Client only sees grand total — no markup breakdown
+  html+='<div class="est-summary">';
+  if(calc.taxAmt)html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div><div class="est-sum-row"><span>Tax</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
+  if(e.validUntil)html+='<div style="text-align:center;font-size:12px;color:#aaa;margin:10px 0">Valid until '+fmtFull(e.validUntil)+'</div>';
+  if(e.signedAt){
+    html+='<div class="wcard" style="text-align:center;background:#EDFAF4;border:1px solid #2EAA72"><div style="font-size:16px;font-weight:700;color:#2EAA72">✅ Signed</div><div style="font-size:13px;color:#555;margin-top:4px">By: '+e.signedBy+'</div><div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div></div>';
+  } else if(e.status!=="Declined"&&e.status!=="Expired"){
+    html+='<div class="wcard"><div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Sign to Approve</div><div><label class="fl" style="margin-bottom:6px">Your Full Name *</label><input class="fi" id="sigName" placeholder="Type your full name" style="margin-bottom:12px"/></div><label class="fl" style="margin-bottom:6px">Signature</label><canvas class="sig-canvas" id="sigCanvas" width="560" height="160"></canvas><div style="display:flex;gap:8px;margin-top:10px"><button onclick="clearSig()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;font-size:13px;cursor:pointer">Clear</button><button onclick="submitSignature(\''+e.id+'\')" style="flex:2;padding:10px;border:none;border-radius:10px;background:#2EAA72;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Approve & Sign</button></div><div style="font-size:11px;color:#aaa;margin-top:8px;text-align:center">By signing you agree to the scope and total above.</div></div>';
+  }
+  html+='</div>';
+  wrapper.innerHTML=html;
+  setTimeout(function(){
+    var canvas=document.getElementById("sigCanvas");if(!canvas)return;
+    var ctx=canvas.getContext("2d");canvas.width=canvas.offsetWidth||560;
+    var drawing=false,lx=0,ly=0;
+    function getPos(e2){var r=canvas.getBoundingClientRect();var cx=e2.touches?e2.touches[0].clientX:e2.clientX;var cy=e2.touches?e2.touches[0].clientY:e2.clientY;return{x:(cx-r.left)*(canvas.width/r.width),y:(cy-r.top)*(canvas.height/r.height)};}
+    canvas.addEventListener("mousedown",function(e2){drawing=true;var p=getPos(e2);lx=p.x;ly=p.y;});
+    canvas.addEventListener("mousemove",function(e2){if(!drawing)return;var p=getPos(e2);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#1A1A2E";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();lx=p.x;ly=p.y;});
+    canvas.addEventListener("mouseup",function(){drawing=false;});
+    canvas.addEventListener("touchstart",function(e2){e2.preventDefault();drawing=true;var p=getPos(e2);lx=p.x;ly=p.y;},{passive:false});
+    canvas.addEventListener("touchmove",function(e2){e2.preventDefault();if(!drawing)return;var p=getPos(e2);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#1A1A2E";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+    canvas.addEventListener("touchend",function(){drawing=false;});
+  },100);
+}
+function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
+function submitSignature(estId){
+  var name=document.getElementById("sigName").value.trim();if(!name){alert("Please enter your full name.");return;}
+  var canvas=document.getElementById("sigCanvas");var sigData=canvas.toDataURL("image/png");
+  var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;
+  if(sigData===blank.toDataURL("image/png")){alert("Please sign in the box above.");return;}
+  eCol.doc(estId).update({signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"}).then(function(){pushNotification("Estimate signed by "+name);eCol.doc(estId).get().then(function(doc){renderClientView(doc.data(),document.getElementById("clientWrapper"));});});
 }
 
+// PROJECT DETAIL
+function openDetail(id){currentId=id;currentTab="timeline";timelineView="list";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A"};document.getElementById("dName").textContent=p.client;var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
+function renderTabs(p){var tabs=["Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t){var k=t.toLowerCase().replace(/ /g,"-"),on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
+function renderGantt(p){var phases=p.phases||[];if(!phases.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No phases added yet.</div>';var minD=null,maxD=null;phases.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add dates to phases to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';phases.forEach(function(ph){if(!ph.start||!ph.end){html+='<div class="gantt-row"><div class="gantt-label">'+ph.name+'</div><div style="font-size:11px;color:#aaa;flex:1">No dates</div></div>';return;}var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";html+='<div class="gantt-row"><div class="gantt-label" title="'+ph.name+'">'+ph.name+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+ph.name+'</div></div></div>';});html+='</div></div>';return html;}
+function renderCalendar(p){var phases=p.phases||[];var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">‹</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">›</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';phases.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+ph.name+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
-
-// ---- NOTIFY SUBCONTRACTOR ----
-function notifySubcontractor(phaseIdx){
-  var p=gpr();var ph=p.phases[phaseIdx];
-  var name=ph.assignTo||"Subcontractor";
-  var phone=ph.assignPhone||"";
-  var email=ph.assignEmail||"";
-  var msg="Hi "+name+", you have been assigned to the following task:%0A%0A"
-    +"Project: "+p.client+"%0ATask: "+ph.name+"%0AStart: "+fmtFull(ph.start)+"%0AEnd: "+fmtFull(ph.end)+"%0ABudget: $"+(ph.phaseBudget||0).toLocaleString()+"%0AStatus: "+ph.complete+"%0A%0APlease confirm your availability by replying to this message.%0A%0AThank you,%0ASpence Contracting";
-  var emailMsg=msg.replace(/%0A/g,"\n");
-  if(phone){window.open("sms:"+phone+"?body="+msg);}
-  if(email){
-    var subject="Task Assignment: "+ph.name+" - "+p.client;
-    setTimeout(function(){window.open("mailto:"+email+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(emailMsg));},phone?1000:0);
-  }
-  if(!phone&&!email){alert("Please add phone and email for this assignee first.");}
-}
-
-// ---- EDIT PHASE MODAL ----
-function openEditPhase(i){
-  editPhaseIdx=i;
-  var p=gpr();var ph=p.phases[i];
-  document.getElementById("epName").value=ph.name||"";
-  document.getElementById("epStart").value=ph.start||"";
-  document.getElementById("epEnd").value=ph.end||"";
-  document.getElementById("epBudget").value=ph.phaseBudget||0;
-  document.getElementById("epActual").value=ph.phaseActual||0;
-  document.getElementById("epStatus").value=ph.complete||"Not Started";
-  document.getElementById("epPhone").value=ph.assignPhone||"";
-  document.getElementById("epEmail").value=ph.assignEmail||"";
-  // Populate assign dropdown
-  var opts='<option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){return'<option'+(s===ph.assignTo?" selected":"")+'>'+s+'</option>';}).join("");
-  document.getElementById("epAssign").innerHTML=opts;
-  document.getElementById("epAssign").value=ph.assignTo||"";
-  document.getElementById("editPhaseModal").classList.add("show");
-}
+function setView(v){timelineView=v;var p=gpr();if(p)renderTabBody(p);}
+function notifyAssignee(phaseIdx){var p=gpr();var ph=p.phases[phaseIdx];if(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail){alert("Please assign someone to this phase first.");return;}var member=(DD.team||[]).find(function(m){return m.name===ph.assignTo;});var isEmployee=member&&member.type==="Employee";var contractAmt=ph.phaseActual||0;var msg=["Hi "+(ph.assignTo||"Team")+" —","",isEmployee?"You are responsible for completing the following task or finding a qualified subcontractor that fits within the budget:":"You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+ph.name,"Start Date: "+fmtFull(ph.start),"End Date: "+fmtFull(ph.end),"Contract Amount: $"+contractAmt.toLocaleString(),"Status: "+ph.complete,"",isEmployee?"Please confirm you have arranged coverage for this task and reply with your plan.":"Please reply to confirm your availability and acceptance of this assignment.","","Thank you,",DD.companyName||"Spence Contracting"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone){window.open("sms:"+phone+"?body="+encodeURIComponent(msg));}if(email){setTimeout(function(){window.open("mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+ph.name+" — "+p.client)+"&body="+encodeURIComponent(msg));},phone?1200:0);}}
+function autoFillAssignee(){var sel=document.getElementById("epAssign").value;var member=(DD.team||[]).find(function(m){return m.name===sel;});if(member){document.getElementById("epPhone").value=member.phone||"";document.getElementById("epEmail").value=member.email||"";}else{document.getElementById("epPhone").value="";document.getElementById("epEmail").value="";}}
+function openEditPhase(i){editPhaseIdx=i;var p=gpr();var ph=p.phases[i];document.getElementById("epName").value=ph.name||"";document.getElementById("epStart").value=ph.start||"";document.getElementById("epEnd").value=ph.end||"";document.getElementById("epBudget").value=ph.phaseBudget||0;document.getElementById("epActual").value=ph.phaseActual||0;document.getElementById("epStatus").value=ph.complete||"Not Started";document.getElementById("epPhone").value=ph.assignPhone||"";document.getElementById("epEmail").value=ph.assignEmail||"";var opts='<option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'"'+(m.name===ph.assignTo?" selected":"")+'>'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("");document.getElementById("epAssign").innerHTML=opts;document.getElementById("epAssign").value=ph.assignTo||"";document.getElementById("editPhaseModal").classList.add("show");}
 function closeEditPhase(){document.getElementById("editPhaseModal").classList.remove("show");}
-function saveEditPhase(){
-  var p=gpr();
-  p.phases[editPhaseIdx]={
-    name:document.getElementById("epName").value.trim(),
-    start:document.getElementById("epStart").value,
-    end:document.getElementById("epEnd").value,
-    phaseBudget:parseFloat(document.getElementById("epBudget").value)||0,
-    phaseActual:parseFloat(document.getElementById("epActual").value)||0,
-    complete:document.getElementById("epStatus").value,
-    assignTo:document.getElementById("epAssign").value,
-    assignPhone:document.getElementById("epPhone").value.trim(),
-    assignEmail:document.getElementById("epEmail").value.trim()
-  };
-  saveP(p);closeEditPhase();
-}
-
-// ---- EDIT CHOICE MODAL ----
-function openEditChoice(i){
-  editChoiceIdx=i;
-  var p=gpr();var ch=p.choices[i];
-  document.getElementById("ecCat").value=ch.category||"";
-  document.getElementById("ecItem").value=ch.item||"";
-  document.getElementById("ecVendor").value=ch.vendor||"";
-  document.getElementById("ecNotes").value=ch.notes||"";
-  document.getElementById("ecBudget").value=ch.budgetAmt||0;
-  document.getElementById("ecActual").value=ch.actualAmt||0;
-  var opts=DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("");
-  document.getElementById("ecStatus").innerHTML=opts;
-  document.getElementById("editChoiceModal").classList.add("show");
-}
+function saveEditPhase(){var p=gpr();var oldStatus=p.phases[editPhaseIdx].complete;var newStatus=document.getElementById("epStatus").value;p.phases[editPhaseIdx]={name:document.getElementById("epName").value.trim(),start:document.getElementById("epStart").value,end:document.getElementById("epEnd").value,phaseBudget:parseFloat(document.getElementById("epBudget").value)||0,phaseActual:parseFloat(document.getElementById("epActual").value)||0,complete:newStatus,assignTo:document.getElementById("epAssign").value,assignPhone:document.getElementById("epPhone").value.trim(),assignEmail:document.getElementById("epEmail").value.trim()};saveP(p,oldStatus!==newStatus?"Phase '"+p.phases[editPhaseIdx].name+"' updated to "+newStatus+" on "+p.client:null);closeEditPhase();}
+function openEditChoice(i){editChoiceIdx=i;var p=gpr();var ch=p.choices[i];document.getElementById("ecCat").value=ch.category||"";document.getElementById("ecItem").value=ch.item||"";document.getElementById("ecVendor").value=ch.vendor||"";document.getElementById("ecNotes").value=ch.notes||"";document.getElementById("ecBudget").value=ch.budgetAmt||0;document.getElementById("ecActual").value=ch.actualAmt||0;document.getElementById("ecStatus").innerHTML=DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("");document.getElementById("editChoiceModal").classList.add("show");}
 function closeEditChoice(){document.getElementById("editChoiceModal").classList.remove("show");}
-function saveEditChoice(){
-  var p=gpr();
-  p.choices[editChoiceIdx]={
-    category:document.getElementById("ecCat").value.trim(),
-    item:document.getElementById("ecItem").value.trim(),
-    vendor:document.getElementById("ecVendor").value.trim(),
-    notes:document.getElementById("ecNotes").value.trim(),
-    status:document.getElementById("ecStatus").value,
-    budgetAmt:parseFloat(document.getElementById("ecBudget").value)||0,
-    actualAmt:parseFloat(document.getElementById("ecActual").value)||0
-  };
-  saveP(p);closeEditChoice();
-}
+function saveEditChoice(){var p=gpr();var oldStatus=p.choices[editChoiceIdx].status;var newStatus=document.getElementById("ecStatus").value;p.choices[editChoiceIdx]={category:document.getElementById("ecCat").value.trim(),item:document.getElementById("ecItem").value.trim(),vendor:document.getElementById("ecVendor").value.trim(),notes:document.getElementById("ecNotes").value.trim(),status:newStatus,budgetAmt:parseFloat(document.getElementById("ecBudget").value)||0,actualAmt:parseFloat(document.getElementById("ecActual").value)||0};saveP(p,oldStatus!==newStatus?"Selection '"+p.choices[editChoiceIdx].category+"' changed to "+newStatus+" on "+p.client:null);closeEditChoice();}
 
 function renderTabBody(p){
   var html="";
-
   if(currentTab==="timeline"){
-    // View toggle
-    html+='<div class="view-toggle">'
-      +'<button class="vt-btn'+(timelineView==="list"?" on":"")+'" onclick="setView(\'list\')">📋 List</button>'
-      +'<button class="vt-btn'+(timelineView==="gantt"?" on":"")+'" onclick="setView(\'gantt\')">📊 Gantt</button>'
-      +'<button class="vt-btn'+(timelineView==="calendar"?" on":"")+'" onclick="setView(\'calendar\')">📅 Calendar</button>'
-      +'</div>';
+    html+='<div class="view-toggle"><button class="vt-btn'+(timelineView==="list"?" on":"")+'" onclick="setView(\'list\')">📋 List</button><button class="vt-btn'+(timelineView==="gantt"?" on":"")+'" onclick="setView(\'gantt\')">📊 Gantt</button><button class="vt-btn'+(timelineView==="calendar"?" on":"")+'" onclick="setView(\'calendar\')">📅 Calendar</button></div>';
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
-
-    if(timelineView==="gantt"){
-      html+=renderGantt(p);
-    } else if(timelineView==="calendar"){
-      html+=renderCalendar(p);
-    } else {
-      // List view
-      var tPB=0,tPA=0;
-      (p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});
-      if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tPB,tPA)+'</div>';}
-      html+='<div class="sec-label">Phases</div>';
-      (p.phases||[]).forEach(function(ph,i){
-        var c=ph.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;
-        var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";
-        html+='<div class="item-card">'
-          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
-          +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'
-          +(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')
-          +(ph.assignTo?'<div style="font-size:11px;color:#9B6BE8;margin-top:2px">👤 '+ph.assignTo+'</div>':'')
-          +'</div>'
-          +'<button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditPhase('+i+')">Edit</button>'
-          +(ph.assignTo||ph.assignPhone||ph.assignEmail?'<button class="btn-notify" onclick="notifySubcontractor('+i+')">Notify</button>':'')
-          +'<button class="del-btn" onclick="delPhase('+i+')">×</button></div>'
-          +'<div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div>'
-          +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'
-          +["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")
-          +'</select>'
-          +bvaHtml(ph.phaseBudget||0,ph.phaseActual||0)
-          +'</div>';
-      });
-    }
+    if(timelineView==="gantt"){html+=renderGantt(p);}
+    else if(timelineView==="calendar"){html+=renderCalendar(p);}
+    else{var tPB=0,tPA=0;(p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tPB,tPA)+'</div>';}html+='<div class="sec-label">Phases</div>';(p.phases||[]).forEach(function(ph,i){var c=ph.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";html+='<div class="item-card"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'+(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')+(ph.assignTo?'<div style="font-size:11px;color:#9B6BE8;margin-top:2px">👤 '+ph.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditPhase('+i+')">Edit</button>'+(ph.assignTo?'<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>':'')+'<button class="del-btn" onclick="delPhase('+i+')">×</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ph.phaseBudget||0,ph.phaseActual||0)+'</div>';});}
     html+='<button class="btn-dashed" onclick="showForm(\'phaseForm\')">+ Add Phase</button>';
-    html+='<div class="inline-form" id="phaseForm">'
-      +'<label class="fl" style="margin-bottom:6px">Phase</label>'
-      +'<select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'
-      +DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select>'
-      +'<input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/>'
-      +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div>'
-      +'<div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div>'
-      +'<label class="fl" style="margin-bottom:6px">Assign To</label>'
-      +'<select class="fi" id="pAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.subcontractors||[]).map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div>'
-      +'</div>';
-
+    html+='<div class="inline-form" id="phaseForm"><label class="fl" style="margin-bottom:6px">Phase</label><select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual/Bid ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="pAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div></div>';
   } else if(currentTab==="choices"){
-    var tCB=0,tCA=0;
-    (p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
-    if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';}
+    var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';}
     html+='<div class="sec-label">Client Selections</div>';
-    (p.choices||[]).forEach(function(ch,i){
-      html+='<div class="item-card">'
-        +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'
-        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div>'
-        +'<div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'
-        +(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')
-        +(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')
-        +'</div>'
-        +'<button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button>'
-        +'<button class="del-btn" onclick="delChoice('+i+')">×</button></div>'
-        +'<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'
-        +DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'
-        +bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)
-        +'</div>';
-    });
+    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">×</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
-    html+='<div class="inline-form" id="choiceForm">'
-      +'<label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/>'
-      +'<label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select>'
-      +'<div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div>'
-      +'<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div>'
-      +'</div>';
-
+    html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
   } else if(currentTab==="budget"){
-    var tPB2=0,tPA2=0,tCB2=0,tCA2=0;
-    (p.phases||[]).forEach(function(ph){tPB2+=(parseFloat(ph.phaseBudget)||0);tPA2+=(parseFloat(ph.phaseActual)||0);});
-    (p.choices||[]).forEach(function(ch){tCB2+=(parseFloat(ch.budgetAmt)||0);tCA2+=(parseFloat(ch.actualAmt)||0);});
-    (p.costs||[]).forEach(function(c){});
-    var grandB=p.budget||0,grandA=p.spent||0;
-    var coImpact=(p.changeOrders||[]).filter(function(c){return c.status==="Approved";}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
+    var tPB2=0,tPA2=0,tCB2=0,tCA2=0;(p.phases||[]).forEach(function(ph){tPB2+=(parseFloat(ph.phaseBudget)||0);tPA2+=(parseFloat(ph.phaseActual)||0);});(p.choices||[]).forEach(function(ch){tCB2+=(parseFloat(ch.budgetAmt)||0);tCA2+=(parseFloat(ch.actualAmt)||0);});
+    var grandB=p.budget||0,grandA=p.spent||0;var coImpact=(p.changeOrders||[]).filter(function(c){return c.status==="Approved";}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
     html+='<div class="wcard"><div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Overall Budget vs Actual</div>'+bvaHtml(grandB,grandA)+'</div>';
     if(coImpact){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">⚠️ Approved Change Orders</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+coImpact.toLocaleString()+' added to scope</div></div>';}
     html+='<div class="summary-grid"><div class="sbox"><div class="sbox-label">Budget</div><div class="sbox-val" style="color:#1A1A2E">$'+grandB.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Spent</div><div class="sbox-val" style="color:#E8713A">$'+grandA.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Remaining</div><div class="sbox-val" style="color:#2EAA72">$'+(grandB-grandA).toLocaleString()+'</div></div></div>';
     if(tPB2||tPA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Phases</div>'+bvaHtml(tPB2,tPA2)+'</div>';}
     if(tCB2||tCA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">🎨 From Selections</div>'+bvaHtml(tCB2,tCA2)+'</div>';}
     html+='<div class="sec-label">Cost Line Items</div>';
-    (p.costs||[]).forEach(function(c,i){
-      html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">×</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';
-    });
+    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">×</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
     html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
     html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
-
   } else if(currentTab==="punch-list"){
-    var done=(p.punchList||[]).filter(function(i){return i.done;}).length;
-    var total=(p.punchList||[]).length;
-    if(total>0){var pct2=Math.round(done/total*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct2+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
+    var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
+    if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
-    (p.punchList||[]).forEach(function(item,i){
-      html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"✓":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">×</button></div>';
-    });
+    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"✓":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">×</button></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
-
   } else if(currentTab==="change-orders"){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length){html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';}
     html+='<div class="sec-label">Change Orders</div>';
-    (p.changeOrders||[]).forEach(function(co,i){
-      var sc2=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";
-      html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' · '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">×</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc2+'22;color:'+sc2+'">'+co.status+'</span></div></div>';
-    });
+    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' · '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">×</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" placeholder="Details..." style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
-
   } else if(currentTab==="daily-log"){
     html+='<div class="sec-label">Daily Logs</div>';
-    var logs=(p.dailyLogs||[]).slice().reverse();
-    logs.forEach(function(log,i){
-      var ri=p.dailyLogs.length-1-i;
-      html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' · '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">×</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">⚠️ '+log.issues+'</div>':'')+'</div>';
-    });
+    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' · '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">×</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">⚠️ '+log.issues+'</div>':'')+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
     html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72°F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:10px"></textarea><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
-
   } else if(currentTab==="notes"){
-    html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">Project Notes</label><textarea class="fi" id="notesInput" rows="8" style="margin-bottom:10px">'+(p.notes||"")+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div><div class="wcard" style="margin-top:4px"><button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button><button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button></div>';
+    html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">General Notes</label><textarea class="fi" id="notesInput" rows="5" style="margin-bottom:10px">'+(p.notes||"")+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div>';
+    html+='<div class="sec-label">Action Items</div>';
+    var resolved=(p.notesLog||[]).filter(function(n){return n.resolved;}).length,totalNL=(p.notesLog||[]).length;
+    if(totalNL>0){html+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">'+resolved+'/'+totalNL+' resolved</div>';}
+    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item'+(item.resolved?' resolved"':'"')+'"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote('+i+')">'+(item.resolved?"✓":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote('+i+')">×</button></div></div>';});
+    html+='<button class="btn-dashed" onclick="showForm(\'noteForm\')">+ Add Action Item</button>';
+    html+='<div class="inline-form" id="noteForm"><label class="fl" style="margin-bottom:6px">Action Item</label><input class="fi" id="noteText" placeholder="e.g. Follow up with client on cabinet selection" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Added By</label><input class="fi" id="noteAuthor" placeholder="Your name" style="margin-bottom:10px"/><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'noteForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addNote()">Add Item</button></div></div>';
+    html+='<div class="wcard" style="margin-top:12px"><button class="btn-dark" onclick="openEditProject()">✏️ Edit Project Details</button><button class="btn-red" onclick="deleteProject()">🗑️ Delete Project</button></div>';
   }
-
   document.getElementById("tabBody").innerHTML=html;
 }
 
-function setView(v){timelineView=v;var p=gpr();if(p)renderTabBody(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
-
-// Phase CRUD
-function addPhase(){
-  var sel=document.getElementById("pSel"),name=sel.value==="__c__"?document.getElementById("pCustom").value.trim():sel.value;
-  if(!name){alert("Enter a phase name.");return;}
-  var p=gpr();p.phases=p.phases||[];
-  p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started",assignTo:document.getElementById("pAssign").value,assignPhone:"",assignEmail:""});
-  saveP(p);
-}
+function addPhase(){var sel=document.getElementById("pSel"),name=sel.value==="__c__"?document.getElementById("pCustom").value.trim():sel.value;if(!name){alert("Enter a phase name.");return;}var p=gpr();p.phases=p.phases||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("pAssign").value;});p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started",assignTo:document.getElementById("pAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Phase '"+name+"' added to "+p.client);}
 function delPhase(i){if(!confirm("Delete phase?"))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
-function updatePhaseStatus(i,v){var p=gpr();p.phases[i].complete=v;saveP(p);}
-
-// Choice CRUD
-function addChoice(){var cat=document.getElementById("cCat").value.trim(),item=document.getElementById("cItem").value.trim();if(!cat||!item){alert("Enter category and item.");return;}var p=gpr();p.choices=p.choices||[];p.choices.push({category:cat,item:item,vendor:document.getElementById("cVend").value.trim(),notes:document.getElementById("cNotes").value.trim(),status:document.getElementById("cStat").value,budgetAmt:parseFloat(document.getElementById("cBud").value)||0,actualAmt:parseFloat(document.getElementById("cAct").value)||0});saveP(p);}
+function updatePhaseStatus(i,v){var p=gpr();var old=p.phases[i].complete;p.phases[i].complete=v;saveP(p,old!==v?"Phase '"+p.phases[i].name+"' is now "+v+" on "+p.client:null);}
+function addChoice(){var cat=document.getElementById("cCat").value.trim(),item=document.getElementById("cItem").value.trim();if(!cat||!item){alert("Enter category and item.");return;}var p=gpr();p.choices=p.choices||[];p.choices.push({category:cat,item:item,vendor:document.getElementById("cVend").value.trim(),notes:document.getElementById("cNotes").value.trim(),status:document.getElementById("cStat").value,budgetAmt:parseFloat(document.getElementById("cBud").value)||0,actualAmt:parseFloat(document.getElementById("cAct").value)||0});saveP(p,"Selection '"+cat+"' added to "+p.client);}
 function delChoice(i){if(!confirm("Delete?"))return;var p=gpr();p.choices.splice(i,1);saveP(p);}
-function updateChoiceStatus(i,v){var p=gpr();p.choices[i].status=v;saveP(p);}
-
-// Cost CRUD
+function updateChoiceStatus(i,v){var p=gpr();var old=p.choices[i].status;p.choices[i].status=v;saveP(p,old!==v?"Selection '"+p.choices[i].category+"' is now "+v+" on "+p.client:null);}
 function addCost(){var p=gpr();p.costs=p.costs||[];var b=parseFloat(document.getElementById("costB").value)||0,a=parseFloat(document.getElementById("costA").value)||0;p.costs.push({category:document.getElementById("costCat").value,description:document.getElementById("costDesc").value.trim(),budgetAmt:b,actualAmt:a});p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function delCost(i){if(!confirm("Delete?"))return;var p=gpr();p.costs.splice(i,1);p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function updateCostAmt(i,k,v){var p=gpr();p.costs[i][k]=parseFloat(v)||0;p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function saveBudgetTotals(){var p=gpr();p.budget=parseFloat(document.getElementById("bBud").value)||0;p.spent=parseFloat(document.getElementById("bSpt").value)||0;saveP(p);}
-
-// Punch List
 function addPunch(){var text=document.getElementById("plText").value.trim();if(!text){alert("Enter an item.");return;}var p=gpr();p.punchList=p.punchList||[];p.punchList.push({text:text,category:document.getElementById("plCat").value,done:false});saveP(p);}
 function delPunch(i){if(!confirm("Delete?"))return;var p=gpr();p.punchList.splice(i,1);saveP(p);}
-function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p);}
-
-// Change Orders
-function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p);}
+function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p,p.punchList[i].done?"Punch list item completed on "+p.client:null);}
+function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p,"Change order '"+title+"' added to "+p.client);}
 function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
-function updateCOStatus(i,v){var p=gpr();p.changeOrders[i].status=v;saveP(p);}
-
-// Daily Log
-function addLog(){var work=document.getElementById("logWork").value.trim();if(!work){alert("Enter work completed.");return;}var p=gpr();p.dailyLogs=p.dailyLogs||[];p.dailyLogs.push({date:document.getElementById("logDate").value,weather:document.getElementById("logWeather").value.trim(),crew:document.getElementById("logCrew").value.trim(),work:work,issues:document.getElementById("logIssues").value.trim()});saveP(p);}
+function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.changeOrders[i].status=v;saveP(p,old!==v?"Change order '"+p.changeOrders[i].title+"' "+v+" on "+p.client:null);}
+function addLog(){var work=document.getElementById("logWork").value.trim();if(!work){alert("Enter work completed.");return;}var p=gpr();p.dailyLogs=p.dailyLogs||[];p.dailyLogs.push({date:document.getElementById("logDate").value,weather:document.getElementById("logWeather").value.trim(),crew:document.getElementById("logCrew").value.trim(),work:work,issues:document.getElementById("logIssues").value.trim()});saveP(p,"Daily log added to "+p.client);}
 function delLog(i){if(!confirm("Delete?"))return;var p=gpr();p.dailyLogs.splice(i,1);saveP(p);}
-
-// Notes
 function saveNotes(){var p=gpr();p.notes=document.getElementById("notesInput").value;saveP(p);}
+function addNote(){var text=document.getElementById("noteText").value.trim();if(!text){alert("Enter an action item.");return;}var p=gpr();p.notesLog=p.notesLog||[];p.notesLog.push({text:text,author:document.getElementById("noteAuthor").value.trim(),ts:Date.now(),resolved:false});saveP(p,"Action item added to "+p.client);}
+function delNote(i){if(!confirm("Delete?"))return;var p=gpr();p.notesLog.splice(i,1);saveP(p);}
+function toggleNote(i){var p=gpr();p.notesLog[i].resolved=!p.notesLog[i].resolved;saveP(p,p.notesLog[i].resolved?"Action item resolved on "+p.client:null);}
 function deleteProject(){if(!confirm("Delete project? Cannot be undone."))return;col.doc(currentId).delete().then(function(){document.getElementById("detailPage").classList.remove("show");T("Deleted");});}
-
-// Add/Edit project
 function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.projectStatuses.map(function(x){return'<option'+(x===(val||DD.projectStatuses[0])?" selected":"")+'>'+x+'</option>';}).join("");}
 function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
 function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
-function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
-
-// Settings
-function openSettings(){renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("subTagsEl","subcontractors");document.getElementById("settingsPage").classList.add("show");}
+function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");pushNotification(editId?"Project '"+client+"' updated":"New project '"+client+"' created");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
+function openSettings(){renderTeamList();document.getElementById("companyName").value=DD.companyName||"Spence Contracting";renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("elTagsEl","estCategories");document.getElementById("settingsPage").classList.add("show");}
 function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
 function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>';}).join("");}
 function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||(DD[key]||[]).indexOf(v)>=0)return;DD[key]=DD[key]||[];DD[key].push(v);document.getElementById(inputId).value="";renderTagSet(elId,key);saveSettings();}
@@ -740,7 +877,7 @@ document.getElementById("cancelBtn").onclick=function(){document.getElementById(
 document.getElementById("saveBtn").onclick=saveProject;
 document.getElementById("searchInput").oninput=renderCards;
 
-loadSettings(function(){startSync();});
+loadSettings(function(){startSync();startNotifSync();checkClientView();});
 </script>
 </body>
 </html>
