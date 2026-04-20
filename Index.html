@@ -557,7 +557,7 @@ function renderEstDetailBody(e){
   html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">+ Line Item</button>';
   html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">🔗 Share</button>';
   html+='<button class="btn-sm" style="background:#E8713A" onclick="sendEstimate()">📤 Send</button>';
-  if(e.status==="Approved"&&!e.signedAt)html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">🏗️ Convert</button>';
+  if(e.status==="Approved")html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">🏗️ Convert</button>';
   if(e.signedAt)html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:8px 12px;font-size:12px;color:#1A7A4E;width:100%">✅ Signed by '+e.signedBy+' · '+fmtTS(e.signedAt)+'</div>';
   html+='</div>';
   // Status
