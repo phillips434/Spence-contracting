@@ -606,7 +606,7 @@ async function generateAIEstimate(){
   try{
     var response=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json","x-api-key":"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","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
       body:JSON.stringify({
         model:"claude-sonnet-4-20250514",
         max_tokens:1000,
