@@ -604,9 +604,9 @@ async function generateAIEstimate(){
   var defaultMarkup=parseFloat(e.markup)||20;
   var systemPrompt="You are an expert construction estimator with 20 years of experience. Generate a detailed construction estimate based on the job description. Return ONLY valid JSON, no markdown, no explanation. Format: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description of work\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":85,\"total\":85,\"markup\":20}]} Categories must be from: Labor, Materials, Subcontractor, Equipment, Permits & Fees, Other. Use realistic current market pricing for the described location. Include all necessary line items for the scope described. Default markup is "+defaultMarkup+"% but adjust per trade (labor typically higher, materials lower). Return 8-15 line items.";
   try{
-    var response=await fetch("https://api.anthropic.com/v1/messages",{
+    var response=await fetch("/api/estimate",{
       method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":"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","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         model:"claude-sonnet-4-20250514",
         max_tokens:1000,
