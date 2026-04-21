@@ -409,6 +409,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <div id="migrateStatus" style="margin-top:10px;font-size:13px;display:none;font-weight:600"></div>
     </div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
+
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:0">
         <div class="fr2"><div><label class="fl">Type</label><select class="fi" id="tmType"><option>Subcontractor</option><option>Employee</option></select></div><div><label class="fl">Trade / Role</label><input class="fi" id="tmTrade" placeholder="e.g. Electrician"/></div></div>
@@ -794,12 +795,41 @@ function renderEstDetailBody(e){
   html+='<button class="btn-green" style="margin-top:10px" onclick="saveContract()">Save Contract</button>';
   html+='</div>';
 
-  // Signature if signed
+  // Contractor signature section
+  html+='<div class="sec-label" style="margin-top:8px">Your Signature (Contractor)</div>';
+  html+='<div class="wcard">';
+  if(e.contractorSignedAt){
+    html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:12px;margin-bottom:10px">';
+    html+='<div style="font-size:13px;font-weight:700;color:#2EAA72">&#10003; Signed as Contractor</div>';
+    html+='<div style="font-size:12px;color:#888;margin-top:4px">By: '+e.contractorName+' &middot; '+fmtTS(e.contractorSignedAt)+'</div>';
+    if(e.contractorSigData) html+='<img src="'+e.contractorSigData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px;display:block"/>';
+    html+='</div>';
+    html+='<button class="btn-ghost" onclick="clearContractorSig()">Clear &amp; Re-sign</button>';
+  } else {
+    html+='<div style="font-size:13px;color:#555;margin-bottom:10px">Sign below as the contractor before sending to your client.</div>';
+    html+='<label class="fl" style="margin-bottom:6px">Your Name</label>';
+    html+='<input class="fi" id="contractorName" placeholder="Your full name" value="'+(DD.companyName||"Spence Construction")+'" style="margin-bottom:10px"/>';
+    html+='<label class="fl" style="margin-bottom:6px">Signature</label>';
+    html+='<canvas id="contractorSigCanvas" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:150px;cursor:crosshair;touch-action:none;background:#FAFAFA"></canvas>';
+    html+='<div style="display:flex;gap:8px;margin-top:10px">';
+    html+='<button onclick="clearContractorCanvas()" class="btn-ghost" style="flex:1">Clear</button>';
+    html+='<button onclick="saveContractorSig()" class="btn-dark" style="flex:2">&#9997; Sign as Contractor</button>';
+    html+='</div>';
+  }
+  html+='</div>';
+
+  // Client signature status
   if(e.signedAt){
-    html+='<div class="wcard" style="text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">&#10003; Digitally Signed</div>';
+    html+='<div class="sec-label" style="margin-top:4px">Client Signature</div>';
+    html+='<div class="wcard" style="text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">&#10003; Signed by Client</div>';
     html+='<div style="font-size:12px;color:#888">By: '+e.signedBy+'</div>';
     html+='<div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>';
     if(e.signatureData) html+='<img src="'+e.signatureData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px"/>';
+    html+='</div>';
+  } else {
+    html+='<div class="wcard" style="background:#FFF8EC;border:1px solid #E8B43A">';
+    html+='<div style="font-size:13px;font-weight:700;color:#8A6000">&#9888; Awaiting Client Signature</div>';
+    html+='<div style="font-size:12px;color:#8A6000;margin-top:4px">Share the estimate link with your client for them to review and sign.</div>';
     html+='</div>';
   }
 
@@ -820,6 +850,29 @@ function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document
 
 
 function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
+function saveContractorSig(){
+  var name=document.getElementById("contractorName");
+  if(!name||!name.value.trim()){alert("Enter your name.");return;}
+  var canvas=document.getElementById("contractorSigCanvas");
+  if(!canvas){alert("Signature canvas not found.");return;}
+  var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;
+  if(canvas.toDataURL()===blank.toDataURL()){alert("Please sign before saving.");return;}
+  var e=ger();if(!e)return;
+  e.contractorName=name.value.trim();
+  e.contractorSignedAt=Date.now();
+  e.contractorSigData=canvas.toDataURL("image/png");
+  eCol.doc(e.id).set(e).then(function(){T("Signed as contractor!");renderEstDetailBody(e);});
+}
+function clearContractorSig(){
+  var e=ger();if(!e)return;
+  if(!confirm("Clear your contractor signature?"))return;
+  delete e.contractorSignedAt;delete e.contractorName;delete e.contractorSigData;
+  eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});
+}
+function clearContractorCanvas(){
+  var c=document.getElementById("contractorSigCanvas");
+  if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);
+}
 function saveContract(){
   var e=ger();if(!e)return;
   e.contractText=document.getElementById("contractTA").value;
@@ -894,8 +947,16 @@ function renderPortalBody(e){
   document.getElementById("portalBody").innerHTML=html;
 }
 
-function generateAIEstimate(){var prompt=document.getElementById("aiPrompt").value.trim();if(!prompt){alert("Please describe the project first.");return;}var e=ger();if(!e)return;document.getElementById("aiLoading").style.display="block";document.querySelectorAll(".btn-ai").forEach(function(b){b.disabled=true;});var profile=DD.aiProfile||{};var dm=parseFloat(e.markup)||parseFloat(profile.markup)||20,lr=parseFloat(profile.laborRate)||85;var sp="You are an expert construction estimator. Use "+dm+"% markup on all items. Labor $"+lr+"/hr."+(profile.location?" Location: "+profile.location+".":" National pricing.")+(profile.instructions?" "+profile.instructions:"")+" Return ONLY JSON no markdown: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":"+lr+",\"total\":"+lr+",\"markup\":"+dm+"}]}. 8-15 items.";fetch("/api/estimate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,system:sp,messages:[{role:"user",content:"Estimate for: "+prompt}]})}).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";var clean=text.replace(/```json\n?|```\n?/g,"").trim();var parsed;try{parsed=JSON.parse(clean);}catch(pe){alert("Could not parse AI response.");return;}if(parsed&&parsed.lineItems&&parsed.lineItems.length){e.lineItems=(e.lineItems||[]).concat(parsed.lineItems);eCol.doc(e.id).set(e).then(function(){T(parsed.lineItems.length+" items added!");document.getElementById("aiPrompt").value="";renderEstDetailBody(e);});}else{alert("AI couldn't generate items.");}}).catch(function(err){alert("Error: "+err.message);}).finally(function(){document.getElementById("aiLoading").style.display="none";document.querySelectorAll(".btn-ai").forEach(function(b){b.disabled=false;});});}
-function generateAILog(){var p=gpr();if(!p)return;var logBtn=document.getElementById("aiLogBtn");if(logBtn)logBtn.disabled=true;var items=(p.scopeItems||[]).filter(function(s){return s.complete==="In Progress";}).map(function(s){return s.desc;}).join(", ");var sp="You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: "+(items||"General construction");fetch("/api/estimate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:"Write today's daily log for: "+p.client+" - "+p.type}]})}).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";document.getElementById("logWork").value=text.trim();T("AI log generated!");}).catch(function(err){alert("Error: "+err.message);}).finally(function(){if(logBtn)logBtn.disabled=false;});}
+function generateAIEstimate(){var prompt=document.getElementById("aiPrompt").value.trim();if(!prompt){alert("Please describe the project first.");return;}var e=ger();if(!e)return;document.getElementById("aiLoading").style.display="block";document.querySelectorAll(".btn-ai").forEach(function(b){b.disabled=true;});var profile=DD.aiProfile||{};var dm=parseFloat(e.markup)||parseFloat(profile.markup)||20,lr=parseFloat(profile.laborRate)||85;var sp="You are an expert construction estimator. Use "+dm+"% markup on all items. Labor $"+lr+"/hr."+(profile.location?" Location: "+profile.location+".":" National pricing.")+(profile.instructions?" "+profile.instructions:"")+" Return ONLY JSON no markdown: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":"+lr+",\"total\":"+lr+",\"markup\":"+dm+"}]}. 8-15 items.";fetch("/api/estimate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,system:sp,messages:[{role:"user",content:"Estimate for: "+prompt}]})
+  }).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";var clean=text.replace(/```json\n?|```\n?/g,"").trim();var parsed;try{parsed=JSON.parse(clean);}catch(pe){alert("Could not parse AI response.");return;}if(parsed&&parsed.lineItems&&parsed.lineItems.length){e.lineItems=(e.lineItems||[]).concat(parsed.lineItems);eCol.doc(e.id).set(e).then(function(){T(parsed.lineItems.length+" items added!");document.getElementById("aiPrompt").value="";renderEstDetailBody(e);});}else{alert("AI couldn't generate items.");}}).catch(function(err){alert("Error: "+err.message);}).finally(function(){document.getElementById("aiLoading").style.display="none";document.querySelectorAll(".btn-ai").forEach(function(b){b.disabled=false;});});}
+function generateAILog(){var p=gpr();if(!p)return;var logBtn=document.getElementById("aiLogBtn");if(logBtn)logBtn.disabled=true;var items=(p.scopeItems||[]).filter(function(s){return s.complete==="In Progress";}).map(function(s){return s.desc;}).join(", ");var sp="You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: "+(items||"General construction");fetch("/api/estimate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,system:"You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.",messages:[{role:"user",content:"Project: "+p.client+" - "+p.type+". Active items: "+(items||"general work")}]})
+  }).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";document.getElementById("logWork").value=text.trim();T("AI log generated!");}).catch(function(err){alert("Error: "+err.message);}).finally(function(){if(logBtn)logBtn.disabled=false;});}
 function openEditLineItem(i){editLineItemIdx=i;var e=ger();var li=e.lineItems[i];document.getElementById("eliCat").innerHTML=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");document.getElementById("eliDesc").value=li.desc||"";document.getElementById("eliQty").value=li.qty||1;document.getElementById("eliUnit").value=li.unit||"";document.getElementById("eliUnitCost").value=li.unitCost||0;document.getElementById("eliMarkup").value=li.markup||0;updateEliPreview();document.getElementById("editLineItemModal").classList.add("show");["eliQty","eliUnitCost","eliMarkup"].forEach(function(id){document.getElementById(id).oninput=updateEliPreview;});}
 function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty").value)||0,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;document.getElementById("eliPreview").textContent="$"+(qty*uc*(1+markup/100)).toLocaleString(undefined,{maximumFractionDigits:0});}
 function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
@@ -1160,6 +1221,14 @@ function renderClientView(e,wrapper){
   html+='<div class="wcard" style="margin-top:14px">';
   html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128196; Contract &amp; Terms</div>';
   html+='<div style="font-size:12px;color:#444;line-height:1.8;white-space:pre-wrap;font-family:Georgia,serif;max-height:320px;overflow-y:auto;padding:12px;background:#F8F9FA;border-radius:8px;border:1px solid #E0E0E0">'+contractText+'</div>';
+  // Show contractor signature if signed
+  if(e.contractorSignedAt){
+    html+='<div style="margin-top:14px;padding-top:14px;border-top:1px solid #E0E0E0">';
+    html+='<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">Contractor Signature</div>';
+    html+='<div style="font-size:12px;color:#888">'+(e.contractorName||"Contractor")+' &middot; '+fmtTS(e.contractorSignedAt)+'</div>';
+    if(e.contractorSigData) html+='<img src="'+e.contractorSigData+'" style="max-width:180px;margin-top:6px;border:1px solid #EEE;border-radius:6px;display:block"/>';
+    html+='</div>';
+  }
   html+='</div>';
 
   // Signed or sign section
@@ -1187,6 +1256,22 @@ function renderClientView(e,wrapper){
 
   html+='</div>';
   wrapper.innerHTML=html;
+
+  // Init contractor signature canvas
+  setTimeout(function(){
+    var cc=document.getElementById("contractorSigCanvas");
+    if(cc){
+      var ctx2=cc.getContext("2d");cc.width=cc.offsetWidth||560;
+      var drawing2=false,lx2=0,ly2=0;
+      function getPos2(ev){var r=cc.getBoundingClientRect();var cx=ev.touches?ev.touches[0].clientX:ev.clientX;var cy=ev.touches?ev.touches[0].clientY:ev.clientY;return{x:(cx-r.left)*(cc.width/r.width),y:(cy-r.top)*(cc.height/r.height)};}
+      cc.addEventListener("mousedown",function(ev){drawing2=true;var p=getPos2(ev);lx2=p.x;ly2=p.y;});
+      cc.addEventListener("mousemove",function(ev){if(!drawing2)return;var p=getPos2(ev);ctx2.beginPath();ctx2.moveTo(lx2,ly2);ctx2.lineTo(p.x,p.y);ctx2.strokeStyle="#1A1A2E";ctx2.lineWidth=2;ctx2.lineCap="round";ctx2.stroke();lx2=p.x;ly2=p.y;});
+      cc.addEventListener("mouseup",function(){drawing2=false;});
+      cc.addEventListener("touchstart",function(ev){ev.preventDefault();drawing2=true;var p=getPos2(ev);lx2=p.x;ly2=p.y;},{passive:false});
+      cc.addEventListener("touchmove",function(ev){ev.preventDefault();if(!drawing2)return;var p=getPos2(ev);ctx2.beginPath();ctx2.moveTo(lx2,ly2);ctx2.lineTo(p.x,p.y);ctx2.strokeStyle="#1A1A2E";ctx2.lineWidth=2;ctx2.lineCap="round";ctx2.stroke();lx2=p.x;ly2=p.y;},{passive:false});
+      cc.addEventListener("touchend",function(){drawing2=false;});
+    }
+  },150);
 
   // Init signature canvas
   setTimeout(function(){
@@ -1253,25 +1338,7 @@ function notifyPerson(assignTo, idx){
     for(var j=0;j<scopeItems.length;j++){
       if(scopeItems[j].assignTo===assignTo||scopeItems[j].name===assignTo){label=scopeItems[j].desc||scopeItems[j].name||"";break;}
     }
-    // Find the scope item to get cost details
-    var scopeItem=null;
-    for(var k=0;k<scopeItems.length;k++){
-      if(scopeItems[k].assignTo===assignTo||scopeItems[k].name===assignTo){scopeItem=scopeItems[k];break;}
-    }
-    var budget=scopeItem?(parseFloat(scopeItem.budget)||parseFloat(scopeItem.phaseBudget)||0):0;
-    var actual=scopeItem?(parseFloat(scopeItem.actual)||parseFloat(scopeItem.phaseActual)||0):0;
-    var costLine=actual>0?"Contract Amount: $"+actual.toLocaleString():"Budget: $"+budget.toLocaleString();
-    var startLine=scopeItem&&scopeItem.start?"Start Date: "+fmtFull(scopeItem.start):"";
-    var endLine=scopeItem&&scopeItem.end?"End Date: "+fmtFull(scopeItem.end):"";
-    var msg=["Hi "+assignTo+" --","",
-      "You have been assigned to the following task:","",
-      "Project: "+p.client,
-      "Address: "+(p.address||""),
-      "Task: "+label,
-      startLine,endLine,costLine,"",
-      "Please reply to confirm your availability and acceptance.","",
-      "Thank you,",DD.companyName||"Spence Construction"
-    ].filter(function(l){return l!=="";}).join("\n");
+    var msg=["Hi "+assignTo+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
     if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
     else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+label)+"&body="+encodeURIComponent(msg);}
   } catch(e){
