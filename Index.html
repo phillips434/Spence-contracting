@@ -332,6 +332,34 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 </div>
 
+<!-- EDIT LINE ITEM PAGE -->
+<div class="fpage" id="editLineItemPage">
+  <div class="phead">
+    <a href="#" class="phead-back" onclick="closePage('editLineItemPage');return false;">&#8249;</a>
+    <span class="phead-title">Edit Line Item</span>
+  </div>
+  <div style="padding:14px">
+    <div class="fg">
+      <div><label class="fl">Category</label><select class="fi" id="eliPageCat"></select></div>
+      <div><label class="fl">Description</label><input class="fi" id="eliPageDesc"/></div>
+      <div class="fr3">
+        <div><label class="fl">Qty</label><input class="fi" id="eliPageQty" type="number" oninput="updateEliPagePreview()"/></div>
+        <div><label class="fl">Unit</label><input class="fi" id="eliPageUnit"/></div>
+        <div><label class="fl">Unit Cost ($)</label><input class="fi" id="eliPageUnitCost" type="number" oninput="updateEliPagePreview()"/></div>
+      </div>
+      <div><label class="fl">Markup %</label><input class="fi" id="eliPageMarkup" type="number" oninput="updateEliPagePreview()"/></div>
+      <div style="background:#EEF2FF;border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:#2B3990;margin-bottom:4px;font-weight:700;text-transform:uppercase">Client Total</div>
+        <div style="font-size:22px;font-weight:700;color:#1A1A2E" id="eliPagePreview">$0</div>
+      </div>
+    </div>
+    <div class="fbtns">
+      <button class="btn-ghost" onclick="closePage('editLineItemPage')">Cancel</button>
+      <button class="btn-dark" style="flex:2" onclick="saveEditLineItemPage()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD/EDIT ESTIMATE -->
 <div class="fpage" id="estFormPage">
   <div class="phead">
@@ -957,7 +985,40 @@ function generateAILog(){var p=gpr();if(!p)return;var logBtn=document.getElement
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,system:"You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.",messages:[{role:"user",content:"Project: "+p.client+" - "+p.type+". Active items: "+(items||"general work")}]})
   }).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";document.getElementById("logWork").value=text.trim();T("AI log generated!");}).catch(function(err){alert("Error: "+err.message);}).finally(function(){if(logBtn)logBtn.disabled=false;});}
-function openEditLineItem(i){editLineItemIdx=i;var e=ger();var li=e.lineItems[i];document.getElementById("eliCat").innerHTML=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");document.getElementById("eliDesc").value=li.desc||"";document.getElementById("eliQty").value=li.qty||1;document.getElementById("eliUnit").value=li.unit||"";document.getElementById("eliUnitCost").value=li.unitCost||0;document.getElementById("eliMarkup").value=li.markup||0;updateEliPreview();document.getElementById("editLineItemModal").classList.add("show");["eliQty","eliUnitCost","eliMarkup"].forEach(function(id){document.getElementById(id).oninput=updateEliPreview;});}
+function openEditLineItem(i){
+  editLineItemIdx=i;
+  var e=ger();if(!e)return;
+  var li=e.lineItems[i];if(!li)return;
+  document.getElementById("eliPageCat").innerHTML=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");
+  document.getElementById("eliPageDesc").value=li.desc||"";
+  document.getElementById("eliPageQty").value=li.qty||1;
+  document.getElementById("eliPageUnit").value=li.unit||"";
+  document.getElementById("eliPageUnitCost").value=li.unitCost||0;
+  document.getElementById("eliPageMarkup").value=li.markup||0;
+  updateEliPagePreview();
+  var pg=document.getElementById("editLineItemPage");
+  pg.classList.add("show");pg.scrollTop=0;
+}
+function updateEliPagePreview(){
+  var qty=parseFloat(document.getElementById("eliPageQty").value)||0;
+  var uc=parseFloat(document.getElementById("eliPageUnitCost").value)||0;
+  var markup=parseFloat(document.getElementById("eliPageMarkup").value)||0;
+  var total=qty*uc*(1+markup/100);
+  document.getElementById("eliPagePreview").textContent="$"+total.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+function saveEditLineItemPage(){
+  var e=ger();if(!e)return;
+  var qty=parseFloat(document.getElementById("eliPageQty").value)||1;
+  var uc=parseFloat(document.getElementById("eliPageUnitCost").value)||0;
+  var markup=parseFloat(document.getElementById("eliPageMarkup").value)||0;
+  e.lineItems[editLineItemIdx]={
+    category:document.getElementById("eliPageCat").value,
+    desc:document.getElementById("eliPageDesc").value.trim(),
+    qty:qty,unit:document.getElementById("eliPageUnit").value.trim(),
+    unitCost:uc,total:qty*uc,markup:markup
+  };
+  eCol.doc(e.id).set(e).then(function(){T("Updated!");closePage("editLineItemPage");renderEstDetailBody(e);});
+}
 function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty").value)||0,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;document.getElementById("eliPreview").textContent="$"+(qty*uc*(1+markup/100)).toLocaleString(undefined,{maximumFractionDigits:0});}
 function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
