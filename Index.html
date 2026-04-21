@@ -680,7 +680,7 @@ function renderEstDetailBody(e){
   html+='<label class="fl" style="margin-bottom:6px">Milestone Name</label>';
   html+='<input class="fi" id="msName" placeholder="e.g. Initial Deposit" style="margin-bottom:8px"/>';
   html+='<div class="fr2" style="margin-bottom:8px">';
-  html+='<div><label class="fl">Percentage %</label><input class="fi" id="msPct" type="number" placeholder="e.g. 30" oninput="calcMilestoneAmt('+calc.grandTotal+')"/></div>';
+  html+='<div><label class="fl">Percentage %</label><input class="fi" id="msPct" type="number" placeholder="e.g. 30" oninput="calcMilestoneAmt()"/></div>';
   html+='<div><label class="fl">Amount ($)</label><input class="fi" id="msAmt" type="number" placeholder="auto-filled"/></div>';
   html+='</div>';
   
@@ -713,14 +713,17 @@ function renderEstDetailBody(e){
   document.getElementById('estDetailBody').innerHTML=html;
 }
 
-function calcMilestoneAmt(grandTotal){
+function calcMilestoneAmt(){
+  var e=ger();
+  if(!e)return;
+  var grandTotal=calcEstimate(e).grandTotal;
   var pct=parseFloat(document.getElementById('msPct').value)||0;
   var amt=Math.round(grandTotal*(pct/100));
-  document.getElementById('msAmt').value=amt>0?amt:'';
+  if(document.getElementById('msAmt')) document.getElementById('msAmt').value=amt>0?amt:'';
 }
 
 
-function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.\n\nContractor: "+co+"\n\nSignature: ________________________  Date: __________\n\nClient: "+e.client+"\n\nSignature: ________________________  Date: __________";}
+function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
 function saveContract(){var e=ger();if(!e)return;e.contractText=document.getElementById("contractTA").value;eCol.doc(e.id).set(e).then(function(){T("Contract saved!");});}
 function printInvoice(){
   var e=ger();if(!e)return;
@@ -747,7 +750,16 @@ function printInvoice(){
 function printContract(){var text=document.getElementById("contractTA").value;var w=window.open("","_blank");w.document.write('<html><body style="font-family:Georgia,serif;padding:40px;font-size:14px;line-height:1.7;white-space:pre-wrap">'+text+'</body></html>');w.document.close();w.print();}
 function markInvoicePaid(){var e=ger();if(!e)return;if(!confirm("Mark invoice as paid?"))return;e.invoice=e.invoice||{};e.invoice.paidAt=Date.now();eCol.doc(e.id).set(e).then(function(){T("Marked as paid!");pushNotification("Invoice paid: "+e.client);renderEstDetailBody(e);});}
 function saveInvoiceSettings(){var e=ger();if(!e)return;e.invoice=e.invoice||{};e.invoice.dueDate=document.getElementById("invDue").value;e.invoice.invoiceNum=document.getElementById("invNum").value;eCol.doc(e.id).set(e).then(function(){T("Saved!");renderEstDetailBody(e);});}
-function toggleMilestone(i){var e=ger();e.paymentMilestones[i].paid=!e.paymentMilestones[i].paid;if(e.paymentMilestones[i].paid)e.paymentMilestones[i].paidAt=Date.now();eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});}
+function toggleMilestone(i){
+  var e=ger();
+  if(!e||!e.paymentMilestones||!e.paymentMilestones[i])return;
+  e.paymentMilestones[i].paid=!e.paymentMilestones[i].paid;
+  if(e.paymentMilestones[i].paid) e.paymentMilestones[i].paidAt=Date.now();
+  else delete e.paymentMilestones[i].paidAt;
+  var idx=estimates.findIndex(function(x){return x.id===e.id;});
+  if(idx>=0) estimates[idx]=e;
+  eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});
+}
 function delMilestone(i){if(!confirm("Delete?"))return;var e=ger();e.paymentMilestones.splice(i,1);eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});}
 function addMilestone(){
   var name=document.getElementById('msName').value.trim();
@@ -903,6 +915,23 @@ function renderProjectPortal(p, est, wrapper){
       html+='<div style="font-size:11px;color:#aaa;margin-bottom:4px">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div>';
       html+='<div style="font-size:13px;color:#444;line-height:1.5">'+log.work+'</div>';
       html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // Approved change orders
+  var approvedCOs=(p.changeOrders||[]).filter(function(c){return c.status==='Approved';});
+  if(approvedCOs.length){
+    html+='<div class="portal-section">';
+    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128260; Approved Changes</div>';
+    approvedCOs.forEach(function(co){
+      html+='<div style="padding:10px 0;border-bottom:1px solid #F5F5F5">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html+='<div><div style="font-size:14px;font-weight:600;color:#1A1A2E">'+co.title+'</div>';
+      if(co.description) html+='<div style="font-size:12px;color:#888;margin-top:3px">'+co.description+'</div>';
+      html+='<div style="font-size:11px;color:#aaa;margin-top:3px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div>';
+      if(co.budgetImpact) html+='<div style="font-size:13px;font-weight:700;color:#E8B43A;white-space:nowrap;margin-left:12px">+$'+parseFloat(co.budgetImpact).toLocaleString()+'</div>';
+      html+='</div></div>';
     });
     html+='</div>';
   }
@@ -1083,7 +1112,29 @@ function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)ren
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyAssignee(idx){var p=gpr();var ph=(p.scopeItems||[])[idx];if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone first.");return;}var label=ph.desc||"";var msg=["Hi "+(ph.assignTo||"Team")+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Contract Amount: $"+(ph.actual||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));if(email)setTimeout(function(){window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
 function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
-function openEditScope(i){editScopeIdx=i;var p=gpr();var ph=(p.scopeItems||[])[i];document.getElementById("esDesc").value=ph.desc||ph.name||"";document.getElementById("esStart").value=ph.start||"";document.getElementById("esEnd").value=ph.end||"";document.getElementById("esBudget").value=ph.budget||ph.phaseBudget||0;document.getElementById("esActual").value=ph.actual||ph.phaseActual||0;document.getElementById("esStatus").value=ph.complete||"Not Started";document.getElementById("esPhone").value=ph.assignPhone||"";document.getElementById("esEmail").value=ph.assignEmail||"";var opts='<option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'"'+(m.name===ph.assignTo?" selected":"")+'>'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("");document.getElementById("esAssign").innerHTML=opts;document.getElementById("esAssign").value=ph.assignTo||"";document.getElementById("editScopeModal").classList.add("show");}
+function openEditScope(i){
+  editScopeIdx=i;
+  var p=gpr();
+  if(!p){alert('Project not found. Please go back and reopen.');return;}
+  var items=p.scopeItems||[];
+  if(i>=items.length){alert('Scope item not found.');return;}
+  var ph=items[i];
+  document.getElementById("esDesc").value=ph.desc||ph.name||"";
+  document.getElementById("esStart").value=ph.start||"";
+  document.getElementById("esEnd").value=ph.end||"";
+  document.getElementById("esBudget").value=ph.budget||ph.phaseBudget||0;
+  document.getElementById("esActual").value=ph.actual||ph.phaseActual||0;
+  document.getElementById("esStatus").value=ph.complete||"Not Started";
+  document.getElementById("esPhone").value=ph.assignPhone||"";
+  document.getElementById("esEmail").value=ph.assignEmail||"";
+  var opts='<option value="">-- Unassigned --</option>';
+  (DD.team||[]).forEach(function(m){
+    opts+='<option value="'+m.name+'"'+(m.name===ph.assignTo?' selected':'')+'>'+m.name+(m.trade?' ('+m.trade+')':'')+'</option>';
+  });
+  document.getElementById("esAssign").innerHTML=opts;
+  document.getElementById("esAssign").value=ph.assignTo||"";
+  document.getElementById("editScopeModal").classList.add("show");
+}
 function closeEditScope(){document.getElementById("editScopeModal").classList.remove("show");}
 function saveEditScope(){var p=gpr();var items=p.scopeItems||[];var old=items[editScopeIdx].complete;var newS=document.getElementById("esStatus").value;items[editScopeIdx]={desc:document.getElementById("esDesc").value.trim(),start:document.getElementById("esStart").value,end:document.getElementById("esEnd").value,budget:parseFloat(document.getElementById("esBudget").value)||0,actual:parseFloat(document.getElementById("esActual").value)||0,complete:newS,assignTo:document.getElementById("esAssign").value,assignPhone:document.getElementById("esPhone").value.trim(),assignEmail:document.getElementById("esEmail").value.trim(),category:items[editScopeIdx].category||""};p.scopeItems=items;saveP(p,old!==newS?"'"+items[editScopeIdx].desc+"' updated to "+newS+" on "+p.client:null);closeEditScope();}
 function openEditChoice(i){editChoiceIdx=i;var p=gpr();var ch=p.choices[i];document.getElementById("ecCat").value=ch.category||"";document.getElementById("ecItem").value=ch.item||"";document.getElementById("ecVendor").value=ch.vendor||"";document.getElementById("ecNotes").value=ch.notes||"";document.getElementById("ecBudget").value=ch.budgetAmt||0;document.getElementById("ecActual").value=ch.actualAmt||0;document.getElementById("ecStatus").innerHTML=DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("");document.getElementById("editChoiceModal").classList.add("show");}
