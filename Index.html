@@ -1287,19 +1287,13 @@ function openScopeEditPage(i){
     });
     sel.value=it.assignTo||'';
   }
-  if((DD.team||[]).length>0){
-    fillDropdown(DD.team);
-  } else {
-    // Team not in memory - pull from Firebase
-    sCol.doc("dropdowns").get().then(function(d){
-      if(d.exists&&d.data().team&&d.data().team.length>0){
-        DD.team=d.data().team;
-        fillDropdown(DD.team);
-      } else {
-        fillDropdown([]);
-      }
-    }).catch(function(){ fillDropdown([]); });
-  }
+  // Always load fresh from Firebase to ensure team is current
+  sCol.doc("dropdowns").get().then(function(d){
+    if(d.exists&&d.data().team&&d.data().team.length>0){
+      DD.team=d.data().team;
+    }
+    fillDropdown(DD.team||[]);
+  }).catch(function(){ fillDropdown(DD.team||[]); });
 }
 
 function onScopeAssignChange(){
@@ -1395,7 +1389,7 @@ function renderTabBody(p){
       html+='</div>';
       html+='<div style="display:flex;gap:6px">';
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
-      if(it.assignTo) html+='<button class="btn-notify" onclick="notifyByIndex('+i+')">Notify</button>';
+      html+='<button class="btn-notify" onclick="notifyByIndex('+i+')">Notify'+(it.assignTo?' '+it.assignTo:'')+' </button>';
       html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
       html+='</div></div>';
       // Progress bar
