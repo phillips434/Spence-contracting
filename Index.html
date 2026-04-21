@@ -672,39 +672,47 @@ function calcEstimate(est){var items=est.lineItems||[];var subtotal=items.reduce
 
 function switchMainTab(tab){mainTabMode=tab;document.getElementById("navProjects").classList.toggle("on",tab==="projects");document.getElementById("navEstimates").classList.toggle("on",tab==="estimates");document.getElementById("navDashboard").classList.toggle("on",tab==="dashboard");document.getElementById("projectsView").style.display=tab==="projects"?"block":"none";document.getElementById("estimatesView").style.display=tab==="estimates"?"block":"none";document.getElementById("dashboardView").style.display=tab==="dashboard"?"block":"none";if(tab==="projects"){document.getElementById("btnNew").textContent="+ New";document.getElementById("btnNew").onclick=openAdd;
 
-// ONE-TIME event delegation for estimate detail - handles ALL dynamic button clicks reliably on iOS
-document.getElementById('estDetailPage').addEventListener('click',function(ev){
+// Document-level capture listener - fires BEFORE scroll handler, works on all iOS
+document.addEventListener('click',function(ev){
   var btn=ev.target.closest('[data-action]');
   if(!btn)return;
+  // Only handle if we're on the estimate detail page
+  var page=document.getElementById('estDetailPage');
+  if(!page||!page.classList.contains('show'))return;
+  ev.preventDefault();
   var action=btn.getAttribute('data-action');
   var idx=parseInt(btn.getAttribute('data-idx')||'0');
   var prompt=btn.getAttribute('data-prompt')||'';
   if(action==='edit-li'){openEditLineItem(idx);}
-  else if(action==='del-li'){if(confirm('Delete this line item?')){delLineItem(idx);}}
+  else if(action==='del-li'){delLineItem(idx);}
   else if(action==='del-excl'){delExclusion(idx);}
   else if(action==='run-ai'){generateAIEstimate();}
   else if(action==='ai-prompt'){setAIPrompt(prompt);}
   else if(action==='show-excl-form'){var f=document.getElementById('exclForm');if(f)f.style.display='block';}
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
-});}else if(tab==="estimates"){document.getElementById("btnNew").textContent="+ New Est";document.getElementById("btnNew").onclick=openNewEstimate;renderEstCards();}else if(tab==="dashboard"){document.getElementById("btnNew").textContent="+ New";document.getElementById("btnNew").onclick=openAdd;
+},true);}else if(tab==="estimates"){document.getElementById("btnNew").textContent="+ New Est";document.getElementById("btnNew").onclick=openNewEstimate;renderEstCards();}else if(tab==="dashboard"){document.getElementById("btnNew").textContent="+ New";document.getElementById("btnNew").onclick=openAdd;
 
-// ONE-TIME event delegation for estimate detail - handles ALL dynamic button clicks reliably on iOS
-document.getElementById('estDetailPage').addEventListener('click',function(ev){
+// Document-level capture listener - fires BEFORE scroll handler, works on all iOS
+document.addEventListener('click',function(ev){
   var btn=ev.target.closest('[data-action]');
   if(!btn)return;
+  // Only handle if we're on the estimate detail page
+  var page=document.getElementById('estDetailPage');
+  if(!page||!page.classList.contains('show'))return;
+  ev.preventDefault();
   var action=btn.getAttribute('data-action');
   var idx=parseInt(btn.getAttribute('data-idx')||'0');
   var prompt=btn.getAttribute('data-prompt')||'';
   if(action==='edit-li'){openEditLineItem(idx);}
-  else if(action==='del-li'){if(confirm('Delete this line item?')){delLineItem(idx);}}
+  else if(action==='del-li'){delLineItem(idx);}
   else if(action==='del-excl'){delExclusion(idx);}
   else if(action==='run-ai'){generateAIEstimate();}
   else if(action==='ai-prompt'){setAIPrompt(prompt);}
   else if(action==='show-excl-form'){var f=document.getElementById('exclForm');if(f)f.style.display='block';}
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
-});renderDashboard();}}
+},true);renderDashboard();}}
 function pushNotification(text,proj){nCol.add({text:text,project:proj||"",ts:Date.now(),read:false});}
 function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
 function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
@@ -740,13 +748,13 @@ function renderEstDetailBody(e){
   html+='<div class="ai-title">&#10024; AI Estimate Assistant</div>';
   html+='<div class="ai-sub">Describe the job OR give commands to add, edit, delete items and generate exclusions</div>';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
-  html+='<button data-action="ai-prompt" data-prompt="Generate line items for " style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
-  html+='<button data-action="ai-prompt" data-prompt="Remove the line item: " style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove item</button>';
-  html+='<button data-action="ai-prompt" data-prompt="Change markup on all items to " style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Adjust markup</button>';
-  html+='<button data-action="ai-prompt" data-prompt="Generate standard exclusions for " style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
+  html+='<button ontouchend="event.preventDefault();setAIPrompt('Generate line items for ');" onclick="setAIPrompt('Generate line items for ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
+  html+='<button ontouchend="event.preventDefault();setAIPrompt('Remove the line item: ');" onclick="setAIPrompt('Remove the line item: ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove item</button>';
+  html+='<button ontouchend="event.preventDefault();setAIPrompt('Change markup on all items to ');" onclick="setAIPrompt('Change markup on all items to ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Adjust markup</button>';
+  html+='<button ontouchend="event.preventDefault();setAIPrompt('Generate standard exclusions for ');" onclick="setAIPrompt('Generate standard exclusions for ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
   html+='</div>';
   html+='<textarea class="ai-input" id="aiPrompt" rows="3" placeholder="Try: Generate line items for kitchen remodel Houston TX&#10;Or: Remove permit fees&#10;Or: Change labor markup to 30%&#10;Or: Generate exclusions for bathroom remodel"></textarea>';
-  html+='<button class="btn-ai" data-action="run-ai" style="margin-top:10px">&#10024; Run AI Command</button>';
+  html+='<button class="btn-ai" ontouchend="event.preventDefault();generateAIEstimate();" onclick="generateAIEstimate();" style="margin-top:10px">&#10024; Run AI Command</button>';
   html+='<div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>AI is working...</div>';'</div>';
 
   // Header info
@@ -796,8 +804,8 @@ function renderEstDetailBody(e){
         if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+li.unit+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
         html+='</div>';
         html+='<div style="display:flex;gap:6px;flex-shrink:0">';
-        html+='<button data-action="edit-li" data-idx="'+i+'" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
-        html+='<button data-action="del-li" data-idx="'+i+'" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
+        html+='<button ontouchend="event.preventDefault();openEditLineItem('+i+');" onclick="openEditLineItem('+i+');" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
+        html+='<button ontouchend="event.preventDefault();delLineItem('+i+');" onclick="if(confirm(\'Delete?\'))delLineItem('+i+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
         html+='</div></div>';
         html+='<div style="display:flex;justify-content:space-between;font-size:12px">';
         html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
@@ -908,18 +916,18 @@ function renderEstDetailBody(e){
       html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="width:8px;height:8px;border-radius:50%;background:#E83A6C;flex-shrink:0"></div>';
       html+='<div style="flex:1;font-size:13px;color:#333">'+ex+'</div>';
-      html+='<button data-action="del-excl" data-idx="'+xi+'" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
+      html+='<button ontouchend="event.preventDefault();delExclusion('+xi+');" onclick="delExclusion('+xi+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
       html+='</div>';
     });
   } else {
     html+='<div style="color:#bbb;font-size:13px;text-align:center;padding:12px">No exclusions yet. Use AI or add manually.</div>';
   }
   html+='</div>';
-  html+='<button class="btn-dashed" data-action="show-excl-form">+ Add Exclusion</button>';
+  html+='<button class="btn-dashed" ontouchend="event.preventDefault();document.getElementById(\'exclForm\').style.display=\'block\';" onclick="document.getElementById(\'exclForm\').style.display=\'block\';">+ Add Exclusion</button>';
   html+='<div id="exclForm" style="display:none;background:#EEF2F7;border-radius:12px;padding:14px;margin-top:8px;border:1.5px solid #DDE3EC">';
   html+='<label class="fl" style="margin-bottom:6px">Exclusion Item</label>';
   html+='<input class="fi" id="exclInput" placeholder="e.g. Painting, debris removal, permits..." style="margin-bottom:10px"/>';
-  html+='<div class="fbtns"><button class="btn-ghost" data-action="hide-excl-form">Cancel</button><button class="btn-dark" style="flex:2" data-action="add-excl">Add</button></div>';
+  html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();document.getElementById(\'exclForm\').style.display=\'none\';" onclick="document.getElementById(\'exclForm\').style.display=\'none\';">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addExclusion();" onclick="addExclusion();">Add</button></div>';
   html+='</div>';
 
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
@@ -1888,22 +1896,26 @@ function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.t
 function removeTag(key,i,elId){DD[key].splice(i,1);renderTagSet(elId,key);saveSettings();}
 document.getElementById("btnNew").onclick=openAdd;
 
-// ONE-TIME event delegation for estimate detail - handles ALL dynamic button clicks reliably on iOS
-document.getElementById('estDetailPage').addEventListener('click',function(ev){
+// Document-level capture listener - fires BEFORE scroll handler, works on all iOS
+document.addEventListener('click',function(ev){
   var btn=ev.target.closest('[data-action]');
   if(!btn)return;
+  // Only handle if we're on the estimate detail page
+  var page=document.getElementById('estDetailPage');
+  if(!page||!page.classList.contains('show'))return;
+  ev.preventDefault();
   var action=btn.getAttribute('data-action');
   var idx=parseInt(btn.getAttribute('data-idx')||'0');
   var prompt=btn.getAttribute('data-prompt')||'';
   if(action==='edit-li'){openEditLineItem(idx);}
-  else if(action==='del-li'){if(confirm('Delete this line item?')){delLineItem(idx);}}
+  else if(action==='del-li'){delLineItem(idx);}
   else if(action==='del-excl'){delExclusion(idx);}
   else if(action==='run-ai'){generateAIEstimate();}
   else if(action==='ai-prompt'){setAIPrompt(prompt);}
   else if(action==='show-excl-form'){var f=document.getElementById('exclForm');if(f)f.style.display='block';}
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
-});
+},true);
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("saveBtn").onclick=saveProject;
 document.getElementById("searchInput").oninput=renderCards;
