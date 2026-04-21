@@ -1239,6 +1239,10 @@ function notifyAssignee(idx){
   else if(email){window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
 }
 
+function toggleScopeEdit(btn,i){
+  openScopeEditPage(i);
+}
+
 function openScopeEditPage(i){
   editScopeIdx=i;
   var p=gpr();
