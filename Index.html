@@ -606,26 +606,26 @@ function forceLoadTeam(){
     var team=data.team||[];
     if(team.length===0){
       statusEl.style.color="#E8B43A";
-      statusEl.textContent="Firebase has 0 team members saved. They may have been saved under a different app version.";
+      statusEl.textContent="Firebase has 0 team members in the team field. Check if they were saved under a different version.";
     } else {
       DD.team=team;
+      var names=team.map(function(m){return m.name+(m.trade?" ("+m.trade+")":"");}).join(", ");
       statusEl.style.color="#2EAA72";
-      statusEl.textContent="Loaded "+team.length+" team member"+(team.length!==1?"s":"")+" from Firebase!";
+      statusEl.textContent="Loaded: "+names;
       renderTeamList();
-      T("Team loaded!");
-    }
-    // Also check for alternate key names
-    var altKeys=["subs","subcontractors","employees","roster"];
-    altKeys.forEach(function(key){
-      if(data[key]&&Array.isArray(data[key])&&data[key].length>0){
-        statusEl.textContent+=" Also found "+data[key].length+" entries under '"+key+"'.";
+      // Refresh the scope tab if open so dropdowns update
+      if(currentId && document.getElementById("detailPage").classList.contains("show")){
+        var p=gpr();
+        if(p) renderTabBody(p);
       }
-    });
+      T("Team loaded - "+team.length+" members!");
+    }
   }).catch(function(err){
     statusEl.style.color="#E83A6C";
     statusEl.textContent="Firebase error: "+err.message;
   });
 }
+
 
 function migrateAllProjects(){var count=0,batch=db.batch();projects.forEach(function(p){if(migratePhases(p)){batch.set(col.doc(p.id),p);count++;}});var el=document.getElementById("migrateStatus");el.style.display="block";if(count===0){el.style.color="#888";el.textContent="All projects are already up to date.";return;}batch.commit().then(function(){el.style.color="#2EAA72";el.textContent="Restored scope items for "+count+" project"+(count!==1?"s":"")+". Open each project to see your data.";T("Restored "+count+" project"+(count!==1?"s":"")+"!");}).catch(function(err){el.style.color="#E83A6C";el.textContent="Error: "+err.message;});}
 function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
@@ -1224,7 +1224,22 @@ function notifyAssignee(idx){
     }
   }
   if(!phone&&!email){
-    alert("No phone or email found for "+ph.assignTo+". Add their contact info in Settings > Team, or edit this scope item.");
+    // Last resort - check Firebase directly
+    sCol.doc("dropdowns").get().then(function(d){
+      if(d.exists&&d.data().team){
+        var liveTeam=d.data().team;
+        DD.team=liveTeam;
+        var lm=liveTeam.find(function(m){return m.name===ph.assignTo;});
+        if(lm&&(lm.phone||lm.email)){
+          // Retry with found contact
+          notifyAssignee(idx);
+        } else {
+          alert("No phone or email found for "+ph.assignTo+". Open Settings > Team and add their contact info.");
+        }
+      } else {
+        alert("No phone or email found for "+ph.assignTo+". Open Settings > Team and add their contact info.");
+      }
+    });
     return;
   }
   var label=ph.desc||"";
@@ -1268,21 +1283,36 @@ function openScopeEditPage(i){
   document.getElementById('espStatus').value=it.complete||'Not Started';
   document.getElementById('espPhone').value=it.assignPhone||'';
   document.getElementById('espEmail').value=it.assignEmail||'';
-  // Populate assign dropdown
-  var sel=document.getElementById('espAssign');
-  sel.innerHTML='<option value="">-- Unassigned --</option>';
-  (DD.team||[]).forEach(function(m){
-    var opt=document.createElement('option');
-    opt.value=m.name;
-    opt.text=m.name+(m.trade?' ('+m.trade+')':'');
-    if(m.name===it.assignTo) opt.selected=true;
-    sel.appendChild(opt);
-  });
-  sel.value=it.assignTo||'';
-  // Open the page
+  // Open page first so user sees it immediately
   var pg=document.getElementById('editScopePage');
   pg.classList.add('show');
   pg.scrollTop=0;
+  // Populate dropdown - if DD.team is empty, load from Firebase first
+  function fillDropdown(team){
+    var sel=document.getElementById('espAssign');
+    sel.innerHTML='<option value="">-- Unassigned --</option>';
+    (team||[]).forEach(function(m){
+      var opt=document.createElement('option');
+      opt.value=m.name;
+      opt.text=m.name+(m.trade?' ('+m.trade+')':'');
+      if(m.name===it.assignTo) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    sel.value=it.assignTo||'';
+  }
+  if((DD.team||[]).length>0){
+    fillDropdown(DD.team);
+  } else {
+    // Team not in memory - pull from Firebase
+    sCol.doc("dropdowns").get().then(function(d){
+      if(d.exists&&d.data().team&&d.data().team.length>0){
+        DD.team=d.data().team;
+        fillDropdown(DD.team);
+      } else {
+        fillDropdown([]);
+      }
+    }).catch(function(){ fillDropdown([]); });
+  }
 }
 
 function onScopeAssignChange(){
