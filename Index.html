@@ -1268,6 +1268,10 @@ function notifyByIndex(idx){
 function notifyAssignee(idx){notifyByIndex(idx);}
 
 
+function toggleScopeEdit(btn,i){
+  openScopeEditPage(i);
+}
+
 function openScopeEditPage(i){
   editScopeIdx=i;
   var p=gpr();
@@ -1408,11 +1412,7 @@ function renderTabBody(p){
       html+='</div>';
       html+='<div style="display:flex;gap:6px">';
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
-      if(it.assignTo){
-        var _np=encodeURIComponent(it.assignPhone||'');
-        var _ne=encodeURIComponent(it.assignEmail||'');
-        html+='<button class="btn-notify" onclick="notifyByIndex('+i+')">&#128276; Notify '+it.assignTo+'</button>';
-      }
+      if(it.assignTo) html+='<button class="btn-notify" onclick="notifyByIndex('+i+')">Notify</button>';
       html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
       html+='</div></div>';
       // Progress bar
@@ -1517,9 +1517,8 @@ function openAdd(){editId=null;document.getElementById("addPageTitle").textConte
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
 function openSettings(){
-  // Pull fresh from Firebase every time - retrieves any subs/team added in previous versions
   document.getElementById("settingsPage").classList.add("show");
-  document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading team from Firebase...</div>';
+  document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   sCol.doc("dropdowns").get().then(function(d){
     if(d.exists){
       var data=d.data();
@@ -1534,23 +1533,25 @@ function openSettings(){
       if(data.punchCategories) DD.punchCategories=data.punchCategories;
       if(data.estCategories) DD.estCategories=data.estCategories;
     }
-    var profile=DD.aiProfile||{};
-    document.getElementById("companyName").value=DD.companyName||"Spence Construction";
-    document.getElementById("aiLocation").value=profile.location||"";
-    document.getElementById("aiMarkup").value=profile.markup||20;
-    document.getElementById("aiLaborRate").value=profile.laborRate||85;
-    document.getElementById("aiInstructions").value=profile.instructions||"";
-    renderTagSet("psTagsEl","projectStatuses");
-    renderTagSet("ptTagsEl","phaseTypes");
-    renderTagSet("csTagsEl","choiceStatuses");
-    renderTagSet("ccTagsEl","costCategories");
-    renderTagSet("coTagsEl","changeOrderTypes");
-    renderTagSet("plTagsEl","punchCategories");
-    renderTagSet("elTagsEl","estCategories");
-    renderTeamList();
-  }).catch(function(){
-    renderTeamList();
-  });
+    renderSettingsForm();
+  }).catch(function(){ renderSettingsForm(); });
+}
+
+function renderSettingsForm(){
+  renderTeamList();
+  document.getElementById("companyName").value=DD.companyName||"Spence Construction";
+  var profile=DD.aiProfile||{};
+  document.getElementById("aiLocation").value=profile.location||"";
+  document.getElementById("aiMarkup").value=profile.markup||20;
+  document.getElementById("aiLaborRate").value=profile.laborRate||85;
+  document.getElementById("aiInstructions").value=profile.instructions||"";
+  renderTagSet("psTagsEl","projectStatuses");
+  renderTagSet("ptTagsEl","phaseTypes");
+  renderTagSet("csTagsEl","choiceStatuses");
+  renderTagSet("ccTagsEl","costCategories");
+  renderTagSet("coTagsEl","changeOrderTypes");
+  renderTagSet("plTagsEl","punchCategories");
+  renderTagSet("elTagsEl","estCategories");
 }
 function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
 function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">&#215;</button></span>';}).join("");}
