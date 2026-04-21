@@ -1221,47 +1221,30 @@ function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)ren
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyByIndex(idx){
   var p=gpr();
-  if(!p){alert("Project not loaded.");return;}
+  if(!p){alert("ERROR: Project not loaded.");return;}
   var items=p.scopeItems||[];
-  if(idx>=items.length){alert("Scope item not found.");return;}
+  if(idx>=items.length){alert("ERROR: Item "+idx+" not found ("+items.length+" items total).");return;}
   var ph=items[idx];
-  
-  // Get name - from data or show what we have
   var assignTo=ph.assignTo||"";
-  if(!assignTo){alert("No one is assigned to this item. Tap Edit to assign a team member.");return;}
-  
-  // Get phone/email - check scope item first, then team roster
   var phone=ph.assignPhone||"";
   var email=ph.assignEmail||"";
-  
-  // Always check team roster as well
   var teamMember=(DD.team||[]).find(function(m){return m.name===assignTo;});
   if(teamMember){
     if(!phone) phone=teamMember.phone||"";
     if(!email) email=teamMember.email||"";
   }
-  
-  if(!phone&&!email){
-    alert("Found assigned person: "+assignTo+"\n\nBut no phone or email is saved for them.\n\nTo fix: Go to Settings > Team, find "+assignTo+", and add their phone/email.\nOR tap Edit on this scope item and type their contact info directly.");
-    return;
-  }
-  
+  var debug="Item: "+ph.desc+
+    "\nAssigned to: "+(assignTo||"EMPTY")+
+    "\nPhone: "+(phone||"NONE")+
+    "\nEmail: "+(email||"NONE")+
+    "\nTeam loaded: "+DD.team.length+" members";
+  if(!assignTo){alert("No one assigned.\n\n"+debug);return;}
+  if(!phone&&!email){alert("No contact info found.\n\n"+debug+"\n\nGo to Settings > Team and add phone/email for "+assignTo);return;}
+  if(!confirm("Send notification to "+assignTo+"?\n("+debug+")")){return;}
   var label=ph.desc||"";
-  var msg=["Hi "+assignTo+" --","",
-    "You have been assigned to the following task:","",
-    "Project: "+p.client,
-    "Address: "+(p.address||""),
-    "Task: "+label,
-    "Start: "+fmtFull(ph.start),
-    "End: "+fmtFull(ph.end),
-    "Amount: $"+(ph.actual||ph.budget||0).toLocaleString(),
-    "Status: "+(ph.complete||"Not Started"),"",
-    "Please reply to confirm.","",
-    "Thank you,",DD.companyName||"Spence Construction"
-  ].join("\n");
-  
+  var msg=["Hi "+assignTo+" --","","You have been assigned to:","","Project: "+p.client,"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
   if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
-  else if(email){window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
+  else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
 }
 
 // Keep old name as alias
