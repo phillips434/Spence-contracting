@@ -745,32 +745,30 @@ function renderEstDetailBody(e){
   } else {
     var byCategory={};
     (e.lineItems||[]).forEach(function(li,i){var cat=li.category||'Other';if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});
-    html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Mkup</th><th style="text-align:right">Client</th><th></th></tr></thead><tbody>';
+    html+='<div>';
     Object.keys(byCategory).forEach(function(cat){
-      html+='<tr><td colspan="5" style="font-size:10px;font-weight:700;color:#2B3990;text-transform:uppercase;padding:10px 4px 4px">'+cat+'</td></tr>';
+      html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;padding:10px 0 6px;letter-spacing:.05em">'+cat+'</div>';
       byCategory[cat].forEach(function(obj){
         var li=obj.li,i=obj.i;
         var cost=parseFloat(li.total)||0,markup=parseFloat(li.markup)||0,clientAmt=cost*(1+markup/100);
-        html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+'</div>';
-        if(li.qty&&li.unit) html+='<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+'</div>';
-        html+='</td>';
-        html+='<td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td>';
-        html+='<td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td>';
-        html+='<td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td>';
-        html+='<td><div style="display:flex;gap:2px"><button onclick="openEditLineItem('+i+')" style="background:#2B3990;border:none;border-radius:6px;color:#fff;padding:4px 7px;font-size:11px;cursor:pointer">&#9999;</button><button class="del-btn" onclick="delLineItem('+i+')" style="font-size:16px">&#215;</button></div></td></tr>';
+        html+='<div style="background:#F8F9FF;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #E0E8FF">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">';
+        html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+li.desc+'</div>';
+        if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+li.unit+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
+        html+='</div>';
+        html+='<div style="display:flex;gap:6px;flex-shrink:0">';
+        html+='<button onclick="openEditLineItem('+i+')" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-height:40px">&#9999;</button>';
+        html+='<button onclick="delLineItem('+i+')" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-height:40px">&#215;</button>';
+        html+='</div></div>';
+        html+='<div style="display:flex;justify-content:space-between;font-size:12px">';
+        html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+        html+='<span style="color:#9B6BE8">'+markup+'% markup</span>';
+        html+='<span style="font-weight:700;color:#1A1A2E;font-size:13px">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+        html+='</div>';
+        html+='</div>';
       });
     });
-    html+='</tbody></table></div>';
-  }
-
-  // Totals summary
-  html+='<div class="est-summary">';
-  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row"><span>Client Total</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  if(calc.taxAmt) html+='<div class="est-sum-row"><span>Tax ('+e.tax+'%)</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row profit"><span>Your Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div>';
-  html+='</div>';
+    html+='</div>';
 
   // ── PAYMENT SCHEDULE ──────────────────────────────────
   html+='<div class="sec-label" style="margin-top:20px">Payment Schedule</div>';
