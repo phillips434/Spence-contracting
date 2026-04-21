@@ -739,7 +739,7 @@ function renderEstDetailBody(e){
 
   // Status
   html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label>';
-  html+='<select class="fi" onchange="updateEstStatus(this.value)">';
+  html+='<select class="fi" data-action="est-status" onchange="updateEstStatus(this.value)">';
   html+=["Draft","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?' selected':'')+'>'+s+'</option>';}).join('');
   html+='</select></div>';
 
@@ -762,8 +762,8 @@ function renderEstDetailBody(e){
         if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+li.unit+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
         html+='</div>';
         html+='<div style="display:flex;gap:6px;flex-shrink:0">';
-        html+='<button onclick="openEditLineItem('+i+')" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-height:40px">&#9999;</button>';
-        html+='<button onclick="delLineItem('+i+')" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-height:40px">&#215;</button>';
+        html+='<button data-action="edit-li" data-idx="'+i+'" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
+        html+='<button data-action="del-li" data-idx="'+i+'" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
         html+='</div></div>';
         html+='<div style="display:flex;justify-content:space-between;font-size:12px">';
         html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
@@ -874,7 +874,7 @@ function renderEstDetailBody(e){
       html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="width:8px;height:8px;border-radius:50%;background:#E83A6C;flex-shrink:0"></div>';
       html+='<div style="flex:1;font-size:13px;color:#333">'+ex+'</div>';
-      html+='<button onclick="delExclusion('+xi+')" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:6px 12px;font-size:13px;cursor:pointer;min-height:36px">&#215;</button>';
+      html+='<button data-action="del-excl" data-idx="'+xi+'" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
       html+='</div>';
     });
   } else {
@@ -891,6 +891,19 @@ function renderEstDetailBody(e){
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
 
   document.getElementById('estDetailBody').innerHTML=html;
+  // Event delegation - handles ALL button clicks in estimate detail reliably on iOS
+  var body=document.getElementById('estDetailBody');
+  body.onclick=null;
+  body.addEventListener('click',function(ev){
+    var btn=ev.target.closest('[data-action]');
+    if(!btn)return;
+    ev.preventDefault();ev.stopPropagation();
+    var action=btn.getAttribute('data-action');
+    var idx=parseInt(btn.getAttribute('data-idx'));
+    if(action==='edit-li'){openEditLineItem(idx);}
+    else if(action==='del-li'){delLineItem(idx);}
+    else if(action==='del-excl'){delExclusion(idx);}
+  },true);
 }
 
 function calcMsAmt(pctVal){
@@ -1030,7 +1043,23 @@ function generateAIEstimate(){
   var dm=parseFloat(e.markup)||parseFloat(profile.markup)||20,lr=parseFloat(profile.laborRate)||85;
   var existingItems=JSON.stringify((e.lineItems||[]).map(function(li,i){return{index:i,desc:li.desc,category:li.category,total:li.total,markup:li.markup};}));
   var existingExcls=JSON.stringify(e.exclusions||[]);
-  var sp='You are an expert construction estimator. The estimate currently has these line items: '+existingItems+'. Current exclusions: '+existingExcls+'. Default markup: '+dm+'%. Labor rate: $'+lr+'/hr.'+(profile.location?' Location: '+profile.location+'.':" National pricing.")+(profile.instructions?' '+profile.instructions:'')+' The user will give you a command. Respond ONLY with valid JSON in this exact format: {"action":"add|delete|update|exclusions|mixed","lineItems":[{"category":"Labor","desc":"desc","qty":1,"unit":"hrs","unitCost":'+lr+',"total":'+lr+',"markup":'+dm+'}],"deleteIndexes":[0,1],"updateItems":[{"index":0,"desc":"new desc","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"exclusions":["item1","item2"],"message":"Brief description of what was done"}. For add commands: populate lineItems. For delete commands: populate deleteIndexes with the indexes to remove. For update/adjust commands: populate updateItems. For exclusions commands: populate exclusions array. You can combine actions in one response using mixed action.';
+  var sp='You are an expert construction estimator assistant. You help manage construction estimates by adding, editing, and deleting line items, and generating job exclusions.'+
+    ' Current line items ('+e.lineItems.length+' items): '+existingItems+
+    ' Current exclusions: '+existingExcls+
+    ' Default markup: '+dm+'%. Labor rate: $'+lr+'/hr.'+
+    (profile.location?' Location: '+profile.location+'.':' National pricing.')+
+    (profile.instructions?' '+profile.instructions:'')+
+    ' RESPOND ONLY WITH VALID JSON. No markdown, no explanation.'+
+    ' Format: {"action":"add","lineItems":[...],"deleteIndexes":[...],"updateItems":[...],"exclusions":[...],"message":"what was done"}'+
+    ' RULES:'+
+    ' - To ADD items: put them in lineItems array with fields: category, desc, qty, unit, unitCost, total (qty*unitCost), markup'+
+    ' - To DELETE items: put their index numbers in deleteIndexes array'+
+    ' - To UPDATE items: put {index, and fields to change} in updateItems array'+
+    ' - To add EXCLUSIONS: put strings in exclusions array'+
+    ' - You can combine multiple actions in one response'+
+    ' - For "generate exclusions" commands: create 5-10 standard exclusions for that project type'+
+    ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
+    ' - For "change markup to X%" commands: put all item updates in updateItems';
 
   fetch('/api/estimate',{
     method:'POST',
