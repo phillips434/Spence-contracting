@@ -396,6 +396,12 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
         <button class="btn-ai" onclick="saveAIProfile()">Save AI Profile</button>
       </div>
     </div>
+    <div class="wcard" style="border:2px solid #2B3990;background:#EEF2FF">
+      <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#128101; Restore Team from Firebase</div>
+      <div style="font-size:12px;color:#2B3990;margin-bottom:12px;line-height:1.6">If your subs and employees aren't showing, tap below to force-reload your team list directly from Firebase.</div>
+      <button class="btn-dark" style="background:#2B3990;margin-bottom:10px" onclick="forceLoadTeam()">&#128101; Reload Team from Firebase</button>
+      <div id="teamLoadStatus" style="font-size:13px;display:none;margin-top:6px;font-weight:600;line-height:1.5"></div>
+    </div>
     <div class="wcard" style="border:2px solid #E8B43A;background:#FFFBF0">
       <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Phase Data Recovery</div>
       <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.6">Restore missing scope items from old timeline phase data across all projects.</div>
@@ -585,6 +591,42 @@ function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSi
 function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent();return "EST-"+String(n).padStart(4,"0");}
 function saveSettingsSilent(){sCol.doc("dropdowns").set(DD);}
 function migratePhases(p){if((p.scopeItems&&p.scopeItems.length>0)||!p.phases||!p.phases.length)return false;p.scopeItems=p.phases.map(function(ph){return{desc:ph.name||ph.desc||"Untitled Phase",start:ph.start||ph.startDate||"",end:ph.end||ph.endDate||"",budget:parseFloat(ph.phaseBudget||ph.budget)||0,actual:parseFloat(ph.phaseActual||ph.actual)||0,complete:ph.complete||ph.status||"Not Started",assignTo:ph.assignTo||ph.subcontractor||"",assignPhone:ph.assignPhone||ph.phone||"",assignEmail:ph.assignEmail||ph.email||"",category:ph.category||ph.type||""};});return true;}
+function forceLoadTeam(){
+  var statusEl=document.getElementById("teamLoadStatus");
+  statusEl.style.display="block";
+  statusEl.style.color="#2B3990";
+  statusEl.textContent="Reading from Firebase...";
+  sCol.doc("dropdowns").get().then(function(d){
+    if(!d.exists){
+      statusEl.style.color="#E83A6C";
+      statusEl.textContent="No settings document found in Firebase.";
+      return;
+    }
+    var data=d.data();
+    var team=data.team||[];
+    if(team.length===0){
+      statusEl.style.color="#E8B43A";
+      statusEl.textContent="Firebase has 0 team members saved. They may have been saved under a different app version.";
+    } else {
+      DD.team=team;
+      statusEl.style.color="#2EAA72";
+      statusEl.textContent="Loaded "+team.length+" team member"+(team.length!==1?"s":"")+" from Firebase!";
+      renderTeamList();
+      T("Team loaded!");
+    }
+    // Also check for alternate key names
+    var altKeys=["subs","subcontractors","employees","roster"];
+    altKeys.forEach(function(key){
+      if(data[key]&&Array.isArray(data[key])&&data[key].length>0){
+        statusEl.textContent+=" Also found "+data[key].length+" entries under '"+key+"'.";
+      }
+    });
+  }).catch(function(err){
+    statusEl.style.color="#E83A6C";
+    statusEl.textContent="Firebase error: "+err.message;
+  });
+}
+
 function migrateAllProjects(){var count=0,batch=db.batch();projects.forEach(function(p){if(migratePhases(p)){batch.set(col.doc(p.id),p);count++;}});var el=document.getElementById("migrateStatus");el.style.display="block";if(count===0){el.style.color="#888";el.textContent="All projects are already up to date.";return;}batch.commit().then(function(){el.style.color="#2EAA72";el.textContent="Restored scope items for "+count+" project"+(count!==1?"s":"")+". Open each project to see your data.";T("Restored "+count+" project"+(count!==1?"s":"")+"!");}).catch(function(err){el.style.color="#E83A6C";el.textContent="Error: "+err.message;});}
 function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
 function calcEstimate(est){var items=est.lineItems||[];var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);var clientTotal=items.reduce(function(a,li){return a+calcLineItemTotal(li);},0);var tax=parseFloat(est.tax)||0;var taxAmt=clientTotal*(tax/100);var grandTotal=clientTotal+taxAmt;var profit=grandTotal-subtotal-taxAmt;var margin=grandTotal>0?(profit/grandTotal*100):0;return{subtotal:subtotal,clientTotal:clientTotal,taxAmt:taxAmt,grandTotal:grandTotal,profit:profit,margin:margin};}
@@ -1167,7 +1209,44 @@ function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
-function notifyAssignee(idx){var p=gpr();var ph=(p.scopeItems||[])[idx];if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone first.");return;}var label=ph.desc||"";var msg=["Hi "+(ph.assignTo||"Team")+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Contract Amount: $"+(ph.actual||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));if(email)setTimeout(function(){window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
+function notifyAssignee(idx){
+  var p=gpr();
+  var ph=(p.scopeItems||[])[idx];
+  if(!ph||!ph.assignTo){alert("No one is assigned to this item. Use Edit to assign a team member.");return;}
+  // Look up contact info - first from scope item, then from DD.team roster
+  var phone=ph.assignPhone||"";
+  var email=ph.assignEmail||"";
+  if(!phone||!email){
+    var member=(DD.team||[]).find(function(m){return m.name===ph.assignTo;});
+    if(member){
+      if(!phone) phone=member.phone||"";
+      if(!email) email=member.email||"";
+    }
+  }
+  if(!phone&&!email){
+    alert("No phone or email found for "+ph.assignTo+". Add their contact info in Settings > Team, or edit this scope item.");
+    return;
+  }
+  var label=ph.desc||"";
+  var msg=[
+    "Hi "+ph.assignTo+" --","",
+    "You have been assigned to the following task:","",
+    "Project: "+p.client,
+    "Address: "+(p.address||""),
+    "Task: "+label,
+    "Start: "+fmtFull(ph.start),
+    "End: "+fmtFull(ph.end),
+    "Contract Amount: $"+(ph.actual||0).toLocaleString(),
+    "Status: "+(ph.complete||"Not Started"),"",
+    "Please reply to confirm.","",
+    "Thank you,",
+    DD.companyName||"Spence Construction"
+  ].join("\n");
+  if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));
+  if(email)setTimeout(function(){
+    window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));
+  },phone?1200:0);
+}
 function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
 function toggleScopeEdit(btn,i){
   // Open the dedicated edit page instead of inline
