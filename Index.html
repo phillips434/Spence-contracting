@@ -1253,7 +1253,25 @@ function notifyPerson(assignTo, idx){
     for(var j=0;j<scopeItems.length;j++){
       if(scopeItems[j].assignTo===assignTo||scopeItems[j].name===assignTo){label=scopeItems[j].desc||scopeItems[j].name||"";break;}
     }
-    var msg=["Hi "+assignTo+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
+    // Find the scope item to get cost details
+    var scopeItem=null;
+    for(var k=0;k<scopeItems.length;k++){
+      if(scopeItems[k].assignTo===assignTo||scopeItems[k].name===assignTo){scopeItem=scopeItems[k];break;}
+    }
+    var budget=scopeItem?(parseFloat(scopeItem.budget)||parseFloat(scopeItem.phaseBudget)||0):0;
+    var actual=scopeItem?(parseFloat(scopeItem.actual)||parseFloat(scopeItem.phaseActual)||0):0;
+    var costLine=actual>0?"Contract Amount: $"+actual.toLocaleString():"Budget: $"+budget.toLocaleString();
+    var startLine=scopeItem&&scopeItem.start?"Start Date: "+fmtFull(scopeItem.start):"";
+    var endLine=scopeItem&&scopeItem.end?"End Date: "+fmtFull(scopeItem.end):"";
+    var msg=["Hi "+assignTo+" --","",
+      "You have been assigned to the following task:","",
+      "Project: "+p.client,
+      "Address: "+(p.address||""),
+      "Task: "+label,
+      startLine,endLine,costLine,"",
+      "Please reply to confirm your availability and acceptance.","",
+      "Thank you,",DD.companyName||"Spence Construction"
+    ].filter(function(l){return l!=="";}).join("\n");
     if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
     else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+label)+"&body="+encodeURIComponent(msg);}
   } catch(e){
