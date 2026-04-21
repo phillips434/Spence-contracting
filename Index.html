@@ -1150,6 +1150,40 @@ function checkClientView(){
     return;
   }
   var estId=params.get('est');if(!estId)return;document.getElementById("mainView").style.display="none";document.body.style.background="#fff";var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}renderClientView(doc.data(),wrapper);});}
+function initSigCanvas(canvasId){
+  var cc=document.getElementById(canvasId);
+  if(!cc)return;
+  // Use parent width for proper sizing
+  var w=cc.parentElement?cc.parentElement.offsetWidth-32:320;
+  if(w<100)w=320;
+  cc.width=w;
+  cc.height=150;
+  var ctx=cc.getContext("2d");
+  var drawing=false,lx=0,ly=0;
+  function pos(ev){
+    var r=cc.getBoundingClientRect();
+    var src=ev.touches?ev.touches[0]:ev;
+    return{x:(src.clientX-r.left)*(cc.width/r.width),y:(src.clientY-r.top)*(cc.height/r.height)};
+  }
+  function start(ev){ev.preventDefault();ev.stopPropagation();drawing=true;var p=pos(ev);lx=p.x;ly=p.y;}
+  function move(ev){
+    ev.preventDefault();ev.stopPropagation();
+    if(!drawing)return;
+    var p=pos(ev);
+    ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle="#1A1A2E";ctx.lineWidth=2.5;ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.stroke();lx=p.x;ly=p.y;
+  }
+  function end(ev){drawing=false;}
+  cc.addEventListener("mousedown",start);
+  cc.addEventListener("mousemove",move);
+  cc.addEventListener("mouseup",end);
+  cc.addEventListener("mouseleave",end);
+  cc.addEventListener("touchstart",start,{passive:false});
+  cc.addEventListener("touchmove",move,{passive:false});
+  cc.addEventListener("touchend",end,{passive:false});
+}
+
 function renderClientView(e,wrapper){
   var calc=calcEstimate(e);
   var html='<div class="client-view">';
@@ -1257,42 +1291,13 @@ function renderClientView(e,wrapper){
   html+='</div>';
   wrapper.innerHTML=html;
 
-  // Init contractor signature canvas
+  // Init contractor signature canvas - delay to ensure DOM ready
   setTimeout(function(){
-    var cc=document.getElementById("contractorSigCanvas");
-    if(cc){
-      var ctx2=cc.getContext("2d");cc.width=cc.offsetWidth||560;
-      var drawing2=false,lx2=0,ly2=0;
-      function getPos2(ev){var r=cc.getBoundingClientRect();var cx=ev.touches?ev.touches[0].clientX:ev.clientX;var cy=ev.touches?ev.touches[0].clientY:ev.clientY;return{x:(cx-r.left)*(cc.width/r.width),y:(cy-r.top)*(cc.height/r.height)};}
-      cc.addEventListener("mousedown",function(ev){drawing2=true;var p=getPos2(ev);lx2=p.x;ly2=p.y;});
-      cc.addEventListener("mousemove",function(ev){if(!drawing2)return;var p=getPos2(ev);ctx2.beginPath();ctx2.moveTo(lx2,ly2);ctx2.lineTo(p.x,p.y);ctx2.strokeStyle="#1A1A2E";ctx2.lineWidth=2;ctx2.lineCap="round";ctx2.stroke();lx2=p.x;ly2=p.y;});
-      cc.addEventListener("mouseup",function(){drawing2=false;});
-      cc.addEventListener("touchstart",function(ev){ev.preventDefault();drawing2=true;var p=getPos2(ev);lx2=p.x;ly2=p.y;},{passive:false});
-      cc.addEventListener("touchmove",function(ev){ev.preventDefault();if(!drawing2)return;var p=getPos2(ev);ctx2.beginPath();ctx2.moveTo(lx2,ly2);ctx2.lineTo(p.x,p.y);ctx2.strokeStyle="#1A1A2E";ctx2.lineWidth=2;ctx2.lineCap="round";ctx2.stroke();lx2=p.x;ly2=p.y;},{passive:false});
-      cc.addEventListener("touchend",function(){drawing2=false;});
-    }
-  },150);
+    initSigCanvas("contractorSigCanvas");
+  },300);
 
-  // Init signature canvas
-  setTimeout(function(){
-    var canvas=document.getElementById('sigCanvas');
-    if(!canvas)return;
-    var ctx=canvas.getContext('2d');
-    canvas.width=canvas.offsetWidth||560;
-    var drawing=false,lx=0,ly=0;
-    function getPos(ev){
-      var r=canvas.getBoundingClientRect();
-      var cx=ev.touches?ev.touches[0].clientX:ev.clientX;
-      var cy=ev.touches?ev.touches[0].clientY:ev.clientY;
-      return{x:(cx-r.left)*(canvas.width/r.width),y:(cy-r.top)*(canvas.height/r.height)};
-    }
-    canvas.addEventListener('mousedown',function(ev){drawing=true;var p=getPos(ev);lx=p.x;ly=p.y;});
-    canvas.addEventListener('mousemove',function(ev){if(!drawing)return;var p=getPos(ev);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1A1A2E';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();lx=p.x;ly=p.y;});
-    canvas.addEventListener('mouseup',function(){drawing=false;});
-    canvas.addEventListener('touchstart',function(ev){ev.preventDefault();drawing=true;var p=getPos(ev);lx=p.x;ly=p.y;},{passive:false});
-    canvas.addEventListener('touchmove',function(ev){ev.preventDefault();if(!drawing)return;var p=getPos(ev);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1A1A2E';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
-    canvas.addEventListener('touchend',function(){drawing=false;});
-  },100);
+  // Init client signature canvas
+  setTimeout(function(){initSigCanvas('sigCanvas');},300);
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
