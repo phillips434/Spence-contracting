@@ -1147,13 +1147,15 @@ function toggleScopeEdit(btn,i){
   if(!isOpen){
     var sel=form.querySelector('.se-assign');
     if(sel){
-      sel.onchange=function(){
+      var fillContact=function(){
         var m=(DD.team||[]).find(function(x){return x.name===sel.value;});
         var ph=form.querySelector('.se-phone');
         var em=form.querySelector('.se-email');
         if(m){if(ph)ph.value=m.phone||'';if(em)em.value=m.email||'';}
-        else{if(ph)ph.value='';if(em)em.value='';}
       };
+      sel.onchange=fillContact;
+      // Also auto-fill immediately if someone is already selected
+      if(sel.value) fillContact();
     }
   }
 }
@@ -1255,20 +1257,20 @@ function renderTabBody(p){
       html+='<div class="scope-edit-form" style="display:none;background:#EEF2F7;border-radius:10px;padding:14px;margin-top:10px;border:1.5px solid #DDE3EC">';
       html+='<div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Edit Scope Item</div>';
       html+='<label class="fl" style="margin-bottom:4px">Description</label>';
-      html+='<input class="fi" class="fi se-desc" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
+      html+='<input class="fi se-desc" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Start Date</label><input class="fi" class="fi se-start" type="date" value="'+(it.start||'')+'"/></div>';
-      html+='<div><label class="fl">End Date</label><input class="fi" class="fi se-end" type="date" value="'+(it.end||'')+'"/></div>';
+      html+='<div><label class="fl">Start Date</label><input class="fi se-start" type="date" value="'+(it.start||'')+'"/></div>';
+      html+='<div><label class="fl">End Date</label><input class="fi se-end" type="date" value="'+(it.end||'')+'"/></div>';
       html+='</div>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Budget ($)</label><input class="fi" class="fi se-budget" type="number" value="'+(it.budget||0)+'"/></div>';
-      html+='<div><label class="fl">Actual ($)</label><input class="fi" class="fi se-actual" type="number" value="'+(it.actual||0)+'"/></div>';
+      html+='<div><label class="fl">Budget ($)</label><input class="fi se-budget" type="number" value="'+(it.budget||0)+'"/></div>';
+      html+='<div><label class="fl">Actual ($)</label><input class="fi se-actual" type="number" value="'+(it.actual||0)+'"/></div>';
       html+='</div>';
       html+='<label class="fl" style="margin-bottom:4px">Assign To</label>';
-      html+='<select class="fi" class="fi se-assign" style="margin-bottom:10px">'+teamOpts+'</select>';
+      html+='<select class="fi se-assign" style="margin-bottom:10px">'+teamOpts+'</select>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Phone</label><input class="fi" class="fi se-phone" value="'+(it.assignPhone||'')+'"/></div>';
-      html+='<div><label class="fl">Email</label><input class="fi" class="fi se-email" value="'+(it.assignEmail||'')+'"/></div>';
+      html+='<div><label class="fl">Phone</label><input class="fi se-phone" value="'+(it.assignPhone||'')+'"/></div>';
+      html+='<div><label class="fl">Email</label><input class="fi se-email" value="'+(it.assignEmail||'')+'"/></div>';
       html+='</div>';
       html+='<div class="fbtns">';
       html+='<button class="btn-ghost" onclick="toggleScopeEdit(this,'+i+')">Cancel</button>';
