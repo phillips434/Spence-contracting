@@ -1130,18 +1130,27 @@ function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)ren
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyAssignee(idx){var p=gpr();var ph=(p.scopeItems||[])[idx];if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone first.");return;}var label=ph.desc||"";var msg=["Hi "+(ph.assignTo||"Team")+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Contract Amount: $"+(ph.actual||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));if(email)setTimeout(function(){window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
 function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
-function toggleScopeEdit(i){
-  var el=document.getElementById('scopeEditForm_'+i);
-  if(!el)return;
-  el.style.display=el.style.display==='none'?'block':'none';
-  if(el.style.display==='block'){
-    // Auto-fill team phone/email when assignee selected
-    var sel=document.getElementById('seAssign_'+i);
+function toggleScopeEdit(btn,i){
+  // Walk up from button to .scope-item, then find the form div
+  var scopeItem=btn.closest('.scope-item');
+  if(!scopeItem){
+    // Fallback: try getElementById
+    var el2=document.getElementById('scopeEditForm_'+i);
+    if(el2) el2.style.display=el2.style.display==='block'?'none':'block';
+    return;
+  }
+  var form=scopeItem.querySelector('.scope-edit-form');
+  if(!form) return;
+  var isOpen=form.style.display==='block';
+  form.style.display=isOpen?'none':'block';
+  // Wire up assignee dropdown auto-fill
+  if(!isOpen){
+    var sel=form.querySelector('.se-assign');
     if(sel){
       sel.onchange=function(){
         var m=(DD.team||[]).find(function(x){return x.name===sel.value;});
-        var ph=document.getElementById('sePhone_'+i);
-        var em=document.getElementById('seEmail_'+i);
+        var ph=form.querySelector('.se-phone');
+        var em=form.querySelector('.se-email');
         if(m){if(ph)ph.value=m.phone||'';if(em)em.value=m.email||'';}
         else{if(ph)ph.value='';if(em)em.value='';}
       };
@@ -1149,21 +1158,24 @@ function toggleScopeEdit(i){
   }
 }
 
-function saveScopeInline(i){
+function saveScopeInline(btn,i){
   var p=gpr();
   if(!p)return;
+  var scopeItem=btn.closest('.scope-item');
+  var form=scopeItem?scopeItem.querySelector('.scope-edit-form'):null;
+  var get=function(cls){var el=form?form.querySelector('.'+cls):document.getElementById(cls+'_'+i);return el?el.value:'';};
   var items=p.scopeItems||[];
   var old=items[i]||{};
   items[i]=Object.assign({},old,{
-    desc:document.getElementById('seDesc_'+i).value.trim(),
-    start:document.getElementById('seStart_'+i).value,
-    end:document.getElementById('seEnd_'+i).value,
-    budget:parseFloat(document.getElementById('seBudget_'+i).value)||0,
-    actual:parseFloat(document.getElementById('seActual_'+i).value)||0,
+    desc:(form?form.querySelector('.se-desc'):document.getElementById('seDesc_'+i)).value.trim(),
+    start:get('se-start'),
+    end:get('se-end'),
+    budget:parseFloat(get('se-budget'))||0,
+    actual:parseFloat(get('se-actual'))||0,
     complete:old.complete||'Not Started',
-    assignTo:document.getElementById('seAssign_'+i).value,
-    assignPhone:document.getElementById('sePhone_'+i).value.trim(),
-    assignEmail:document.getElementById('seEmail_'+i).value.trim()
+    assignTo:get('se-assign'),
+    assignPhone:get('se-phone'),
+    assignEmail:get('se-email')
   });
   p.scopeItems=items;
   saveP(p,'Scope item updated on '+p.client);
@@ -1228,7 +1240,7 @@ function renderTabBody(p){
       if(it.assignTo) html+='<div style="font-size:11px;color:#2B3990;margin-top:2px">&#128100; '+it.assignTo+'</div>';
       html+='</div>';
       html+='<div style="display:flex;gap:6px">';
-      html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit('+i+')">Edit</button>';
+      html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
       if(it.assignTo) html+='<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>';
       html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
       html+='</div></div>';
@@ -1240,27 +1252,27 @@ function renderTabBody(p){
       html+='</select>';
       html+=bvaHtml(it.budget||0,it.actual||0);
       // Inline edit form (hidden by default)
-      html+='<div id="scopeEditForm_'+i+'" style="display:none;background:#EEF2F7;border-radius:10px;padding:14px;margin-top:10px;border:1.5px solid #DDE3EC">';
+      html+='<div class="scope-edit-form" style="display:none;background:#EEF2F7;border-radius:10px;padding:14px;margin-top:10px;border:1.5px solid #DDE3EC">';
       html+='<div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Edit Scope Item</div>';
       html+='<label class="fl" style="margin-bottom:4px">Description</label>';
-      html+='<input class="fi" id="seDesc_'+i+'" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
+      html+='<input class="fi" class="fi se-desc" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Start Date</label><input class="fi" id="seStart_'+i+'" type="date" value="'+(it.start||'')+'"/></div>';
-      html+='<div><label class="fl">End Date</label><input class="fi" id="seEnd_'+i+'" type="date" value="'+(it.end||'')+'"/></div>';
+      html+='<div><label class="fl">Start Date</label><input class="fi" class="fi se-start" type="date" value="'+(it.start||'')+'"/></div>';
+      html+='<div><label class="fl">End Date</label><input class="fi" class="fi se-end" type="date" value="'+(it.end||'')+'"/></div>';
       html+='</div>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Budget ($)</label><input class="fi" id="seBudget_'+i+'" type="number" value="'+(it.budget||0)+'"/></div>';
-      html+='<div><label class="fl">Actual ($)</label><input class="fi" id="seActual_'+i+'" type="number" value="'+(it.actual||0)+'"/></div>';
+      html+='<div><label class="fl">Budget ($)</label><input class="fi" class="fi se-budget" type="number" value="'+(it.budget||0)+'"/></div>';
+      html+='<div><label class="fl">Actual ($)</label><input class="fi" class="fi se-actual" type="number" value="'+(it.actual||0)+'"/></div>';
       html+='</div>';
       html+='<label class="fl" style="margin-bottom:4px">Assign To</label>';
-      html+='<select class="fi" id="seAssign_'+i+'" style="margin-bottom:10px">'+teamOpts+'</select>';
+      html+='<select class="fi" class="fi se-assign" style="margin-bottom:10px">'+teamOpts+'</select>';
       html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Phone</label><input class="fi" id="sePhone_'+i+'" value="'+(it.assignPhone||'')+'"/></div>';
-      html+='<div><label class="fl">Email</label><input class="fi" id="seEmail_'+i+'" value="'+(it.assignEmail||'')+'"/></div>';
+      html+='<div><label class="fl">Phone</label><input class="fi" class="fi se-phone" value="'+(it.assignPhone||'')+'"/></div>';
+      html+='<div><label class="fl">Email</label><input class="fi" class="fi se-email" value="'+(it.assignEmail||'')+'"/></div>';
       html+='</div>';
       html+='<div class="fbtns">';
-      html+='<button class="btn-ghost" onclick="toggleScopeEdit('+i+')">Cancel</button>';
-      html+='<button class="btn-dark" style="flex:2" onclick="saveScopeInline('+i+')">Save</button>';
+      html+='<button class="btn-ghost" onclick="toggleScopeEdit(this,'+i+')">Cancel</button>';
+      html+='<button class="btn-dark" style="flex:2" onclick="saveScopeInline(this,'+i+')">Save</button>';
       html+='</div></div>';
       html+='</div>';
     });
