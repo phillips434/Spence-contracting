@@ -249,12 +249,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <span class="phead-num" id="edEstNum"></span>
     <span class="pbadge" id="edBadge"></span>
   </div>
-  <div class="est-subtabs" id="estSubtabs">
-    <button class="est-subtab on" onclick="switchEstTab('details',this)">Details</button>
-    <button class="est-subtab" onclick="switchEstTab('payments',this)">Payments</button>
-    <button class="est-subtab" onclick="switchEstTab('contract',this)">Contract</button>
-    <button class="est-subtab" onclick="switchEstTab('invoice',this)">Invoice</button>
-  </div>
+
   <div class="pbody" id="estDetailBody"></div>
 </div>
 
@@ -579,69 +574,191 @@ function renderCards(){var q=document.getElementById("searchInput").value.toLowe
 
 function renderDashboard(){var el=document.getElementById("dashContent");var totalB=projects.reduce(function(a,p){return a+(p.budget||0);},0),totalS=projects.reduce(function(a,p){return a+(p.spent||0);},0);var active=projects.filter(function(p){return p.status==="In Progress";});var completed=projects.filter(function(p){return p.status==="Completed";});var totalEstVal=estimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);var signedEst=estimates.filter(function(e){return e.signedAt;}).length;var openPunch=projects.reduce(function(a,p){return a+(p.punchList||[]).filter(function(i){return !i.done;}).length;},0);var openCO=projects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);var html='<div style="font-size:18px;font-weight:700;color:#1A1A2E;margin-bottom:14px">Overview</div>';html+='<div class="dash-grid">';html+='<div class="dash-card"><div class="dash-label">Total Budget</div><div class="dash-val">$'+Math.round(totalB/1000)+'k</div><div class="dash-sub">'+projects.length+' total jobs</div></div>';html+='<div class="dash-card"><div class="dash-label">Total Spent</div><div class="dash-val" style="color:#2B3990">$'+Math.round(totalS/1000)+'k</div><div class="dash-sub">'+(totalB>0?Math.round(totalS/totalB*100):0)+'% of budget</div></div>';html+='<div class="dash-card"><div class="dash-label">Active Jobs</div><div class="dash-val" style="color:#E8B43A">'+active.length+'</div><div class="dash-sub">'+completed.length+' completed</div></div>';html+='<div class="dash-card"><div class="dash-label">Est. Pipeline</div><div class="dash-val" style="color:#2EAA72">$'+Math.round(totalEstVal/1000)+'k</div><div class="dash-sub">'+signedEst+' signed</div></div>';html+='</div>';html+='<div class="dash-grid"><div class="dash-card"><div class="dash-label">Open Punch Items</div><div class="dash-val" style="color:#9B6BE8">'+openPunch+'</div></div><div class="dash-card"><div class="dash-label">Pending Change Orders</div><div class="dash-val" style="color:#E83A6C">'+openCO+'</div></div></div>';html+='<div class="sec-label" style="margin-top:8px">Recent Activity</div><div class="wcard">';var activity=[];projects.forEach(function(p){(p.dailyLogs||[]).forEach(function(l){activity.push({ts:new Date(l.date).getTime()||0,text:l.work,proj:p.client,color:"#2B3990"});});(p.changeOrders||[]).filter(function(c){return c.date;}).forEach(function(c){activity.push({ts:new Date(c.date).getTime()||0,text:c.title+" ("+c.status+")",proj:p.client,color:"#E8B43A"});});});activity.sort(function(a,b){return b.ts-a.ts;});if(!activity.length){html+='<div style="color:#bbb;font-size:13px;text-align:center;padding:20px">No recent activity.</div>';}else{activity.slice(0,8).forEach(function(a){html+='<div class="activity-item"><div class="activity-dot" style="background:'+a.color+'"></div><div><div style="font-size:13px;color:#333">'+a.text+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+a.proj+'</div></div></div>';});}html+='</div>';if(active.length){html+='<div class="sec-label">Active Jobs</div>';active.forEach(function(p){var pr=gp(p),pct=Math.round((p.spent||0)/((p.budget||1))*100);html+='<div class="wcard" style="cursor:pointer" onclick="openDetail(\''+p.id+'\')"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+p.client+'</div><span style="font-size:11px;color:#2B3990;font-weight:700">'+(p.jobNum||"")+'</span></div><div class="brow"><div class="blr"><span>Scope</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';});}el.innerHTML=html;}
 function renderEstCards(){var el=document.getElementById("estCards");if(!estimates.length){el.innerHTML='<div class="empty">No estimates yet.<br>Tap <b>+ New Estimate</b> to create one.</div>';return;}el.innerHTML=estimates.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+e.id+'">'+(e.estNum?'<div class="card-num">'+e.estNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' &middot; '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
-function switchEstTab(tab,btn){currentEstTab=tab;document.querySelectorAll(".est-subtab").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var e=ger();if(e)renderEstDetailBody(e);}
+function switchEstTab(tab,btn){}
 function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();if(!e)return;var sc2=EST_SC[e.status]||"#888";document.getElementById("edName").textContent=e.client+" - "+e.type;document.getElementById("edEstNum").textContent=e.estNum||"";var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;document.querySelectorAll(".est-subtab").forEach(function(t,i){t.classList.toggle("on",i===0);});renderEstDetailBody(e);var dp=document.getElementById("estDetailPage");dp.classList.add("show");dp.scrollTop=0;}
 
 function renderEstDetailBody(e){
-  var calc=calcEstimate(e);var html="";
-  if(currentEstTab==="details"){
-    html+='<div class="ai-box"><div class="ai-title">&#10024; AI Estimate Generator</div><div class="ai-sub">Describe the job and AI will generate line items with your markup</div><textarea class="ai-input" id="aiPrompt" rows="3" placeholder="e.g. Demo and replace 4x6 tile shower, Houston TX"></textarea><button class="btn-ai" style="margin-top:10px" onclick="generateAIEstimate()">&#10024; Generate with AI</button><div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>Generating estimate...</div></div>';
-    html+='<div class="wcard"><div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div><div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>'+(e.address?'<div style="font-size:12px;color:#888;margin-top:8px">&#128205; '+e.address+'</div>':'')+(e.notes?'<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>':'')+'</div>';
-    html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
-    html+='<button class="btn-sm" style="background:#2B3990" onclick="openEditEstimate()">&#9999; Edit</button>';
-    html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">+ Line Item</button>';
-    html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">&#128279; Share</button>';
-    html+='<button class="btn-sm" style="background:#3A78E8" onclick="sendEstimate()">&#128228; Send</button>';
-    html+='<button class="btn-sm" style="background:#E8B43A" onclick="openClientPortal()">&#127968; Portal</button>';
-    if(e.status==="Approved")html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">&#127959; Convert</button>';
-    html+='</div>';
-    if(e.signedAt)html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+e.signedBy+' &middot; '+fmtTS(e.signedAt)+'</div>';
-    html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" onchange="updateEstStatus(this.value)">'+["Draft","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select></div>';
-    html+='<div class="sec-label">Line Items</div>';
-    if(!(e.lineItems||[]).length){html+='<div class="wcard" style="color:#bbb;font-size:13px;text-align:center;padding:20px">No line items yet. Use &#10024; AI Generate or + Line Item.</div>';}
-    else{var byCategory={};(e.lineItems||[]).forEach(function(li,i){var cat=li.category||"Other";if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Mkup</th><th style="text-align:right">Client</th><th></th></tr></thead><tbody>';Object.keys(byCategory).forEach(function(cat){html+='<tr><td colspan="5" style="font-size:10px;font-weight:700;color:#2B3990;text-transform:uppercase;padding:10px 4px 4px">'+cat+'</td></tr>';byCategory[cat].forEach(function(obj){var li=obj.li,i=obj.i;var cost=parseFloat(li.total)||0,markup=parseFloat(li.markup)||0,clientAmt=cost*(1+markup/100);html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+'</div>'+(li.qty&&li.unit?'<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+'</div>':'')+'</td><td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td><td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td><div style="display:flex;gap:2px"><button onclick="openEditLineItem('+i+')" style="background:#2B3990;border:none;border-radius:6px;color:#fff;padding:4px 8px;font-size:11px;cursor:pointer">&#9999;</button><button class="del-btn" onclick="delLineItem('+i+')" style="font-size:16px">&#215;</button></div></td></tr>';});});html+='</tbody></table></div>';}
-    html+='<div class="est-summary"><div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div><div class="est-sum-row"><span>Client Total</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>'+(calc.taxAmt?'<div class="est-sum-row"><span>Tax</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>':'')+'<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div><div class="est-sum-row profit"><span>Your Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div></div>';
-    html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
-  } else if(currentEstTab==="payments"){
-    var milestones=e.paymentMilestones||[];var totalPaid=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);
-    html+='<div class="wcard"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Payment Schedule</div>';
-    if(milestones.length){var paidPct=calc.grandTotal>0?Math.round(totalPaid/calc.grandTotal*100):0;html+='<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px"><span style="font-weight:700;color:#2EAA72">$'+totalPaid.toLocaleString()+' collected</span><span style="color:#aaa">of $'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+paidPct+'%;background:#2EAA72"></div></div><div style="font-size:11px;color:#aaa;margin-top:4px">'+milestones.filter(function(m){return m.paid;}).length+' of '+milestones.length+' milestones paid</div></div>';}
-    milestones.forEach(function(m,i){html+='<div class="payment-milestone'+(m.paid?" pm-paid":"")+'"><div class="pm-cb'+(m.paid?" paid":"")+'" onclick="toggleMilestone('+i+')">'+(m.paid?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+m.name+'</div><div style="font-size:12px;color:#aaa;margin-top:2px">$'+m.amount.toLocaleString()+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div><button class="del-btn" onclick="delMilestone('+i+')">&#215;</button></div>';});
-    html+='</div>';
-    html+='<button class="btn-dashed" onclick="showForm(\'msForm\')">+ Add Milestone</button>';
-    html+='<div class="inline-form" id="msForm"><label class="fl" style="margin-bottom:6px">Milestone Name</label><input class="fi" id="msName" placeholder="e.g. Initial Deposit (30%)" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Amount ($)</label><input class="fi" id="msAmount" type="number" placeholder="0"/></div><div><label class="fl">Due Date</label><input class="fi" id="msDue" type="date"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'msForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addMilestone()">Add</button></div></div>';
-    html+='<button class="btn-navy" style="margin-top:10px" onclick="autoGenMilestones()">&#10024; Auto-generate 30/40/30</button>';
-  } else if(currentEstTab==="contract"){
-    var contractText=e.contractText||generateContractText(e,calc);
-    html+='<div class="wcard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:14px;font-weight:700;color:#1A1A2E">Contract Agreement</div><button class="btn-sm" style="background:#2B3990" onclick="printContract()">&#128438; Print</button></div><textarea class="fi" id="contractTA" rows="20" style="font-family:Georgia,serif;font-size:13px;line-height:1.7;color:#333">'+contractText+'</textarea><button class="btn-green" style="margin-top:10px" onclick="saveContract()">Save Contract</button></div>';
-  } else if(currentEstTab==="invoice"){
-    var inv=e.invoice||{};
-    html+='<div class="invoice-header"><img src="'+LOGO_SRC+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px">'+(DD.companyName||"Spence Construction")+'</div><div style="font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.05em">Invoice</div><div style="font-size:20px;font-weight:700;margin-top:4px">'+(inv.invoiceNum||e.estNum||"INV-0001")+'</div></div>';
-    html+='<div class="wcard">';
-    html+='<div class="invoice-row"><span style="color:#888">Client</span><span style="font-weight:600">'+e.client+'</span></div>';
-    html+='<div class="invoice-row"><span style="color:#888">Project</span><span style="font-weight:600">'+e.type+'</span></div>';
-    html+='<div class="invoice-row"><span style="color:#888">Invoice Date</span><span>'+(inv.date||fmt(e.date))+'</span></div>';
-    html+='<div class="invoice-row"><span style="color:#888">Due Date</span><span>'+(inv.dueDate?fmt(inv.dueDate):"Upon Receipt")+'</span></div>';
-    html+='</div>';
-    html+='<div class="wcard">';
-    (e.lineItems||[]).forEach(function(li){var clientAmt=calcLineItemTotal(li);html+='<div class="invoice-row"><span style="color:#555">'+li.desc+'</span><span style="font-weight:600">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';});
-    html+='<div style="border-top:2px solid #1A1A2E;margin-top:10px;padding-top:10px"><div class="invoice-total-row"><span>Total Due</span><span style="color:#2B3990">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div></div>';
-    if(inv.paidAt){html+='<div class="wcard" style="background:#EDFAF4;border:1px solid #2EAA72;text-align:center"><div style="font-size:16px;font-weight:700;color:#2EAA72">&#10003; PAID</div><div style="font-size:12px;color:#888;margin-top:4px">'+fmtTS(inv.paidAt)+'</div></div>';}
-    else{html+='<button class="btn-green" onclick="markInvoicePaid()">&#10003; Mark as Paid</button>';}
-    html+='<div class="fr2" style="margin-top:10px;gap:10px"><div><label class="fl">Due Date</label><input class="fi" id="invDue" type="date" value="'+(inv.dueDate||"")+'"/></div><div><label class="fl">Invoice #</label><input class="fi" id="invNum" value="'+(inv.invoiceNum||e.estNum||"")+'"/></div></div>';
-    html+='<button class="btn-navy" style="margin-top:10px" onclick="saveInvoiceSettings()">Save Invoice Settings</button>';
+  var calc=calcEstimate(e);
+  var html='';
+
+  // AI Generator
+  html+='<div class="ai-box">';
+  html+='<div class="ai-title">&#10024; AI Estimate Generator</div>';
+  html+='<div class="ai-sub">Describe the job and AI will build your line items</div>';
+  html+='<textarea class="ai-input" id="aiPrompt" rows="3" placeholder="e.g. Demo and replace 4x6 tile shower, Houston TX"></textarea>';
+  html+='<button class="btn-ai" style="margin-top:10px" onclick="generateAIEstimate()">&#10024; Generate with AI</button>';
+  html+='<div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>Generating...</div>';
+  html+='</div>';
+
+  // Header info
+  html+='<div class="wcard">';
+  html+='<div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div>';
+  html+='<div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>';
+  if(e.address) html+='<div style="font-size:12px;color:#888;margin-top:8px">&#128205; '+e.address+'</div>';
+  if(e.validUntil) html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
+  if(e.notes) html+='<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>';
+  html+='</div>';
+
+  // Action buttons
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+  html+='<button class="btn-sm" style="background:#2B3990" onclick="openEditEstimate()">&#9999; Edit</button>';
+  html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">+ Line Item</button>';
+  html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">&#128279; Share</button>';
+  html+='<button class="btn-sm" style="background:#3A78E8" onclick="sendEstimate()">&#128228; Send</button>';
+  html+='<button class="btn-sm" style="background:#E8B43A" onclick="openClientPortal()">&#127968; Portal</button>';
+  html+='<button class="btn-sm" style="background:#E8713A" onclick="printInvoice()">&#128438; Invoice</button>';
+  if(e.status==='Approved') html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">&#127959; Convert</button>';
+  html+='</div>';
+
+  if(e.signedAt) html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+e.signedBy+' &middot; '+fmtTS(e.signedAt)+'</div>';
+
+  // Status
+  html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label>';
+  html+='<select class="fi" onchange="updateEstStatus(this.value)">';
+  html+=["Draft","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?' selected':'')+'>'+s+'</option>';}).join('');
+  html+='</select></div>';
+
+  // Line Items
+  html+='<div class="sec-label">Line Items</div>';
+  if(!(e.lineItems||[]).length){
+    html+='<div class="wcard" style="color:#bbb;font-size:13px;text-align:center;padding:20px">No line items yet. Use &#10024; AI Generate or + Line Item.</div>';
+  } else {
+    var byCategory={};
+    (e.lineItems||[]).forEach(function(li,i){var cat=li.category||'Other';if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});
+    html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Mkup</th><th style="text-align:right">Client</th><th></th></tr></thead><tbody>';
+    Object.keys(byCategory).forEach(function(cat){
+      html+='<tr><td colspan="5" style="font-size:10px;font-weight:700;color:#2B3990;text-transform:uppercase;padding:10px 4px 4px">'+cat+'</td></tr>';
+      byCategory[cat].forEach(function(obj){
+        var li=obj.li,i=obj.i;
+        var cost=parseFloat(li.total)||0,markup=parseFloat(li.markup)||0,clientAmt=cost*(1+markup/100);
+        html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+'</div>';
+        if(li.qty&&li.unit) html+='<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+'</div>';
+        html+='</td>';
+        html+='<td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td>';
+        html+='<td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td>';
+        html+='<td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td>';
+        html+='<td><div style="display:flex;gap:2px"><button onclick="openEditLineItem(\'+i+\')" style="background:#2B3990;border:none;border-radius:6px;color:#fff;padding:4px 7px;font-size:11px;cursor:pointer">&#9999;</button><button class="del-btn" onclick="delLineItem(\'+i+\')" style="font-size:16px">&#215;</button></div></td></tr>';
+      });
+    });
+    html+='</tbody></table></div>';
   }
-  document.getElementById("estDetailBody").innerHTML=html;
+
+  // Totals summary
+  html+='<div class="est-summary">';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row"><span>Client Total</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  if(calc.taxAmt) html+='<div class="est-sum-row"><span>Tax ('+e.tax+'%)</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Your Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div>';
+  html+='</div>';
+
+  // ── PAYMENT SCHEDULE ──────────────────────────────────
+  html+='<div class="sec-label" style="margin-top:20px">Payment Schedule</div>';
+  html+='<div class="wcard">';
+  var milestones=e.paymentMilestones||[];
+  var totalPaid=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);
+  if(milestones.length){
+    var paidPct=calc.grandTotal>0?Math.round(totalPaid/calc.grandTotal*100):0;
+    html+='<div style="margin-bottom:14px">';
+    html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">';
+    html+='<span style="font-weight:700;color:#2EAA72">$'+totalPaid.toLocaleString()+' collected</span>';
+    html+='<span style="color:#aaa">of $'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="bt" style="height:10px"><div class="bf" style="width:'+paidPct+'%;background:#2EAA72"></div></div>';
+    html+='<div style="font-size:11px;color:#aaa;margin-top:4px">'+milestones.filter(function(m){return m.paid;}).length+' of '+milestones.length+' milestones paid</div>';
+    html+='</div>';
+    milestones.forEach(function(m,i){
+      html+='<div class="pay-mile'+(m.paid?' paid':'')+'">';
+      html+='<div class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone(\'+i+\')">'+(m.paid?'&#10003;':'')+'</div>';
+      html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+m.name+'</div>';
+      html+='<div style="font-size:12px;color:#aaa;margin-top:2px">$'+m.amount.toLocaleString()+(m.pct?' ('+m.pct+'%)':'')+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div>';
+      html+='<button class="del-btn" onclick="delMilestone(\'+i+\')">&#215;</button></div>';
+    });
+  }
+  // Add milestone form inline
+  html+='<button class="btn-dashed" style="margin-top:4px" onclick="showForm(\'msForm\')">+ Add Milestone</button>';
+  html+='<div class="inline-form" id="msForm">';
+  html+='<label class="fl" style="margin-bottom:6px">Milestone Name</label>';
+  html+='<input class="fi" id="msName" placeholder="e.g. Initial Deposit" style="margin-bottom:8px"/>';
+  html+='<div class="fr2" style="margin-bottom:8px">';
+  html+='<div><label class="fl">Percentage %</label><input class="fi" id="msPct" type="number" placeholder="e.g. 30" oninput="calcMilestoneAmt(\'+calc.grandTotal+\')"/></div>';
+  html+='<div><label class="fl">Amount ($)</label><input class="fi" id="msAmt" type="number" placeholder="auto-filled"/></div>';
+  html+='</div>';
+  html+='<div><label class="fl" style="margin-bottom:6px">Due Date (optional)</label><input class="fi" id="msDue" type="date" style="margin-bottom:10px"/></div>';
+  html+='<div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'msForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addMilestone()">Add</button></div></div>';
+  html+='<button class="btn-dark" style="background:#2B3990;margin-top:10px" onclick="autoGenMilestones()">&#10024; Auto-generate 30 / 40 / 30</button>';
+  html+='</div>';
+
+  // ── CONTRACT ──────────────────────────────────────────
+  html+='<div class="sec-label" style="margin-top:8px">Contract Agreement</div>';
+  html+='<div class="wcard">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html+='<div style="font-size:13px;color:#888">Auto-generated from your estimate. Edit as needed.</div>';
+  html+='<button class="btn-sm" style="background:#2B3990" onclick="printContract()">&#128438; Print</button></div>';
+  var contractText=e.contractText||generateContractText(e,calc);
+  html+='<textarea class="fi" id="contractTA" rows="18" style="font-family:Georgia,serif;font-size:12px;line-height:1.8;color:#333">'+contractText+'</textarea>';
+  html+='<button class="btn-green" style="margin-top:10px" onclick="saveContract()">Save Contract</button>';
+  html+='</div>';
+
+  // Signature if signed
+  if(e.signedAt){
+    html+='<div class="wcard" style="text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">&#10003; Digitally Signed</div>';
+    html+='<div style="font-size:12px;color:#888">By: '+e.signedBy+'</div>';
+    html+='<div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>';
+    if(e.signatureData) html+='<img src="'+e.signatureData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px"/>';
+    html+='</div>';
+  }
+
+  html+='<button class="btn-red" style="margin-top:6px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
+
+  document.getElementById('estDetailBody').innerHTML=html;
 }
+
+function calcMilestoneAmt(grandTotal){
+  var pct=parseFloat(document.getElementById('msPct').value)||0;
+  var amt=Math.round(grandTotal*(pct/100));
+  document.getElementById('msAmt').value=amt>0?amt:'';
+}
+
 
 function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.\n\nContractor: "+co+"\n\nSignature: ________________________  Date: __________\n\nClient: "+e.client+"\n\nSignature: ________________________  Date: __________";}
 function saveContract(){var e=ger();if(!e)return;e.contractText=document.getElementById("contractTA").value;eCol.doc(e.id).set(e).then(function(){T("Contract saved!");});}
+function printInvoice(){
+  var e=ger();if(!e)return;
+  var calc=calcEstimate(e);
+  var co=DD.companyName||'Spence Construction';
+  var inv=e.invoice||{};
+  var rows=(e.lineItems||[]).map(function(li){
+    var ca=calcLineItemTotal(li);
+    return '<tr><td style="padding:8px 0;border-bottom:1px solid #eee">'+li.desc+'</td><td style="text-align:right;padding:8px 0;border-bottom:1px solid #eee">$'+ca.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>';
+  }).join('');
+  var milestones=(e.paymentMilestones||[]).map(function(m){
+    return '<tr><td style="padding:6px 0">'+m.name+(m.pct?' ('+m.pct+'%)':'')+'</td><td style="text-align:right;padding:6px 0">$'+m.amount.toLocaleString()+'</td></tr>';
+  }).join('');
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>Invoice</title></head><body style="font-family:Georgia,serif;padding:40px;max-width:680px;margin:0 auto;color:#333">');
+  w.document.write('<h1 style="color:#2B3990;margin-bottom:4px">'+co+'</h1>');
+  w.document.write('<p style="color:#888;margin-bottom:24px">Invoice '+(inv.invoiceNum||e.estNum||'')+'</p>');
+  w.document.write('<table style="width:100%;margin-bottom:16px"><tr><td><strong>To:</strong> '+e.client+'<br>'+(e.address||'')+'</td><td style="text-align:right"><strong>Date:</strong> '+new Date().toLocaleDateString()+'<br><strong>Due:</strong> '+(inv.dueDate||'Upon Receipt')+'</td></tr></table>');
+  w.document.write('<h3 style="margin-bottom:8px">Services</h3><table style="width:100%">'+rows+'<tr><td colspan="2" style="padding:12px 0"></td></tr><tr><td style="font-size:18px;font-weight:bold">Total Due</td><td style="text-align:right;font-size:18px;font-weight:bold;color:#2B3990">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr></table>');
+  if(milestones) w.document.write('<h3 style="margin-top:24px;margin-bottom:8px">Payment Schedule</h3><table style="width:100%">'+milestones+'</table>');
+  w.document.write('</body></html>');
+  w.document.close();w.print();
+}
 function printContract(){var text=document.getElementById("contractTA").value;var w=window.open("","_blank");w.document.write('<html><body style="font-family:Georgia,serif;padding:40px;font-size:14px;line-height:1.7;white-space:pre-wrap">'+text+'</body></html>');w.document.close();w.print();}
 function markInvoicePaid(){var e=ger();if(!e)return;if(!confirm("Mark invoice as paid?"))return;e.invoice=e.invoice||{};e.invoice.paidAt=Date.now();eCol.doc(e.id).set(e).then(function(){T("Marked as paid!");pushNotification("Invoice paid: "+e.client);renderEstDetailBody(e);});}
 function saveInvoiceSettings(){var e=ger();if(!e)return;e.invoice=e.invoice||{};e.invoice.dueDate=document.getElementById("invDue").value;e.invoice.invoiceNum=document.getElementById("invNum").value;eCol.doc(e.id).set(e).then(function(){T("Saved!");renderEstDetailBody(e);});}
 function toggleMilestone(i){var e=ger();e.paymentMilestones[i].paid=!e.paymentMilestones[i].paid;if(e.paymentMilestones[i].paid)e.paymentMilestones[i].paidAt=Date.now();eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});}
 function delMilestone(i){if(!confirm("Delete?"))return;var e=ger();e.paymentMilestones.splice(i,1);eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);});}
-function addMilestone(){var name=document.getElementById("msName").value.trim();if(!name){alert("Enter milestone name.");return;}var e=ger();e.paymentMilestones=e.paymentMilestones||[];e.paymentMilestones.push({name:name,amount:parseFloat(document.getElementById("msAmount").value)||0,dueDate:document.getElementById("msDue").value,paid:false});eCol.doc(e.id).set(e).then(function(){T("Added!");hideForm("msForm");renderEstDetailBody(e);});}
+function addMilestone(){
+  var name=document.getElementById('msName').value.trim();
+  if(!name){alert('Enter milestone name.');return;}
+  var pct=parseFloat(document.getElementById('msPct').value)||0;
+  var amt=parseFloat(document.getElementById('msAmt').value)||0;
+  var e=ger();
+  e.paymentMilestones=e.paymentMilestones||[];
+  e.paymentMilestones.push({name:name,pct:pct||null,amount:amt,dueDate:document.getElementById('msDue').value,paid:false});
+  eCol.doc(e.id).set(e).then(function(){T('Added!');hideForm('msForm');renderEstDetailBody(e);});
+}
 function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).grandTotal;e.paymentMilestones=[{name:"Initial Deposit (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false},{name:"Progress Payment (40%)",amount:Math.round(total*0.40),dueDate:"",paid:false},{name:"Final Payment (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false}];eCol.doc(e.id).set(e).then(function(){T("Milestones generated!");renderEstDetailBody(e);});}
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
@@ -711,7 +828,7 @@ function renderTabBody(p){
     if(p.estimateTotal)html+='<div class="wcard" style="background:#EEF2FF"><div style="font-size:12px;font-weight:700;color:#2B3990;margin-bottom:4px">&#128176; Estimate Total (Client Price)</div><div style="font-size:18px;font-weight:700;color:#2B3990">$'+p.estimateTotal.toLocaleString()+'</div></div>';
     if(items.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tB,tA)+'</div>';
     html+='<div class="sec-label">Scope of Work Items</div>';
-    items.forEach(function(it,i){var c=it.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#2B3990":"#CBD5E1";html+='<div class="scope-item"><div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+it.desc+'</div>'+(it.category?'<div style="font-size:10px;color:#2B3990;margin-top:2px;text-transform:uppercase">'+it.category+'</div>':'')+(it.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' &#8594; '+fmt(it.end):'')+'</div>':'')+(it.assignTo?'<div style="font-size:11px;color:#2B3990;margin-top:2px">&#128100; '+it.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditScope('+i+')">Edit</button>'+(it.assignTo?'<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>':'')+'<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateScopeStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(it.budget||0,it.actual||0)+'</div>';});
+    items.forEach(function(it,i){var c=it.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#2B3990":"#CBD5E1";html+='<div class="scope-item"><div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+it.desc+'</div>'+(it.category?'<div style="font-size:10px;color:#2B3990;margin-top:2px;text-transform:uppercase">'+it.category+'</div>':'')+(it.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' &#8594; '+fmt(it.end):'')+'</div>':'')+(it.assignTo?'<div style="font-size:11px;color:#2B3990;margin-top:2px">&#128100; '+it.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditScope(\'+i+\')">Edit</button>'+(it.assignTo?'<button class="btn-notify" onclick="notifyAssignee(\'+i+\')">Notify</button>':'')+'<button class="del-btn" onclick="delScopeItem(\'+i+\')">&#215;</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateScopeStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(it.budget||0,it.actual||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'scopeForm\')">+ Add Scope Item</button>';
     html+='<div class="inline-form" id="scopeForm"><label class="fl" style="margin-bottom:6px">Description</label><select class="fi" id="siSel" style="margin-bottom:8px" onchange="document.getElementById(\'siCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="siCustom" placeholder="Custom description" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="siSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="siEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="siBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="siAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="siAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'scopeForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addScopeItem()">Add Item</button></div></div>';
   } else if(currentTab==="timeline"){
@@ -720,7 +837,7 @@ function renderTabBody(p){
     var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
     if(p.choices&&p.choices.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';
     html+='<div class="sec-label">Client Selections</div>';
-    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
+    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice(\'+i+\')">Edit</button><button class="del-btn" onclick="delChoice(\'+i+\')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
     html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
   } else if(currentTab==="budget"){
@@ -732,7 +849,7 @@ function renderTabBody(p){
     if(tSB||tSA)html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">From Scope of Work</div>'+bvaHtml(tSB,tSA)+'</div>';
     if(tCB2||tCA2)html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">From Selections</div>'+bvaHtml(tCB2,tCA2)+'</div>';
     html+='<div class="sec-label">Cost Line Items</div>';
-    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
+    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost(\'+i+\')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
     html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
     html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
@@ -740,19 +857,19 @@ function renderTabBody(p){
     var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
-    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
+    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch(\'+i+\')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch(\'+i+\')">&#215;</button></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
   } else if(currentTab==="change-orders"){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length)html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8B43A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';
     html+='<div class="sec-label">Change Orders</div>';
-    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
+    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO(\'+i+\')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
   } else if(currentTab==="daily-log"){
     html+='<div class="sec-label">Daily Logs</div>';
-    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
+    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog(\'+ri+\')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
     html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" onclick="generateAILog()">&#10024; AI Generate Log Entry</button><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
   } else if(currentTab==="notes"){
@@ -760,7 +877,7 @@ function renderTabBody(p){
     html+='<div class="sec-label">Action Items &amp; Photos</div>';
     var resolved=(p.notesLog||[]).filter(function(n){return n.resolved;}).length,totalNL=(p.notesLog||[]).length;
     if(totalNL>0)html+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">'+resolved+'/'+totalNL+' resolved</div>';
-    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote('+i+')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote('+i+')">&#215;</button></div></div>';});
+    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote(\'+i+\')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote(\'+i+\')">&#215;</button></div></div>';});
     html+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-dashed" style="flex:1;margin-top:0" onclick="showForm(\'noteForm\')">+ Add Action Item</button><button class="btn-dashed" style="flex:1;margin-top:0" onclick="triggerPhotoUpload()">&#128247; Add Photo</button></div>';
     html+='<div class="inline-form" id="noteForm"><label class="fl" style="margin-bottom:6px">Action Item</label><input class="fi" id="noteText" placeholder="e.g. Follow up with client on cabinet selection" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Added By</label><input class="fi" id="noteAuthor" placeholder="Your name" style="margin-bottom:10px"/><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'noteForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addNote()">Add Item</button></div></div>';
     html+='<div class="wcard" style="margin-top:12px"><button class="btn-dark" style="margin-bottom:8px" onclick="openEditProject()">&#9999; Edit Project Details</button><button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button></div>';
