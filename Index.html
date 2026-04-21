@@ -722,6 +722,29 @@ function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){sCol.doc("dropdowns").get().then(function(d){if(d.exists)DD=Object.assign({},DD,d.data());if(cb)cb();}).catch(function(){if(cb)cb();});}
 function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("Saved!");});}
+function testAIConnection(){
+  var el=document.getElementById('aiTestResult');
+  el.style.display='block';
+  el.style.color='#2B3990';
+  el.textContent='Testing...';
+  fetch('/api/estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+  }).then(function(r){
+    if(!r.ok){el.style.color='#E83A6C';el.textContent='Server responded but with error: HTTP '+r.status;return null;}
+    return r.json();
+  }).then(function(data){
+    if(!data)return;
+    var text=data.content&&data.content[0]&&data.content[0].text;
+    if(text){el.style.color='#2EAA72';el.textContent='\u2713 Connected! AI responded: '+text;}
+    else if(data.error){el.style.color='#E83A6C';el.textContent='API error: '+JSON.stringify(data.error);}
+    else{el.style.color='#E8B43A';el.textContent='Unexpected response: '+JSON.stringify(data).slice(0,100);}
+  }).catch(function(err){
+    el.style.color='#E83A6C';
+    el.textContent='\u2717 Connection failed: '+err.message+'\n\nMake sure your Replit server is running.';
+  });
+}
 function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Spence Construction";saveSettings();}
 function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocation").value.trim(),markup:parseFloat(document.getElementById("aiMarkup").value)||20,laborRate:parseFloat(document.getElementById("aiLaborRate").value)||85,instructions:document.getElementById("aiInstructions").value.trim()};saveSettings();T("AI profile saved!");}
 function saveP(p,notifText){setSS("saving");return col.doc(p.id).set(p).then(function(){T("Saved!");if(notifText){pushNotification(notifText,p.client);showBanner(notifText);}}).catch(function(){T("Error");setSS("error");});}
@@ -1106,7 +1129,7 @@ function generateAIEstimate(){
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
   }).then(function(r){return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
@@ -1149,7 +1172,16 @@ function generateAIEstimate(){
       renderEstDetailBody(e2);
     });
   })
-  .catch(function(err){alert('Error: '+err.message);})
+  .catch(function(err){
+    var msg='Error: '+err.message+'\n\n';
+    if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
+      msg+='Network error - possible causes:\n';
+      msg+='1. Replit server is asleep - open Replit and check the server is running\n';
+      msg+='2. Try refreshing the page and testing again\n';
+      msg+='3. Check your internet connection';
+    }
+    alert(msg);
+  })
   .finally(function(){
     document.getElementById('aiLoading').style.display='none';
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=false;});
