@@ -293,6 +293,45 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 </div>
 
+<!-- EDIT SCOPE ITEM -->
+<div class="fpage" id="editScopePage">
+  <div class="phead">
+    <a href="#" class="phead-back" onclick="closePage('editScopePage');return false;">&#8249;</a>
+    <span class="phead-title">Edit Scope Item</span>
+  </div>
+  <div style="padding:14px">
+    <div class="fg">
+      <div><label class="fl">Description</label><input class="fi" id="espDesc"/></div>
+      <div class="fr2">
+        <div><label class="fl">Start Date</label><input class="fi" id="espStart" type="date"/></div>
+        <div><label class="fl">End Date</label><input class="fi" id="espEnd" type="date"/></div>
+      </div>
+      <div class="fr2">
+        <div><label class="fl">Budget ($)</label><input class="fi" id="espBudget" type="number"/></div>
+        <div><label class="fl">Actual ($)</label><input class="fi" id="espActual" type="number"/></div>
+      </div>
+      <div><label class="fl">Status</label>
+        <select class="fi" id="espStatus">
+          <option>Not Started</option><option>In Progress</option><option>Complete</option>
+        </select>
+      </div>
+      <div><label class="fl">Assign To</label>
+        <select class="fi" id="espAssign" onchange="onScopeAssignChange()">
+          <option value="">-- Unassigned --</option>
+        </select>
+      </div>
+      <div class="fr2">
+        <div><label class="fl">Phone</label><input class="fi" id="espPhone"/></div>
+        <div><label class="fl">Email</label><input class="fi" id="espEmail"/></div>
+      </div>
+    </div>
+    <div class="fbtns">
+      <button class="btn-ghost" onclick="closePage('editScopePage')">Cancel</button>
+      <button class="btn-dark" style="flex:2" onclick="saveScopeEditPage()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD/EDIT ESTIMATE -->
 <div class="fpage" id="estFormPage">
   <div class="phead">
@@ -1131,56 +1170,73 @@ function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)ren
 function notifyAssignee(idx){var p=gpr();var ph=(p.scopeItems||[])[idx];if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone first.");return;}var label=ph.desc||"";var msg=["Hi "+(ph.assignTo||"Team")+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Contract Amount: $"+(ph.actual||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));if(email)setTimeout(function(){window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
 function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
 function toggleScopeEdit(btn,i){
-  // Walk up from button to .scope-item, then find the form div
-  var scopeItem=btn.closest('.scope-item');
-  if(!scopeItem){
-    // Fallback: try getElementById
-    var el2=document.getElementById('scopeEditForm_'+i);
-    if(el2) el2.style.display=el2.style.display==='block'?'none':'block';
-    return;
-  }
-  var form=scopeItem.querySelector('.scope-edit-form');
-  if(!form) return;
-  var isOpen=form.style.display==='block';
-  form.style.display=isOpen?'none':'block';
-  // Wire up assignee dropdown auto-fill
-  if(!isOpen){
-    var sel=form.querySelector('.se-assign');
-    if(sel){
-      var fillContact=function(){
-        var m=(DD.team||[]).find(function(x){return x.name===sel.value;});
-        var ph=form.querySelector('.se-phone');
-        var em=form.querySelector('.se-email');
-        if(m){if(ph)ph.value=m.phone||'';if(em)em.value=m.email||'';}
-      };
-      sel.onchange=fillContact;
-      // Also auto-fill immediately if someone is already selected
-      if(sel.value) fillContact();
-    }
+  // Open the dedicated edit page instead of inline
+  openScopeEditPage(i);
+}
+
+function openScopeEditPage(i){
+  editScopeIdx=i;
+  var p=gpr();
+  if(!p)return;
+  var it=(p.scopeItems||[])[i];
+  if(!it)return;
+  // Populate fields
+  document.getElementById('espDesc').value=it.desc||'';
+  document.getElementById('espStart').value=it.start||'';
+  document.getElementById('espEnd').value=it.end||'';
+  document.getElementById('espBudget').value=it.budget||0;
+  document.getElementById('espActual').value=it.actual||0;
+  document.getElementById('espStatus').value=it.complete||'Not Started';
+  document.getElementById('espPhone').value=it.assignPhone||'';
+  document.getElementById('espEmail').value=it.assignEmail||'';
+  // Populate assign dropdown
+  var sel=document.getElementById('espAssign');
+  sel.innerHTML='<option value="">-- Unassigned --</option>';
+  (DD.team||[]).forEach(function(m){
+    var opt=document.createElement('option');
+    opt.value=m.name;
+    opt.text=m.name+(m.trade?' ('+m.trade+')':'');
+    if(m.name===it.assignTo) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  sel.value=it.assignTo||'';
+  // Open the page
+  var pg=document.getElementById('editScopePage');
+  pg.classList.add('show');
+  pg.scrollTop=0;
+}
+
+function onScopeAssignChange(){
+  var sel=document.getElementById('espAssign');
+  var m=(DD.team||[]).find(function(x){return x.name===sel.value;});
+  if(m){
+    document.getElementById('espPhone').value=m.phone||'';
+    document.getElementById('espEmail').value=m.email||'';
+  } else {
+    document.getElementById('espPhone').value='';
+    document.getElementById('espEmail').value='';
   }
 }
 
-function saveScopeInline(btn,i){
+function saveScopeEditPage(){
   var p=gpr();
   if(!p)return;
-  var scopeItem=btn.closest('.scope-item');
-  var form=scopeItem?scopeItem.querySelector('.scope-edit-form'):null;
-  var get=function(cls){var el=form?form.querySelector('.'+cls):document.getElementById(cls+'_'+i);return el?el.value:'';};
   var items=p.scopeItems||[];
-  var old=items[i]||{};
-  items[i]=Object.assign({},old,{
-    desc:(form?form.querySelector('.se-desc'):document.getElementById('seDesc_'+i)).value.trim(),
-    start:get('se-start'),
-    end:get('se-end'),
-    budget:parseFloat(get('se-budget'))||0,
-    actual:parseFloat(get('se-actual'))||0,
-    complete:old.complete||'Not Started',
-    assignTo:get('se-assign'),
-    assignPhone:get('se-phone'),
-    assignEmail:get('se-email')
+  var old=items[editScopeIdx]||{};
+  items[editScopeIdx]=Object.assign({},old,{
+    desc:document.getElementById('espDesc').value.trim(),
+    start:document.getElementById('espStart').value,
+    end:document.getElementById('espEnd').value,
+    budget:parseFloat(document.getElementById('espBudget').value)||0,
+    actual:parseFloat(document.getElementById('espActual').value)||0,
+    complete:document.getElementById('espStatus').value,
+    assignTo:document.getElementById('espAssign').value,
+    assignPhone:document.getElementById('espPhone').value.trim(),
+    assignEmail:document.getElementById('espEmail').value.trim()
   });
   p.scopeItems=items;
   saveP(p,'Scope item updated on '+p.client);
+  closePage('editScopePage');
 }
 
 
@@ -1253,29 +1309,7 @@ function renderTabBody(p){
       html+=["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?' selected':'')+'>'+s+'</option>';}).join('');
       html+='</select>';
       html+=bvaHtml(it.budget||0,it.actual||0);
-      // Inline edit form (hidden by default)
-      html+='<div class="scope-edit-form" style="display:none;background:#EEF2F7;border-radius:10px;padding:14px;margin-top:10px;border:1.5px solid #DDE3EC">';
-      html+='<div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Edit Scope Item</div>';
-      html+='<label class="fl" style="margin-bottom:4px">Description</label>';
-      html+='<input class="fi se-desc" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
-      html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Start Date</label><input class="fi se-start" type="date" value="'+(it.start||'')+'"/></div>';
-      html+='<div><label class="fl">End Date</label><input class="fi se-end" type="date" value="'+(it.end||'')+'"/></div>';
-      html+='</div>';
-      html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Budget ($)</label><input class="fi se-budget" type="number" value="'+(it.budget||0)+'"/></div>';
-      html+='<div><label class="fl">Actual ($)</label><input class="fi se-actual" type="number" value="'+(it.actual||0)+'"/></div>';
-      html+='</div>';
-      html+='<label class="fl" style="margin-bottom:4px">Assign To</label>';
-      html+='<select class="fi se-assign" style="margin-bottom:10px">'+teamOpts+'</select>';
-      html+='<div class="fr2" style="margin-bottom:10px">';
-      html+='<div><label class="fl">Phone</label><input class="fi se-phone" value="'+(it.assignPhone||'')+'"/></div>';
-      html+='<div><label class="fl">Email</label><input class="fi se-email" value="'+(it.assignEmail||'')+'"/></div>';
-      html+='</div>';
-      html+='<div class="fbtns">';
-      html+='<button class="btn-ghost" onclick="toggleScopeEdit(this,'+i+')">Cancel</button>';
-      html+='<button class="btn-dark" style="flex:2" onclick="saveScopeInline(this,'+i+')">Save</button>';
-      html+='</div></div>';
+      // (edit handled by dedicated page)
       html+='</div>';
     });
     html+='<button class="btn-dashed" onclick="showForm(\'scopeForm\')">+ Add Scope Item</button>';
@@ -1369,7 +1403,42 @@ function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(functi
 function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
-function openSettings(){renderTeamList();document.getElementById("companyName").value=DD.companyName||"Spence Construction";var profile=DD.aiProfile||{};document.getElementById("aiLocation").value=profile.location||"";document.getElementById("aiMarkup").value=profile.markup||20;document.getElementById("aiLaborRate").value=profile.laborRate||85;document.getElementById("aiInstructions").value=profile.instructions||"";renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("elTagsEl","estCategories");document.getElementById("settingsPage").classList.add("show");}
+function openSettings(){
+  // Pull fresh from Firebase every time - retrieves any subs/team added in previous versions
+  document.getElementById("settingsPage").classList.add("show");
+  document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading team from Firebase...</div>';
+  sCol.doc("dropdowns").get().then(function(d){
+    if(d.exists){
+      var data=d.data();
+      if(data.team!==undefined) DD.team=data.team;
+      if(data.companyName) DD.companyName=data.companyName;
+      if(data.aiProfile) DD.aiProfile=data.aiProfile;
+      if(data.projectStatuses) DD.projectStatuses=data.projectStatuses;
+      if(data.phaseTypes) DD.phaseTypes=data.phaseTypes;
+      if(data.choiceStatuses) DD.choiceStatuses=data.choiceStatuses;
+      if(data.costCategories) DD.costCategories=data.costCategories;
+      if(data.changeOrderTypes) DD.changeOrderTypes=data.changeOrderTypes;
+      if(data.punchCategories) DD.punchCategories=data.punchCategories;
+      if(data.estCategories) DD.estCategories=data.estCategories;
+    }
+    var profile=DD.aiProfile||{};
+    document.getElementById("companyName").value=DD.companyName||"Spence Construction";
+    document.getElementById("aiLocation").value=profile.location||"";
+    document.getElementById("aiMarkup").value=profile.markup||20;
+    document.getElementById("aiLaborRate").value=profile.laborRate||85;
+    document.getElementById("aiInstructions").value=profile.instructions||"";
+    renderTagSet("psTagsEl","projectStatuses");
+    renderTagSet("ptTagsEl","phaseTypes");
+    renderTagSet("csTagsEl","choiceStatuses");
+    renderTagSet("ccTagsEl","costCategories");
+    renderTagSet("coTagsEl","changeOrderTypes");
+    renderTagSet("plTagsEl","punchCategories");
+    renderTagSet("elTagsEl","estCategories");
+    renderTeamList();
+  }).catch(function(){
+    renderTeamList();
+  });
+}
 function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
 function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">&#215;</button></span>';}).join("");}
 function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||(DD[key]||[]).indexOf(v)>=0)return;DD[key]=DD[key]||[];DD[key].push(v);document.getElementById(inputId).value="";renderTagSet(elId,key);saveSettings();}
