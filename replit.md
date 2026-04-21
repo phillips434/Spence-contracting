@@ -42,8 +42,8 @@ Server runs on port 5000. Workflow: "Start application".
 1. Curly double quotes → straight quotes
 2. API URL → `/api/estimate`
 3. Strip `x-api-key` headers → `Content-Type` only
-4. Model → `claude-sonnet-4-6`
-5. `max_tokens:(1000|1500)` → `max_tokens:4000` (the generateAIEstimate call needs ≥4000 tokens for complex estimates; 2000 causes truncated JSON parse errors)
+4. Model → `claude-sonnet-4-6` (use broad regex `/claude-(?:opus|sonnet|haiku)-[0-9][0-9a-z-]*/g` to catch all naming variants e.g. `claude-haiku-4-5-20251001`, `claude-sonnet-4-20250514`)
+5. `max_tokens:(1000|1500|2000)` → `max_tokens:4000` (generateAIEstimate needs ≥4000 for complex estimates; keep max_tokens:20 ping and max_tokens:200 log calls unchanged)
 6. JS Bug #1: `(''+var+'')` → escaped single quotes
 7. JS Bug #2: unescaped `fn('literal')` inside `html+=` lines
 8. JS Bug #3: missing `}` closing the `else` block in `renderEstDetailBody`
