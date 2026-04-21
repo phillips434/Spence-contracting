@@ -595,37 +595,47 @@ function forceLoadTeam(){
   var statusEl=document.getElementById("teamLoadStatus");
   statusEl.style.display="block";
   statusEl.style.color="#2B3990";
-  statusEl.textContent="Reading from Firebase...";
-  sCol.doc("dropdowns").get().then(function(d){
-    if(!d.exists){
-      statusEl.style.color="#E83A6C";
-      statusEl.textContent="No settings document found in Firebase.";
-      return;
-    }
-    var data=d.data();
-    var team=data.team||[];
-    if(team.length===0){
-      statusEl.style.color="#E8B43A";
-      statusEl.textContent="Firebase has 0 team members in the team field. Check if they were saved under a different version.";
-    } else {
-      DD.team=team;
-      var names=team.map(function(m){return m.name+(m.trade?" ("+m.trade+")":"");}).join(", ");
+  statusEl.textContent="Scanning Firebase...";
+  sCol.get().then(function(snap){
+    var found=[];
+    var docs=[];
+    snap.forEach(function(doc){
+      var data=doc.data();
+      docs.push(doc.id);
+      Object.keys(data).forEach(function(key){
+        var val=data[key];
+        if(Array.isArray(val)&&val.length>0&&val[0]&&val[0].name){
+          val.forEach(function(item){if(item.name)found.push(item);});
+        }
+      });
+    });
+    if(found.length>0){
+      DD.team=found;
+      var names=found.map(function(m){return m.name;}).join(", ");
       statusEl.style.color="#2EAA72";
-      statusEl.textContent="Loaded: "+names;
+      statusEl.textContent="Found "+found.length+" people: "+names;
       renderTeamList();
-      // Refresh the scope tab if open so dropdowns update
-      if(currentId && document.getElementById("detailPage").classList.contains("show")){
-        var p=gpr();
-        if(p) renderTabBody(p);
+      sCol.doc("dropdowns").set(Object.assign({},DD,{team:found}));
+      if(currentId&&document.getElementById("detailPage").classList.contains("show")){
+        var p=gpr();if(p)renderTabBody(p);
       }
-      T("Team loaded - "+team.length+" members!");
+      T("Team restored!");
+    } else {
+      statusEl.style.color="#E83A6C";
+      statusEl.textContent="No team data found. Docs scanned: "+docs.join(", ");
     }
   }).catch(function(err){
-    statusEl.style.color="#E83A6C";
-    statusEl.textContent="Firebase error: "+err.message;
+    sCol.doc("dropdowns").get().then(function(d){
+      if(!d.exists){statusEl.textContent="No settings doc found.";return;}
+      var data=d.data();
+      var info=Object.keys(data).map(function(k){
+        var v=data[k];return k+":"+(Array.isArray(v)?v.length+"items":typeof v);
+      }).join(", ");
+      statusEl.style.color="#888";
+      statusEl.textContent="Keys in Firebase: "+info;
+    });
   });
 }
-
 
 function migrateAllProjects(){var count=0,batch=db.batch();projects.forEach(function(p){if(migratePhases(p)){batch.set(col.doc(p.id),p);count++;}});var el=document.getElementById("migrateStatus");el.style.display="block";if(count===0){el.style.color="#888";el.textContent="All projects are already up to date.";return;}batch.commit().then(function(){el.style.color="#2EAA72";el.textContent="Restored scope items for "+count+" project"+(count!==1?"s":"")+". Open each project to see your data.";T("Restored "+count+" project"+(count!==1?"s":"")+"!");}).catch(function(err){el.style.color="#E83A6C";el.textContent="Error: "+err.message;});}
 function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
@@ -1212,60 +1222,21 @@ function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)ren
 function notifyAssignee(idx){
   var p=gpr();
   var ph=(p.scopeItems||[])[idx];
-  if(!ph||!ph.assignTo){alert("No one is assigned to this item. Use Edit to assign a team member.");return;}
-  // Look up contact info - first from scope item, then from DD.team roster
+  if(!ph||!ph.assignTo){alert("No one assigned. Tap Edit to assign someone.");return;}
   var phone=ph.assignPhone||"";
   var email=ph.assignEmail||"";
   if(!phone||!email){
-    var member=(DD.team||[]).find(function(m){return m.name===ph.assignTo;});
-    if(member){
-      if(!phone) phone=member.phone||"";
-      if(!email) email=member.email||"";
-    }
+    var m=(DD.team||[]).find(function(x){return x.name===ph.assignTo;});
+    if(m){if(!phone)phone=m.phone||"";if(!email)email=m.email||"";}
   }
   if(!phone&&!email){
-    // Last resort - check Firebase directly
-    sCol.doc("dropdowns").get().then(function(d){
-      if(d.exists&&d.data().team){
-        var liveTeam=d.data().team;
-        DD.team=liveTeam;
-        var lm=liveTeam.find(function(m){return m.name===ph.assignTo;});
-        if(lm&&(lm.phone||lm.email)){
-          // Retry with found contact
-          notifyAssignee(idx);
-        } else {
-          alert("No phone or email found for "+ph.assignTo+". Open Settings > Team and add their contact info.");
-        }
-      } else {
-        alert("No phone or email found for "+ph.assignTo+". Open Settings > Team and add their contact info.");
-      }
-    });
+    alert(ph.assignTo+" has no contact info saved.\n\nGo to Settings > Team, find "+ph.assignTo+", and add their phone or email.");
     return;
   }
   var label=ph.desc||"";
-  var msg=[
-    "Hi "+ph.assignTo+" --","",
-    "You have been assigned to the following task:","",
-    "Project: "+p.client,
-    "Address: "+(p.address||""),
-    "Task: "+label,
-    "Start: "+fmtFull(ph.start),
-    "End: "+fmtFull(ph.end),
-    "Contract Amount: $"+(ph.actual||0).toLocaleString(),
-    "Status: "+(ph.complete||"Not Started"),"",
-    "Please reply to confirm.","",
-    "Thank you,",
-    DD.companyName||"Spence Construction"
-  ].join("\n");
-  if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));
-  if(email)setTimeout(function(){
-    window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));
-  },phone?1200:0);
-}
-function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
-function toggleScopeEdit(btn,i){
-  // Open the dedicated edit page instead of inline
-  openScopeEditPage(i);
+  var msg=["Hi "+ph.assignTo+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Amount: $"+(ph.actual||ph.budget||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
+  if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
+  else if(email){window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
 }
 
 function openScopeEditPage(i){
