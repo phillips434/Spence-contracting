@@ -1220,31 +1220,24 @@ function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyByIndex(idx){
-  var p=gpr();
-  if(!p){alert("ERROR: Project not loaded.");return;}
-  var items=p.scopeItems||[];
-  if(idx>=items.length){alert("ERROR: Item "+idx+" not found ("+items.length+" items total).");return;}
-  var ph=items[idx];
-  var assignTo=ph.assignTo||"";
-  var phone=ph.assignPhone||"";
-  var email=ph.assignEmail||"";
-  var teamMember=(DD.team||[]).find(function(m){return m.name===assignTo;});
-  if(teamMember){
-    if(!phone) phone=teamMember.phone||"";
-    if(!email) email=teamMember.email||"";
+  try {
+    var p=gpr();
+    if(!p){alert("No project loaded.");return;}
+    var items=p.scopeItems||[];
+    var ph=items[idx]||{};
+    var assignTo=ph.assignTo||"";
+    var phone=ph.assignPhone||"";
+    var email=ph.assignEmail||"";
+    var team=DD.team||[];
+    var teamMember=team.find(function(m){return m.name===assignTo;});
+    if(teamMember){
+      if(!phone) phone=teamMember.phone||"";
+      if(!email) email=teamMember.email||"";
+    }
+    alert("DEBUG:\nItem: "+ph.desc+"\nAssigned: '"+(assignTo||"nobody")+"'\nPhone: '"+(phone||"none")+"'\nEmail: '"+(email||"none")+"'\nTeam members loaded: "+team.length);
+  } catch(e){
+    alert("Notify error: "+e.message);
   }
-  var debug="Item: "+ph.desc+
-    "\nAssigned to: "+(assignTo||"EMPTY")+
-    "\nPhone: "+(phone||"NONE")+
-    "\nEmail: "+(email||"NONE")+
-    "\nTeam loaded: "+DD.team.length+" members";
-  if(!assignTo){alert("No one assigned.\n\n"+debug);return;}
-  if(!phone&&!email){alert("No contact info found.\n\n"+debug+"\n\nGo to Settings > Team and add phone/email for "+assignTo);return;}
-  if(!confirm("Send notification to "+assignTo+"?\n("+debug+")")){return;}
-  var label=ph.desc||"";
-  var msg=["Hi "+assignTo+" --","","You have been assigned to:","","Project: "+p.client,"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
-  if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
-  else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
 }
 
 // Keep old name as alias
