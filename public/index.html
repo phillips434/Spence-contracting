@@ -1220,31 +1220,24 @@ function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyByIndex(idx){
-  var p=gpr();
-  if(!p){alert("ERROR: Project not loaded.");return;}
-  var items=p.scopeItems||[];
-  if(idx>=items.length){alert("ERROR: Item "+idx+" not found ("+items.length+" items total).");return;}
-  var ph=items[idx];
-  var assignTo=ph.assignTo||"";
-  var phone=ph.assignPhone||"";
-  var email=ph.assignEmail||"";
-  var teamMember=(DD.team||[]).find(function(m){return m.name===assignTo;});
-  if(teamMember){
-    if(!phone) phone=teamMember.phone||"";
-    if(!email) email=teamMember.email||"";
+  try {
+    var p=gpr();
+    if(!p){alert("No project loaded.");return;}
+    var items=p.scopeItems||[];
+    var ph=items[idx]||{};
+    var assignTo=ph.assignTo||"";
+    var phone=ph.assignPhone||"";
+    var email=ph.assignEmail||"";
+    var team=DD.team||[];
+    var teamMember=team.find(function(m){return m.name===assignTo;});
+    if(teamMember){
+      if(!phone) phone=teamMember.phone||"";
+      if(!email) email=teamMember.email||"";
+    }
+    alert("DEBUG:\nItem: "+ph.desc+"\nAssigned: '"+(assignTo||"nobody")+"'\nPhone: '"+(phone||"none")+"'\nEmail: '"+(email||"none")+"'\nTeam members loaded: "+team.length);
+  } catch(e){
+    alert("Notify error: "+e.message);
   }
-  var debug="Item: "+ph.desc+
-    "\nAssigned to: "+(assignTo||"EMPTY")+
-    "\nPhone: "+(phone||"NONE")+
-    "\nEmail: "+(email||"NONE")+
-    "\nTeam loaded: "+DD.team.length+" members";
-  if(!assignTo){alert("No one assigned.\n\n"+debug);return;}
-  if(!phone&&!email){alert("No contact info found.\n\n"+debug+"\n\nGo to Settings > Team and add phone/email for "+assignTo);return;}
-  if(!confirm("Send notification to "+assignTo+"?\n("+debug+")")){return;}
-  var label=ph.desc||"";
-  var msg=["Hi "+assignTo+" --","","You have been assigned to:","","Project: "+p.client,"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
-  if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
-  else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task: "+label)+"&body="+encodeURIComponent(msg);}
 }
 
 // Keep old name as alias
@@ -1287,19 +1280,13 @@ function openScopeEditPage(i){
     });
     sel.value=it.assignTo||'';
   }
-  if((DD.team||[]).length>0){
-    fillDropdown(DD.team);
-  } else {
-    // Team not in memory - pull from Firebase
-    sCol.doc("dropdowns").get().then(function(d){
-      if(d.exists&&d.data().team&&d.data().team.length>0){
-        DD.team=d.data().team;
-        fillDropdown(DD.team);
-      } else {
-        fillDropdown([]);
-      }
-    }).catch(function(){ fillDropdown([]); });
-  }
+  // Always load fresh from Firebase to ensure team is current
+  sCol.doc("dropdowns").get().then(function(d){
+    if(d.exists&&d.data().team&&d.data().team.length>0){
+      DD.team=d.data().team;
+    }
+    fillDropdown(DD.team||[]);
+  }).catch(function(){ fillDropdown(DD.team||[]); });
 }
 
 function onScopeAssignChange(){
@@ -1395,7 +1382,7 @@ function renderTabBody(p){
       html+='</div>';
       html+='<div style="display:flex;gap:6px">';
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
-      if(it.assignTo) html+='<button class="btn-notify" onclick="notifyByIndex(\'+i+\')">Notify</button>';
+      html+='<button class="btn-notify" onclick="notifyByIndex(\'+i+\')">Notify'+(it.assignTo?' '+it.assignTo:'')+' </button>';
       html+='<button class="del-btn" onclick="delScopeItem(\'+i+\')">&#215;</button>';
       html+='</div></div>';
       // Progress bar
