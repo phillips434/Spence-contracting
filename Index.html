@@ -676,11 +676,11 @@ function renderEstDetailBody(e){
   }
   // Add milestone form inline
   html+='<button class="btn-dashed" style="margin-top:4px" onclick="showForm('msForm')">+ Add Milestone</button>';
-  html+='<div class="inline-form" id="msForm">';
+  html+='<div class="inline-form" id="msForm" data-total="'+calc.grandTotal+'">';
   html+='<label class="fl" style="margin-bottom:6px">Milestone Name</label>';
   html+='<input class="fi" id="msName" placeholder="e.g. Initial Deposit" style="margin-bottom:8px"/>';
   html+='<div class="fr2" style="margin-bottom:8px">';
-  html+='<div><label class="fl">Percentage %</label><input class="fi" id="msPct" type="number" placeholder="e.g. 30" oninput="calcMilestoneAmt()"/></div>';
+  html+='<div><label class="fl">Percentage %</label><input class="fi" id="msPct" type="number" placeholder="e.g. 30" oninput="calcMsAmt(this.value)"/></div>';
   html+='<div><label class="fl">Amount ($)</label><input class="fi" id="msAmt" type="number" placeholder="auto-filled"/></div>';
   html+='</div>';
   
@@ -694,7 +694,11 @@ function renderEstDetailBody(e){
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   html+='<div style="font-size:13px;color:#888">Auto-generated from your estimate. Edit as needed.</div>';
   html+='<button class="btn-sm" style="background:#2B3990" onclick="printContract()">&#128438; Print</button></div>';
-  var contractText=e.contractText||generateContractText(e,calc);
+  var contractText=generateContractText(e,calc);
+  html+='<div style="display:flex;gap:8px;margin-bottom:10px">';
+  html+='<button class="btn-sm" style="background:#2B3990;flex:1" onclick="printContract()">&#128438; Print</button>';
+  html+='<button class="btn-sm" style="background:#888;flex:1" onclick="resetContract()">&#8635; Regenerate</button>';
+  html+='</div>';
   html+='<textarea class="fi" id="contractTA" rows="18" style="font-family:Georgia,serif;font-size:12px;line-height:1.8;color:#333">'+contractText+'</textarea>';
   html+='<button class="btn-green" style="margin-top:10px" onclick="saveContract()">Save Contract</button>';
   html+='</div>';
@@ -713,18 +717,32 @@ function renderEstDetailBody(e){
   document.getElementById('estDetailBody').innerHTML=html;
 }
 
-function calcMilestoneAmt(){
-  var e=ger();
-  if(!e)return;
-  var grandTotal=calcEstimate(e).grandTotal;
-  var pct=parseFloat(document.getElementById('msPct').value)||0;
-  var amt=Math.round(grandTotal*(pct/100));
-  if(document.getElementById('msAmt')) document.getElementById('msAmt').value=amt>0?amt:'';
+function calcMsAmt(pctVal){
+  var formEl=document.getElementById('msForm');
+  var total=formEl?parseFloat(formEl.getAttribute('data-total'))||0:0;
+  var pct=parseFloat(pctVal)||0;
+  var amt=Math.round(total*pct/100);
+  var amtEl=document.getElementById('msAmt');
+  if(amtEl) amtEl.value=amt>0?amt:'';
 }
+function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document.getElementById('msPct').value:0); }
 
 
 function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
-function saveContract(){var e=ger();if(!e)return;e.contractText=document.getElementById("contractTA").value;eCol.doc(e.id).set(e).then(function(){T("Contract saved!");});}
+function saveContract(){
+  var e=ger();if(!e)return;
+  e.contractText=document.getElementById("contractTA").value;
+  eCol.doc(e.id).set(e).then(function(){T("Contract saved!");});
+}
+function resetContract(){
+  var e=ger();if(!e)return;
+  var calc=calcEstimate(e);
+  var fresh=generateContractText(e,calc);
+  var ta=document.getElementById("contractTA");
+  if(ta) ta.value=fresh;
+  e.contractText=fresh;
+  eCol.doc(e.id).set(e).then(function(){T("Contract regenerated!");});
+}
 function printInvoice(){
   var e=ger();if(!e)return;
   var calc=calcEstimate(e);
@@ -1112,6 +1130,46 @@ function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)ren
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
 function notifyAssignee(idx){var p=gpr();var ph=(p.scopeItems||[])[idx];if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone first.");return;}var label=ph.desc||"";var msg=["Hi "+(ph.assignTo||"Team")+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start: "+fmtFull(ph.start),"End: "+fmtFull(ph.end),"Contract Amount: $"+(ph.actual||0).toLocaleString(),"Status: "+(ph.complete||"Not Started"),"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone)window.open("sms:"+phone+"?body="+encodeURIComponent(msg));if(email)setTimeout(function(){window.open("mailto:"+email+"?subject=Task: "+encodeURIComponent(label)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
 function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var m=(DD.team||[]).find(function(m){return m.name===sel;});if(m){document.getElementById("esPhone").value=m.phone||"";document.getElementById("esEmail").value=m.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
+function toggleScopeEdit(i){
+  var el=document.getElementById('scopeEditForm_'+i);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block'){
+    // Auto-fill team phone/email when assignee selected
+    var sel=document.getElementById('seAssign_'+i);
+    if(sel){
+      sel.onchange=function(){
+        var m=(DD.team||[]).find(function(x){return x.name===sel.value;});
+        var ph=document.getElementById('sePhone_'+i);
+        var em=document.getElementById('seEmail_'+i);
+        if(m){if(ph)ph.value=m.phone||'';if(em)em.value=m.email||'';}
+        else{if(ph)ph.value='';if(em)em.value='';}
+      };
+    }
+  }
+}
+
+function saveScopeInline(i){
+  var p=gpr();
+  if(!p)return;
+  var items=p.scopeItems||[];
+  var old=items[i]||{};
+  items[i]=Object.assign({},old,{
+    desc:document.getElementById('seDesc_'+i).value.trim(),
+    start:document.getElementById('seStart_'+i).value,
+    end:document.getElementById('seEnd_'+i).value,
+    budget:parseFloat(document.getElementById('seBudget_'+i).value)||0,
+    actual:parseFloat(document.getElementById('seActual_'+i).value)||0,
+    complete:old.complete||'Not Started',
+    assignTo:document.getElementById('seAssign_'+i).value,
+    assignPhone:document.getElementById('sePhone_'+i).value.trim(),
+    assignEmail:document.getElementById('seEmail_'+i).value.trim()
+  });
+  p.scopeItems=items;
+  saveP(p,'Scope item updated on '+p.client);
+}
+
+
 function openEditScope(i){
   editScopeIdx=i;
   var p=gpr();
@@ -1154,7 +1212,58 @@ function renderTabBody(p){
     if(p.estimateTotal)html+='<div class="wcard" style="background:#EEF2FF"><div style="font-size:12px;font-weight:700;color:#2B3990;margin-bottom:4px">&#128176; Estimate Total (Client Price)</div><div style="font-size:18px;font-weight:700;color:#2B3990">$'+p.estimateTotal.toLocaleString()+'</div></div>';
     if(items.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tB,tA)+'</div>';
     html+='<div class="sec-label">Scope of Work Items</div>';
-    items.forEach(function(it,i){var c=it.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#2B3990":"#CBD5E1";html+='<div class="scope-item"><div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+it.desc+'</div>'+(it.category?'<div style="font-size:10px;color:#2B3990;margin-top:2px;text-transform:uppercase">'+it.category+'</div>':'')+(it.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' &#8594; '+fmt(it.end):'')+'</div>':'')+(it.assignTo?'<div style="font-size:11px;color:#2B3990;margin-top:2px">&#128100; '+it.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditScope('+i+')">Edit</button>'+(it.assignTo?'<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>':'')+'<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateScopeStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(it.budget||0,it.actual||0)+'</div>';});
+    items.forEach(function(it,i){
+      var c=it.complete||"Not Started";
+      var pct=c==="Complete"?100:c==="In Progress"?50:0;
+      var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#2B3990":"#CBD5E1";
+      var teamOpts='<option value="">-- Unassigned --</option>';
+      (DD.team||[]).forEach(function(m){teamOpts+='<option value="'+m.name+'"'+(m.name===it.assignTo?' selected':'')+'>'+m.name+(m.trade?' ('+m.trade+')':'')+'</option>';});
+      html+='<div class="scope-item">';
+      // Header row
+      html+='<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px">';
+      html+='<div style="flex:1">';
+      html+='<div style="font-size:14px;font-weight:700;color:#1A1A2E">'+it.desc+'</div>';
+      if(it.category) html+='<div style="font-size:10px;color:#2B3990;margin-top:2px;text-transform:uppercase">'+it.category+'</div>';
+      if(it.start) html+='<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' &#8594; '+fmt(it.end):'')+'</div>';
+      if(it.assignTo) html+='<div style="font-size:11px;color:#2B3990;margin-top:2px">&#128100; '+it.assignTo+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;gap:6px">';
+      html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit('+i+')">Edit</button>';
+      if(it.assignTo) html+='<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>';
+      html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
+      html+='</div></div>';
+      // Progress bar
+      html+='<div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div>';
+      // Status select
+      html+='<select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateScopeStatus('+i+',this.value)">';
+      html+=["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?' selected':'')+'>'+s+'</option>';}).join('');
+      html+='</select>';
+      html+=bvaHtml(it.budget||0,it.actual||0);
+      // Inline edit form (hidden by default)
+      html+='<div id="scopeEditForm_'+i+'" style="display:none;background:#EEF2F7;border-radius:10px;padding:14px;margin-top:10px;border:1.5px solid #DDE3EC">';
+      html+='<div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Edit Scope Item</div>';
+      html+='<label class="fl" style="margin-bottom:4px">Description</label>';
+      html+='<input class="fi" id="seDesc_'+i+'" value="'+((it.desc||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:10px"/>';
+      html+='<div class="fr2" style="margin-bottom:10px">';
+      html+='<div><label class="fl">Start Date</label><input class="fi" id="seStart_'+i+'" type="date" value="'+(it.start||'')+'"/></div>';
+      html+='<div><label class="fl">End Date</label><input class="fi" id="seEnd_'+i+'" type="date" value="'+(it.end||'')+'"/></div>';
+      html+='</div>';
+      html+='<div class="fr2" style="margin-bottom:10px">';
+      html+='<div><label class="fl">Budget ($)</label><input class="fi" id="seBudget_'+i+'" type="number" value="'+(it.budget||0)+'"/></div>';
+      html+='<div><label class="fl">Actual ($)</label><input class="fi" id="seActual_'+i+'" type="number" value="'+(it.actual||0)+'"/></div>';
+      html+='</div>';
+      html+='<label class="fl" style="margin-bottom:4px">Assign To</label>';
+      html+='<select class="fi" id="seAssign_'+i+'" style="margin-bottom:10px">'+teamOpts+'</select>';
+      html+='<div class="fr2" style="margin-bottom:10px">';
+      html+='<div><label class="fl">Phone</label><input class="fi" id="sePhone_'+i+'" value="'+(it.assignPhone||'')+'"/></div>';
+      html+='<div><label class="fl">Email</label><input class="fi" id="seEmail_'+i+'" value="'+(it.assignEmail||'')+'"/></div>';
+      html+='</div>';
+      html+='<div class="fbtns">';
+      html+='<button class="btn-ghost" onclick="toggleScopeEdit('+i+')">Cancel</button>';
+      html+='<button class="btn-dark" style="flex:2" onclick="saveScopeInline('+i+')">Save</button>';
+      html+='</div></div>';
+      html+='</div>';
+    });
     html+='<button class="btn-dashed" onclick="showForm(\'scopeForm\')">+ Add Scope Item</button>';
     html+='<div class="inline-form" id="scopeForm"><label class="fl" style="margin-bottom:6px">Description</label><select class="fi" id="siSel" style="margin-bottom:8px" onchange="document.getElementById(\'siCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="siCustom" placeholder="Custom description" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="siSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="siEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="siBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="siAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="siAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'scopeForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addScopeItem()">Add Item</button></div></div>';
   } else if(currentTab==="timeline"){
