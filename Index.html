@@ -24,7 +24,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .btn-notify{background:#9B6BE8;border:none;border-radius:8px;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .btn-sm{border:none;border-radius:8px;color:#fff;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .btn-ai{background:linear-gradient(135deg,#9B6BE8,#3A78E8);border:none;border-radius:10px;color:#fff;padding:13px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
-.back-btn{display:inline-flex;align-items:center;justify-content:center;background:#E8713A;border:none;border-radius:8px;color:#fff;font-size:24px;font-weight:900;min-width:48px;min-height:48px;cursor:pointer;margin-right:10px;text-decoration:none;flex-shrink:0;line-height:1}
+/* BACK BUTTON - always visible, inline styles */
 .page{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F5F7;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .page.show{display:block}
 .phead{background:#1A1A2E;padding:0 12px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:10;gap:8px}
@@ -119,7 +119,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .cal-day.today{border-color:#E8713A;background:#FFF8F5}
 .cal-day-num{font-weight:700;color:#333;margin-bottom:2px}
 .cal-event{border-radius:3px;padding:1px 4px;font-size:9px;font-weight:600;color:#fff;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:80;align-items:center;justify-content:center;padding:20px}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:80;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
 .modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
 .modal-title{font-size:16px;font-weight:700;color:#1A1A2E;margin-bottom:14px}
@@ -140,7 +140,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .client-view{max-width:600px;margin:0 auto;padding:20px}
 .client-header{background:#1A1A2E;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
 .sig-canvas{border:2px dashed #CCC;border-radius:10px;width:100%;height:160px;cursor:crosshair;touch-action:none;background:#FAFAFA}
-/* AI */
 .ai-box{background:linear-gradient(135deg,#1A1A2E,#2A1A4E);border-radius:14px;padding:16px;margin-bottom:14px}
 .ai-title{color:#fff;font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .ai-sub{color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:12px}
@@ -149,11 +148,12 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 .ai-loading{display:none;text-align:center;padding:20px;color:rgba(255,255,255,0.7);font-size:13px}
 .ai-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* Line item table */
 .li-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
 .li-table th{text-align:left;padding:6px 4px;font-size:9px;color:#aaa;text-transform:uppercase;border-bottom:2px solid #F0F0F0;font-weight:700}
 .li-table td{padding:8px 4px;border-bottom:1px solid #F8F8F8;vertical-align:middle}
-.li-edit-input{border:1px solid #E0E0E0;border-radius:6px;padding:4px 6px;font-size:12px;width:100%;background:#fff}
+/* Scope of work */
+.scope-item{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #F0F0F0}
+.scope-status-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
 </style>
 </head>
 <body>
@@ -296,6 +296,19 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <span class="phead-title">Settings & Dropdowns</span>
   </div>
   <div style="padding:14px">
+    <!-- AI Company Profile -->
+    <div class="wcard" style="background:linear-gradient(135deg,#1A1A2E,#2A1A4E)">
+      <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px">✨ AI Company Profile</div>
+      <div class="fg" style="margin-bottom:0">
+        <div><label class="fl" style="color:rgba(255,255,255,0.6)">Company Location</label><input class="fi" id="aiLocation" placeholder="e.g. Houston, TX" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"/></div>
+        <div class="fr2">
+          <div><label class="fl" style="color:rgba(255,255,255,0.6)">Default Markup %</label><input class="fi" id="aiMarkup" type="number" placeholder="20" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"/></div>
+          <div><label class="fl" style="color:rgba(255,255,255,0.6)">Labor Rate ($/hr)</label><input class="fi" id="aiLaborRate" type="number" placeholder="85" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"/></div>
+        </div>
+        <div><label class="fl" style="color:rgba(255,255,255,0.6)">Special Instructions for AI</label><textarea class="fi" id="aiInstructions" rows="2" placeholder="e.g. Always include debris removal. Use union labor rates." style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"></textarea></div>
+        <button class="btn-ai" onclick="saveAIProfile()">Save AI Profile</button>
+      </div>
+    </div>
     <div class="wcard">
       <label class="fl" style="margin-bottom:8px">Team — Subs & Employees</label>
       <div id="teamList"></div>
@@ -308,7 +321,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     </div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName" placeholder="Your Company Name"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('projectStatuses','psInput','psTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Phase Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add phase..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Scope of Work Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add scope item..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('choiceStatuses','csInput','csTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('changeOrderTypes','coInput','coTagsEl')">Add</button></div></div>
@@ -317,19 +330,19 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 </div>
 
-<!-- EDIT PHASE MODAL -->
-<div class="modal-overlay" id="editPhaseModal">
+<!-- EDIT SCOPE ITEM MODAL -->
+<div class="modal-overlay" id="editScopeModal">
   <div class="modal-box">
-    <div class="modal-title">Edit Phase</div>
+    <div class="modal-title">Edit Scope Item</div>
     <div class="fg">
-      <div><label class="fl">Phase Name</label><input class="fi" id="epName"/></div>
-      <div class="fr2"><div><label class="fl">Start</label><input class="fi" id="epStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="epEnd" type="date"/></div></div>
-      <div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="epBudget" type="number"/></div><div><label class="fl">Actual/Bid ($)</label><input class="fi" id="epActual" type="number"/></div></div>
-      <div><label class="fl">Status</label><select class="fi" id="epStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div>
-      <div><label class="fl">Assign To</label><select class="fi" id="epAssign" onchange="autoFillAssignee()"><option value="">-- Unassigned --</option></select></div>
-      <div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="epPhone" placeholder="Auto-filled"/></div><div><label class="fl">Email</label><input class="fi" id="epEmail" placeholder="Auto-filled"/></div></div>
+      <div><label class="fl">Description</label><input class="fi" id="esDesc"/></div>
+      <div class="fr2"><div><label class="fl">Start Date</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End Date</label><input class="fi" id="esEnd" type="date"/></div></div>
+      <div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div>
+      <div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div>
+      <div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="autoFillScopeAssignee()"><option value="">-- Unassigned --</option></select></div>
+      <div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div>
     </div>
-    <div class="fbtns"><button class="btn-ghost" onclick="closeEditPhase()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditPhase()">Save Changes</button></div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeEditScope()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div>
   </div>
 </div>
 
@@ -345,7 +358,26 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div>
       <div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div>
     </div>
-    <div class="fbtns"><button class="btn-ghost" onclick="closeEditChoice()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save Changes</button></div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeEditChoice()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div>
+  </div>
+</div>
+
+<!-- EDIT LINE ITEM MODAL -->
+<div class="modal-overlay" id="editLineItemModal">
+  <div class="modal-box">
+    <div class="modal-title">Edit Line Item</div>
+    <div class="fg">
+      <div><label class="fl">Category</label><select class="fi" id="eliCat"></select></div>
+      <div><label class="fl">Description</label><input class="fi" id="eliDesc"/></div>
+      <div class="fr3">
+        <div><label class="fl">Qty</label><input class="fi" id="eliQty" type="number"/></div>
+        <div><label class="fl">Unit</label><input class="fi" id="eliUnit"/></div>
+        <div><label class="fl">Unit Cost ($)</label><input class="fi" id="eliUnitCost" type="number"/></div>
+      </div>
+      <div><label class="fl">Markup %</label><input class="fi" id="eliMarkup" type="number"/></div>
+      <div style="background:#F8F8F8;border-radius:8px;padding:10px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">CLIENT TOTAL (your cost + markup)</div><div style="font-size:18px;font-weight:700;color:#1A1A2E" id="eliPreview">$0</div></div>
+    </div>
+    <div class="fbtns"><button class="btn-ghost" onclick="closeEditLineItem()">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditLineItem()">Save</button></div>
   </div>
 </div>
 
@@ -401,24 +433,25 @@ var DD={
   costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],
   changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],
   punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],
-  estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Overhead","Other"],
+  estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],
   team:[],
-  companyName:"Spence Contracting"
+  companyName:"Spence Contracting",
+  aiProfile:{location:"",markup:20,laborRate:85,instructions:""}
 };
 
 var COLORS=["#E8713A","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#E8713A","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
 var EST_SC={Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
-var projects=[],estimates=[],activeFilter="All",currentId=null,currentTab="timeline",selColor=0,editId=null;
-var timelineView="list",calMonth=new Date(),editPhaseIdx=-1,editChoiceIdx=-1;
+var projects=[],estimates=[],activeFilter="All",currentId=null,currentTab="scope",selColor=0,editId=null;
+var calMonth=new Date(),editScopeIdx=-1,editChoiceIdx=-1,editLineItemIdx=-1;
 var notifications=[],unreadCount=0;
 var currentEstId=null,editEstId=null,liTabMode="detailed";
 var mainTabMode="projects";
 
 var SEED=[
-  {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"",phases:[{name:"Demo",start:"2026-03-10",end:"2026-03-14",phaseBudget:2000,phaseActual:1800,complete:"Complete",assignTo:"",assignPhone:"",assignEmail:""},{name:"Cabinets",start:"2026-04-01",end:"2026-04-18",phaseBudget:12000,phaseActual:0,complete:"In Progress",assignTo:"",assignPhone:"",assignEmail:""}],choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"}],changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips",date:"2026-03-28"}],dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz",weather:"Clear 72°F",work:"Installed upper cabinet boxes.",issues:""}],notesLog:[]},
-  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]},
-  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"",phases:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]}
+  {id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#E86C3A",notes:"",scopeItems:[{desc:"Demo existing cabinets and countertops",start:"2026-03-10",end:"2026-03-14",budget:2000,actual:1800,complete:"Complete",assignTo:"",assignPhone:"",assignEmail:""},{desc:"Install new cabinets",start:"2026-04-01",end:"2026-04-18",budget:12000,actual:0,complete:"In Progress",assignTo:"",assignPhone:"",assignEmail:""}],choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"}],changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips",date:"2026-03-28"}],dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz",weather:"Clear 72°F",work:"Installed upper cabinet boxes.",issues:""}],notesLog:[]},
+  {id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"",scopeItems:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]},
+  {id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"",scopeItems:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]}
 ];
 
 // HELPERS
@@ -427,19 +460,15 @@ function fmt(d){if(!d)return"—";var p=d.split("-");return["Jan","Feb","Mar","A
 function fmtFull(d){if(!d)return"";var p=d.split("-");return["January","February","March","April","May","June","July","August","September","October","November","December"][parseInt(p[1])-1]+" "+parseInt(p[2])+", "+p[0];}
 function fmtTS(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString()+" "+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});}
 function daysLeft(e){return Math.ceil((new Date(e)-new Date())/86400000);}
-function gp(p){if(!p.phases||!p.phases.length)return 0;var d=p.phases.filter(function(x){return x.complete==="Complete";}).length;return Math.round(d/p.phases.length*100);}
+function gp(p){var items=p.scopeItems||p.phases||[];if(!items.length)return 0;var d=items.filter(function(x){return x.complete==="Complete";}).length;return Math.round(d/items.length*100);}
 function gpr(){return projects.find(function(x){return x.id===currentId;});}
 function ger(){return estimates.find(function(x){return x.id===currentEstId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
 function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#E8713A">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
 
-// ESTIMATE CALCULATIONS — per line item markup
-function calcLineItemTotal(li){
-  var cost=parseFloat(li.total)||0;
-  var markup=parseFloat(li.markup)||0;
-  return cost*(1+markup/100);
-}
+// ESTIMATE CALC — per line item markup
+function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
 function calcEstimate(est){
   var items=est.lineItems||[];
   var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);
@@ -477,6 +506,7 @@ function clearBellBadge(){document.getElementById("bellBadge").style.display="no
 function loadSettings(cb){sCol.doc("dropdowns").get().then(function(d){if(d.exists)DD=Object.assign({},DD,d.data());if(cb)cb();}).catch(function(){if(cb)cb();});}
 function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("✅ Settings saved!");});}
 function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Spence Contracting";saveSettings();}
+function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocation").value.trim(),markup:parseFloat(document.getElementById("aiMarkup").value)||20,laborRate:parseFloat(document.getElementById("aiLaborRate").value)||85,instructions:document.getElementById("aiInstructions").value.trim()};saveSettings();T("✅ AI profile saved!");}
 function saveP(p,notifText){setSS("saving");return col.doc(p.id).set(p).then(function(){T("✅ Saved!");if(notifText){pushNotification(notifText,p.client);showBanner("🔔 "+notifText);}}).catch(function(){T("❌ Error");setSS("error");});}
 function addTeamMember(){var type=document.getElementById("tmType").value,trade=document.getElementById("tmTrade").value.trim(),name=document.getElementById("tmName").value.trim(),company=document.getElementById("tmCompany").value.trim(),phone=document.getElementById("tmPhone").value.trim(),email=document.getElementById("tmEmail").value.trim();if(!name){alert("Please enter a name.");return;}DD.team=DD.team||[];DD.team.push({type:type,trade:trade,name:name,company:company,phone:phone,email:email});["tmTrade","tmName","tmCompany","tmPhone","tmEmail"].forEach(function(id){document.getElementById(id).value="";});renderTeamList();saveSettings();}
 function removeTeamMember(i){DD.team.splice(i,1);renderTeamList();saveSettings();}
@@ -507,7 +537,7 @@ function renderCards(){
     var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";
     var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;
     var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;
-    return'<div class="card" data-id="'+p.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' · '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Phase Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div></div>';
+    return'<div class="card" data-id="'+p.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' · '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"—")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#E8713A")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E8713A":"#2EAA72")+'"></div></div></div></div>';
   }).join("");
   document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});
 }
@@ -517,16 +547,14 @@ function renderEstCards(){
   var el=document.getElementById("estCards");
   if(!estimates.length){el.innerHTML='<div class="empty">No estimates yet.<br>Tap <b>+ New Estimate</b> to create one.</div>';return;}
   el.innerHTML=estimates.map(function(e){
-    var sc2=EST_SC[e.status]||"#888";
-    var calc=calcEstimate(e);
+    var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);
     return'<div class="est-card" data-eid="'+e.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div class="card-name">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' · '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">✓ Signed</div></div>':'')+'</div></div>';
   }).join("");
   document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});
 }
 
 function openEstDetail(id){
-  currentEstId=id;
-  var e=ger();if(!e)return;
+  currentEstId=id;var e=ger();if(!e)return;
   var sc2=EST_SC[e.status]||"#888";
   document.getElementById("edName").textContent=e.client+" — "+e.type;
   var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;
@@ -538,19 +566,9 @@ function renderEstDetailBody(e){
   var calc=calcEstimate(e);
   var html='';
   // AI Generator
-  html+='<div class="ai-box">'
-    +'<div class="ai-title">✨ AI Estimate Generator</div>'
-    +'<div class="ai-sub">Describe the job and AI will generate line items with pricing</div>'
-    +'<textarea class="ai-input" id="aiPrompt" rows="3" placeholder="e.g. Kitchen remodel 200 sqft, mid-range finishes, new cabinets, countertops, flooring, paint. Houston TX area."></textarea>'
-    +'<button class="btn-ai" style="margin-top:10px" onclick="generateAIEstimate()">✨ Generate Estimate with AI</button>'
-    +'<div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>AI is generating your estimate...</div>'
-    +'</div>';
+  html+='<div class="ai-box"><div class="ai-title">✨ AI Estimate Generator</div><div class="ai-sub">Describe the job and AI will generate line items with your markup</div><textarea class="ai-input" id="aiPrompt" rows="3" placeholder="e.g. Demo and replace 4x6 tile shower with Schluter system, Houston TX"></textarea><button class="btn-ai" style="margin-top:10px" onclick="generateAIEstimate()">✨ Generate Estimate with AI</button><div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>AI is generating your estimate...</div></div>';
   // Header
-  html+='<div class="wcard"><div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div><div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>';
-  if(e.address)html+='<div style="font-size:12px;color:#888;margin-top:8px">📍 '+e.address+'</div>';
-  if(e.validUntil)html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
-  if(e.notes)html+='<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>';
-  html+='</div>';
+  html+='<div class="wcard"><div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div><div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>'+(e.address?'<div style="font-size:12px;color:#888;margin-top:8px">📍 '+e.address+'</div>':'')+(e.validUntil?'<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>':'')+(e.notes?'<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>':'')+'</div>';
   // Actions
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
   html+='<button class="btn-sm" style="background:#3A78E8" onclick="openEditEstimate()">✏️ Edit</button>';
@@ -568,79 +586,126 @@ function renderEstDetailBody(e){
   else{
     var byCategory={};
     (e.lineItems||[]).forEach(function(li,i){var cat=li.category||"Other";if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});
-    html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Markup</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>';
+    html+='<div class="wcard"><table class="li-table"><thead><tr><th>Description</th><th style="text-align:right">Cost</th><th style="text-align:right">Markup</th><th style="text-align:right">Client Total</th><th></th></tr></thead><tbody>';
     Object.keys(byCategory).forEach(function(cat){
       html+='<tr><td colspan="5" style="font-size:10px;font-weight:700;color:#9B6BE8;text-transform:uppercase;padding:10px 4px 4px">'+cat+'</td></tr>';
       byCategory[cat].forEach(function(obj){
         var li=obj.li,i=obj.i;
-        var cost=parseFloat(li.total)||0;
-        var markup=parseFloat(li.markup)||0;
-        var clientAmt=cost*(1+markup/100);
-        html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+'</div>'+(li.qty&&li.unit?'<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+' × $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>':'')+'</td><td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td><td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td><button class="del-btn" onclick="delLineItem('+i+')" style="font-size:16px">×</button></td></tr>';
+        var cost=parseFloat(li.total)||0,markup=parseFloat(li.markup)||0,clientAmt=cost*(1+markup/100);
+        var isAllowance=li.category==="Allowance";
+        html+='<tr><td><div style="font-size:12px;font-weight:600;color:#333">'+li.desc+(isAllowance?'<span style="background:#E8B43A22;color:#B87A00;border-radius:4px;padding:1px 5px;font-size:9px;margin-left:4px">ALLOWANCE</span>':'')+'</div>'+(li.qty&&li.unit?'<div style="font-size:10px;color:#aaa">'+li.qty+' '+li.unit+' × $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>':'')+'</td><td style="text-align:right;font-size:12px;color:#666">$'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td style="text-align:right;font-size:12px;color:#9B6BE8">'+markup+'%</td><td style="text-align:right;font-size:13px;font-weight:700;color:#1A1A2E">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</td><td style="display:flex;gap:4px"><button onclick="openEditLineItem('+i+')" style="background:#3A78E8;border:none;border-radius:6px;color:#fff;padding:4px 8px;font-size:11px;cursor:pointer">✏️</button><button class="del-btn" onclick="delLineItem('+i+')" style="font-size:16px">×</button></td></tr>';
       });
     });
     html+='</tbody></table></div>';
   }
-  // Summary
+  // Summary (your view — shows profit)
   html+='<div class="est-summary">';
   html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row"><span>Client Total</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row"><span>Client Total (before tax)</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
   if(calc.taxAmt)html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
   html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div>';
+  html+='<div class="est-sum-row profit"><span>Your Profit</span><span>$'+calc.profit.toLocaleString(undefined,{maximumFractionDigits:0})+' ('+calc.margin.toFixed(1)+'%)</span></div>';
   html+='</div>';
   if(e.signedAt){html+='<div class="wcard" style="margin-top:14px;text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">✅ Digitally Signed</div><div style="font-size:12px;color:#888">By: '+e.signedBy+'</div><div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>'+(e.signatureData?'<img src="'+e.signatureData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px"/>':'')+'</div>';}
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">🗑️ Delete Estimate</button>';
   document.getElementById("estDetailBody").innerHTML=html;
 }
 
-// AI ESTIMATE GENERATOR
-async function generateAIEstimate(){
+// AI ESTIMATE GENERATOR — mobile compatible, uses AI profile
+function generateAIEstimate(){
   var prompt=document.getElementById("aiPrompt").value.trim();
   if(!prompt){alert("Please describe the project first.");return;}
   var e=ger();if(!e)return;
   document.getElementById("aiLoading").style.display="block";
-  document.querySelector(".btn-ai").disabled=true;
-  var defaultMarkup=parseFloat(e.markup)||20;
-  var systemPrompt="You are an expert construction estimator with 20 years of experience. Generate a detailed construction estimate based on the job description. Return ONLY valid JSON, no markdown, no explanation. Format: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description of work\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":85,\"total\":85,\"markup\":20}]} Categories must be from: Labor, Materials, Subcontractor, Equipment, Permits & Fees, Other. Use realistic current market pricing for the described location. Include all necessary line items for the scope described. Default markup is "+defaultMarkup+"% but adjust per trade (labor typically higher, materials lower). Return 8-15 line items.";
-  try{
-    var response=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":"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","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        system:systemPrompt,
-        messages:[{role:"user",content:"Generate a construction estimate for: "+prompt}]
-      })
-    });
-    var data=await response.json();
+  var btns=document.querySelectorAll(".btn-ai");
+  btns.forEach(function(b){b.disabled=true;});
+  var profile=DD.aiProfile||{};
+  var defaultMarkup=parseFloat(e.markup)||parseFloat(profile.markup)||20;
+  var laborRate=parseFloat(profile.laborRate)||85;
+  var location=profile.location||"";
+  var instructions=profile.instructions||"";
+  var systemPrompt="You are an expert construction estimator with 20 years of experience."+(location?" You are based in "+location+".":" Use national average pricing.")+" Generate a detailed construction estimate. IMPORTANT: Use "+defaultMarkup+"% markup on ALL line items unless a specific trade warrants different markup. Labor rate is $"+laborRate+"/hr."+(instructions?" Additional instructions: "+instructions:"")+" Return ONLY valid JSON, no markdown, no explanation. Format: {\"lineItems\":[{\"category\":\"Labor\",\"desc\":\"Description\",\"qty\":1,\"unit\":\"hrs\",\"unitCost\":"+laborRate+",\"total\":"+laborRate+",\"markup\":"+defaultMarkup+"}]} Categories: Labor, Materials, Subcontractor, Equipment, Permits & Fees, Allowance, Other. For allowances show the allowance amount as the cost and mark category as Allowance. Include 8-15 line items covering all aspects of the described work.";
+  fetch("/api/estimate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens:1500,
+      system:systemPrompt,
+      messages:[{role:"user",content:"Generate a construction estimate for: "+prompt}]
+    })
+  })
+  .then(function(response){return response.json();})
+  .then(function(data){
     var text=data.content&&data.content[0]&&data.content[0].text||"";
     var clean=text.replace(/```json\n?|```\n?/g,"").trim();
-    var parsed=JSON.parse(clean);
-    if(parsed.lineItems&&parsed.lineItems.length){
+    var parsed;
+    try{parsed=JSON.parse(clean);}catch(pe){alert("Could not read AI response. Please try again.");return;}
+    if(parsed&&parsed.lineItems&&parsed.lineItems.length){
       e.lineItems=(e.lineItems||[]).concat(parsed.lineItems);
-      await eCol.doc(e.id).set(e);
-      T("✅ "+parsed.lineItems.length+" line items added!");
-      document.getElementById("aiPrompt").value="";
-      renderEstDetailBody(e);
+      eCol.doc(e.id).set(e).then(function(){
+        T("✅ "+parsed.lineItems.length+" line items added!");
+        document.getElementById("aiPrompt").value="";
+        renderEstDetailBody(e);
+      });
     } else {
       alert("AI couldn't generate items. Try a more specific description.");
     }
-  }catch(err){
-    console.error(err);
-    alert("Error generating estimate. Please try again.");
-  }finally{
+  })
+  .catch(function(err){
+    alert("Error: "+err.message+". Make sure you are connected to the internet.");
+  })
+  .finally(function(){
     document.getElementById("aiLoading").style.display="none";
-    document.querySelector(".btn-ai").disabled=false;
-  }
+    btns.forEach(function(b){b.disabled=false;});
+  });
+}
+
+// EDIT LINE ITEM
+function openEditLineItem(i){
+  editLineItemIdx=i;
+  var e=ger();var li=e.lineItems[i];
+  var opts=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");
+  document.getElementById("eliCat").innerHTML=opts;
+  document.getElementById("eliDesc").value=li.desc||"";
+  document.getElementById("eliQty").value=li.qty||1;
+  document.getElementById("eliUnit").value=li.unit||"";
+  document.getElementById("eliUnitCost").value=li.unitCost||0;
+  document.getElementById("eliMarkup").value=li.markup||0;
+  updateEliPreview();
+  document.getElementById("editLineItemModal").classList.add("show");
+  ["eliQty","eliUnitCost","eliMarkup"].forEach(function(id){document.getElementById(id).oninput=updateEliPreview;});
+}
+function updateEliPreview(){
+  var qty=parseFloat(document.getElementById("eliQty").value)||0;
+  var uc=parseFloat(document.getElementById("eliUnitCost").value)||0;
+  var markup=parseFloat(document.getElementById("eliMarkup").value)||0;
+  var cost=qty*uc;
+  var total=cost*(1+markup/100);
+  document.getElementById("eliPreview").textContent="$"+total.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
+function saveEditLineItem(){
+  var e=ger();
+  var qty=parseFloat(document.getElementById("eliQty").value)||1;
+  var uc=parseFloat(document.getElementById("eliUnitCost").value)||0;
+  var markup=parseFloat(document.getElementById("eliMarkup").value)||0;
+  e.lineItems[editLineItemIdx]={
+    category:document.getElementById("eliCat").value,
+    desc:document.getElementById("eliDesc").value.trim(),
+    qty:qty,unit:document.getElementById("eliUnit").value.trim(),
+    unitCost:uc,total:qty*uc,markup:markup
+  };
+  eCol.doc(e.id).set(e).then(function(){T("✅ Updated!");closeEditLineItem();renderEstDetailBody(e);});
 }
 
 function openNewEstimate(){
   editEstId=null;
   document.getElementById("estFormTitle").textContent="New Estimate";
   ["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone"].forEach(function(id){document.getElementById(id).value="";});
-  document.getElementById("efMarkup").value="20";document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";
+  var defaultMarkup=(DD.aiProfile&&DD.aiProfile.markup)||20;
+  document.getElementById("efMarkup").value=defaultMarkup;
+  document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";
   var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;
   var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];
   document.getElementById("estFormPage").classList.add("show");
@@ -651,21 +716,21 @@ function saveEstimate(){
   if(!client||!type){alert("Client name and project type required.");return;}
   var id=editEstId||("est"+Date.now());var existing=editEstId?(ger()||{}):{};
   var est=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],createdAt:existing.createdAt||Date.now()});
-  eCol.doc(id).set(est).then(function(){T(editEstId?"✅ Updated!":"✅ Created!");document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{renderEstDetailBody(ger()||est);}});
+  eCol.doc(id).set(est).then(function(){T(editEstId?"✅ Updated!":"✅ Created!");document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});
 }
-function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("✅ Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstDetailBody(e);renderEstCards();});}
+function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("✅ Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 
 // LINE ITEMS
 function openAddLineItem(){
-  populateLiCats();
+  var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");
+  document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;
   ["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});
   document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";
-  var defaultMarkup=(ger()||{}).markup||20;
+  var defaultMarkup=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;
   document.getElementById("liMarkup").value=defaultMarkup;document.getElementById("liMarkupS").value=defaultMarkup;
   document.getElementById("addLineItemModal").classList.add("show");
 }
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
-function populateLiCats(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;}
 function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
 function saveLineItem(){
   var e=ger();if(!e)return;e.lineItems=e.lineItems||[];
@@ -694,11 +759,33 @@ function sendEstimate(){
   if(!e.clientPhone&&!e.clientEmail){alert("No client contact info found.");}
   if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}
 }
+
+// CONVERT TO PROJECT — line items become scope items, budget = your cost
 function convertToProject(){
-  var e=ger();if(!e)return;if(!confirm("Convert to project?"))return;
+  var e=ger();if(!e)return;if(!confirm("Convert to project? Line items will become Scope of Work items."))return;
   var calc=calcEstimate(e);
-  var newProj={id:"p"+Date.now(),client:e.client,type:e.type,address:e.address||"",pm:"",startDate:"",endDate:"",budget:Math.round(calc.grandTotal),spent:0,status:DD.projectStatuses[0]||"Planning",notes:"Converted from estimate. "+e.notes,color:COLORS[Math.floor(Math.random()*COLORS.length)],choices:[],phases:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[],estimateId:e.id};
-  col.doc(newProj.id).set(newProj).then(function(){e.projectId=newProj.id;eCol.doc(e.id).set(e);T("✅ Project created!");pushNotification("Estimate converted: "+e.client);document.getElementById("estDetailPage").classList.remove("show");switchMainTab("projects");setTimeout(function(){openDetail(newProj.id);},500);});
+  // Convert line items to scope items
+  var scopeItems=(e.lineItems||[]).map(function(li){
+    return{desc:li.desc+(li.qty&&li.unit?" ("+li.qty+" "+li.unit+")":""),start:"",end:"",budget:parseFloat(li.total)||0,actual:0,complete:"Not Started",assignTo:"",assignPhone:"",assignEmail:"",category:li.category};
+  });
+  var newProj={
+    id:"p"+Date.now(),client:e.client,type:e.type,address:e.address||"",pm:"",
+    startDate:"",endDate:"",
+    budget:Math.round(calc.subtotal), // YOUR COST, not client total
+    spent:0,status:DD.projectStatuses[0]||"Planning",
+    notes:"Converted from estimate. "+e.notes,
+    color:COLORS[Math.floor(Math.random()*COLORS.length)],
+    scopeItems:scopeItems,choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[],
+    estimateId:e.id,estimateTotal:Math.round(calc.grandTotal)
+  };
+  col.doc(newProj.id).set(newProj).then(function(){
+    e.projectId=newProj.id;eCol.doc(e.id).set(e);
+    T("✅ Project created with "+scopeItems.length+" scope items!");
+    pushNotification("Estimate converted: "+e.client);
+    document.getElementById("estDetailPage").classList.remove("show");
+    switchMainTab("projects");
+    setTimeout(function(){openDetail(newProj.id);},500);
+  });
 }
 function deleteEstimate(){if(!confirm("Delete?"))return;eCol.doc(currentEstId).delete().then(function(){document.getElementById("estDetailPage").classList.remove("show");T("Deleted");renderEstCards();});}
 
@@ -720,11 +807,16 @@ function renderClientView(e,wrapper){
     (e.lineItems||[]).forEach(function(li){var cat=li.category||"Other";if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push(li);});
     Object.keys(byCategory).forEach(function(cat){
       html+='<div style="font-size:11px;font-weight:700;color:#9B6BE8;text-transform:uppercase;margin:10px 0 6px">'+cat+'</div>';
-      byCategory[cat].forEach(function(li){var clientAmt=calcLineItemTotal(li);html+='<div class="li-row"><div class="li-name">'+li.desc+'</div><div class="li-total">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';});
+      byCategory[cat].forEach(function(li){
+        var clientAmt=calcLineItemTotal(li);
+        var isAllowance=li.category==="Allowance";
+        // For allowances show the allowance amount clearly
+        html+='<div class="li-row"><div class="li-name">'+li.desc+(isAllowance?'<div style="font-size:10px;color:#B87A00;margin-top:2px">Allowance: $'+(parseFloat(li.total)||0).toLocaleString()+'</div>':'')+'</div><div class="li-total">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+      });
     });
     html+='</div>';
   }
-  // Client only sees grand total — no markup breakdown
+  // Client only sees total — no markup breakdown
   html+='<div class="est-summary">';
   if(calc.taxAmt)html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div><div class="est-sum-row"><span>Tax</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
   html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
@@ -759,51 +851,154 @@ function submitSignature(estId){
 }
 
 // PROJECT DETAIL
-function openDetail(id){currentId=id;currentTab="timeline";timelineView="list";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A"};document.getElementById("dName").textContent=p.client;var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
-function renderTabs(p){var tabs=["Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t){var k=t.toLowerCase().replace(/ /g,"-"),on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
-function renderGantt(p){var phases=p.phases||[];if(!phases.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No phases added yet.</div>';var minD=null,maxD=null;phases.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add dates to phases to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';phases.forEach(function(ph){if(!ph.start||!ph.end){html+='<div class="gantt-row"><div class="gantt-label">'+ph.name+'</div><div style="font-size:11px;color:#aaa;flex:1">No dates</div></div>';return;}var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";html+='<div class="gantt-row"><div class="gantt-label" title="'+ph.name+'">'+ph.name+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+ph.name+'</div></div></div>';});html+='</div></div>';return html;}
-function renderCalendar(p){var phases=p.phases||[];var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">‹</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">›</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';phases.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+ph.name+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
+function openDetail(id){
+  currentId=id;currentTab="scope";
+  var p=gpr();if(!p)return;
+  var s=sc(p.status)||{bg:"#FFF3EC",text:"#C4511A"};
+  document.getElementById("dName").textContent=p.client;
+  var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
+  renderTabs(p);renderTabBody(p);
+  var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;
+}
+
+function renderTabs(p){
+  var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];
+  var keys=["scope","timeline","choices","budget","punch-list","change-orders","daily-log","notes"];
+  document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){
+    var k=keys[idx],on=k===currentTab;
+    return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#E8713A")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';
+  }).join("");
+  document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});
+}
+
+function renderGantt(p){
+  var items=(p.scopeItems||p.phases||[]);
+  if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';
+  var minD=null,maxD=null;
+  items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});
+  if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';
+  var totalDays=(maxD-minD)/86400000+1;
+  var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}
+  var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';
+  months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});
+  html+='</div>';
+  items.forEach(function(ph){if(!ph.start||!ph.end){return;}var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+label+'">'+label+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+label+'</div></div></div>';});
+  html+='</div></div>';return html;
+}
+
+function renderCalendar(p){
+  var items=(p.scopeItems||p.phases||[]);
+  var y=calMonth.getFullYear(),mo=calMonth.getMonth();
+  var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">‹</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">›</button></div><div class="cal-grid">';
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});
+  var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();
+  var today=new Date();today.setHours(0,0,0,0);
+  for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';
+  for(var d=1;d<=daysInMonth;d++){
+    var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();
+    html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';
+    items.forEach(function(ph){
+      if(!ph.start||!ph.end)return;
+      var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);
+      if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#E8713A":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="cal-event" style="background:'+clr+'">'+label+'</div>';}
+    });
+    html+='</div>';
+  }
+  html+='</div></div>';return html;
+}
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
 function calNext(){calMonth.setMonth(calMonth.getMonth()+1);var p=gpr();if(p)renderTabBody(p);}
-function setView(v){timelineView=v;var p=gpr();if(p)renderTabBody(p);}
-function notifyAssignee(phaseIdx){var p=gpr();var ph=p.phases[phaseIdx];if(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail){alert("Please assign someone to this phase first.");return;}var member=(DD.team||[]).find(function(m){return m.name===ph.assignTo;});var isEmployee=member&&member.type==="Employee";var contractAmt=ph.phaseActual||0;var msg=["Hi "+(ph.assignTo||"Team")+" —","",isEmployee?"You are responsible for completing the following task or finding a qualified subcontractor that fits within the budget:":"You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+ph.name,"Start Date: "+fmtFull(ph.start),"End Date: "+fmtFull(ph.end),"Contract Amount: $"+contractAmt.toLocaleString(),"Status: "+ph.complete,"",isEmployee?"Please confirm you have arranged coverage for this task and reply with your plan.":"Please reply to confirm your availability and acceptance of this assignment.","","Thank you,",DD.companyName||"Spence Contracting"].join("\n");var phone=ph.assignPhone||"",email=ph.assignEmail||"";if(phone){window.open("sms:"+phone+"?body="+encodeURIComponent(msg));}if(email){setTimeout(function(){window.open("mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+ph.name+" — "+p.client)+"&body="+encodeURIComponent(msg));},phone?1200:0);}}
-function autoFillAssignee(){var sel=document.getElementById("epAssign").value;var member=(DD.team||[]).find(function(m){return m.name===sel;});if(member){document.getElementById("epPhone").value=member.phone||"";document.getElementById("epEmail").value=member.email||"";}else{document.getElementById("epPhone").value="";document.getElementById("epEmail").value="";}}
-function openEditPhase(i){editPhaseIdx=i;var p=gpr();var ph=p.phases[i];document.getElementById("epName").value=ph.name||"";document.getElementById("epStart").value=ph.start||"";document.getElementById("epEnd").value=ph.end||"";document.getElementById("epBudget").value=ph.phaseBudget||0;document.getElementById("epActual").value=ph.phaseActual||0;document.getElementById("epStatus").value=ph.complete||"Not Started";document.getElementById("epPhone").value=ph.assignPhone||"";document.getElementById("epEmail").value=ph.assignEmail||"";var opts='<option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'"'+(m.name===ph.assignTo?" selected":"")+'>'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("");document.getElementById("epAssign").innerHTML=opts;document.getElementById("epAssign").value=ph.assignTo||"";document.getElementById("editPhaseModal").classList.add("show");}
-function closeEditPhase(){document.getElementById("editPhaseModal").classList.remove("show");}
-function saveEditPhase(){var p=gpr();var oldStatus=p.phases[editPhaseIdx].complete;var newStatus=document.getElementById("epStatus").value;p.phases[editPhaseIdx]={name:document.getElementById("epName").value.trim(),start:document.getElementById("epStart").value,end:document.getElementById("epEnd").value,phaseBudget:parseFloat(document.getElementById("epBudget").value)||0,phaseActual:parseFloat(document.getElementById("epActual").value)||0,complete:newStatus,assignTo:document.getElementById("epAssign").value,assignPhone:document.getElementById("epPhone").value.trim(),assignEmail:document.getElementById("epEmail").value.trim()};saveP(p,oldStatus!==newStatus?"Phase '"+p.phases[editPhaseIdx].name+"' updated to "+newStatus+" on "+p.client:null);closeEditPhase();}
+
+function notifyAssignee(idx){
+  var p=gpr();var items=p.scopeItems||[];var ph=items[idx];
+  if(!ph||(!ph.assignTo&&!ph.assignPhone&&!ph.assignEmail)){alert("Please assign someone to this item first.");return;}
+  var member=(DD.team||[]).find(function(m){return m.name===ph.assignTo;});
+  var isEmployee=member&&member.type==="Employee";
+  var contractAmt=ph.actual||0;
+  var label=ph.desc||ph.name||"";
+  var msg=["Hi "+(ph.assignTo||"Team")+" —","",isEmployee?"You are responsible for completing the following task or finding a qualified subcontractor that fits within the budget:":"You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"Start Date: "+fmtFull(ph.start),"End Date: "+fmtFull(ph.end),"Contract Amount: $"+contractAmt.toLocaleString(),"Status: "+(ph.complete||"Not Started"),"",isEmployee?"Please confirm you have arranged coverage and reply with your plan.":"Please reply to confirm your availability and acceptance.","","Thank you,",DD.companyName||"Spence Contracting"].join("\n");
+  var phone=ph.assignPhone||"",email=ph.assignEmail||"";
+  if(phone){window.open("sms:"+phone+"?body="+encodeURIComponent(msg));}
+  if(email){setTimeout(function(){window.open("mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+label+" — "+p.client)+"&body="+encodeURIComponent(msg));},phone?1200:0);}
+}
+
+function autoFillScopeAssignee(){var sel=document.getElementById("esAssign").value;var member=(DD.team||[]).find(function(m){return m.name===sel;});if(member){document.getElementById("esPhone").value=member.phone||"";document.getElementById("esEmail").value=member.email||"";}else{document.getElementById("esPhone").value="";document.getElementById("esEmail").value="";}}
+function openEditScope(i){
+  editScopeIdx=i;var p=gpr();var items=p.scopeItems||[];var ph=items[i];
+  document.getElementById("esDesc").value=ph.desc||ph.name||"";
+  document.getElementById("esStart").value=ph.start||"";document.getElementById("esEnd").value=ph.end||"";
+  document.getElementById("esBudget").value=ph.budget||ph.phaseBudget||0;document.getElementById("esActual").value=ph.actual||ph.phaseActual||0;
+  document.getElementById("esStatus").value=ph.complete||"Not Started";
+  document.getElementById("esPhone").value=ph.assignPhone||"";document.getElementById("esEmail").value=ph.assignEmail||"";
+  var opts='<option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'"'+(m.name===ph.assignTo?" selected":"")+'>'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("");
+  document.getElementById("esAssign").innerHTML=opts;document.getElementById("esAssign").value=ph.assignTo||"";
+  document.getElementById("editScopeModal").classList.add("show");
+}
+function closeEditScope(){document.getElementById("editScopeModal").classList.remove("show");}
+function saveEditScope(){
+  var p=gpr();var items=p.scopeItems||[];var oldStatus=items[editScopeIdx].complete;var newStatus=document.getElementById("esStatus").value;
+  items[editScopeIdx]={desc:document.getElementById("esDesc").value.trim(),start:document.getElementById("esStart").value,end:document.getElementById("esEnd").value,budget:parseFloat(document.getElementById("esBudget").value)||0,actual:parseFloat(document.getElementById("esActual").value)||0,complete:newStatus,assignTo:document.getElementById("esAssign").value,assignPhone:document.getElementById("esPhone").value.trim(),assignEmail:document.getElementById("esEmail").value.trim(),category:items[editScopeIdx].category||""};
+  p.scopeItems=items;
+  saveP(p,oldStatus!==newStatus?"Scope item '"+items[editScopeIdx].desc+"' updated to "+newStatus+" on "+p.client:null);
+  closeEditScope();
+}
+
 function openEditChoice(i){editChoiceIdx=i;var p=gpr();var ch=p.choices[i];document.getElementById("ecCat").value=ch.category||"";document.getElementById("ecItem").value=ch.item||"";document.getElementById("ecVendor").value=ch.vendor||"";document.getElementById("ecNotes").value=ch.notes||"";document.getElementById("ecBudget").value=ch.budgetAmt||0;document.getElementById("ecActual").value=ch.actualAmt||0;document.getElementById("ecStatus").innerHTML=DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("");document.getElementById("editChoiceModal").classList.add("show");}
 function closeEditChoice(){document.getElementById("editChoiceModal").classList.remove("show");}
 function saveEditChoice(){var p=gpr();var oldStatus=p.choices[editChoiceIdx].status;var newStatus=document.getElementById("ecStatus").value;p.choices[editChoiceIdx]={category:document.getElementById("ecCat").value.trim(),item:document.getElementById("ecItem").value.trim(),vendor:document.getElementById("ecVendor").value.trim(),notes:document.getElementById("ecNotes").value.trim(),status:newStatus,budgetAmt:parseFloat(document.getElementById("ecBudget").value)||0,actualAmt:parseFloat(document.getElementById("ecActual").value)||0};saveP(p,oldStatus!==newStatus?"Selection '"+p.choices[editChoiceIdx].category+"' changed to "+newStatus+" on "+p.client:null);closeEditChoice();}
 
 function renderTabBody(p){
   var html="";
-  if(currentTab==="timeline"){
-    html+='<div class="view-toggle"><button class="vt-btn'+(timelineView==="list"?" on":"")+'" onclick="setView(\'list\')">📋 List</button><button class="vt-btn'+(timelineView==="gantt"?" on":"")+'" onclick="setView(\'gantt\')">📊 Gantt</button><button class="vt-btn'+(timelineView==="calendar"?" on":"")+'" onclick="setView(\'calendar\')">📅 Calendar</button></div>';
+  if(currentTab==="scope"){
+    // Scope of Work tab
+    var items=p.scopeItems||[];
+    var tB=0,tA=0;items.forEach(function(it){tB+=(parseFloat(it.budget)||0);tA+=(parseFloat(it.actual)||0);});
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
-    if(timelineView==="gantt"){html+=renderGantt(p);}
-    else if(timelineView==="calendar"){html+=renderCalendar(p);}
-    else{var tPB=0,tPA=0;(p.phases||[]).forEach(function(ph){tPB+=(parseFloat(ph.phaseBudget)||0);tPA+=(parseFloat(ph.phaseActual)||0);});if(p.phases&&p.phases.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tPB,tPA)+'</div>';}html+='<div class="sec-label">Phases</div>';(p.phases||[]).forEach(function(ph,i){var c=ph.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";html+='<div class="item-card"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+ph.name+'</div>'+(ph.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(ph.start)+(ph.end?' → '+fmt(ph.end):'')+'</div>':'')+(ph.assignTo?'<div style="font-size:11px;color:#9B6BE8;margin-top:2px">👤 '+ph.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditPhase('+i+')">Edit</button>'+(ph.assignTo?'<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>':'')+'<button class="del-btn" onclick="delPhase('+i+')">×</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updatePhaseStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ph.phaseBudget||0,ph.phaseActual||0)+'</div>';});}
-    html+='<button class="btn-dashed" onclick="showForm(\'phaseForm\')">+ Add Phase</button>';
-    html+='<div class="inline-form" id="phaseForm"><label class="fl" style="margin-bottom:6px">Phase</label><select class="fi" id="pSel" style="margin-bottom:8px" onchange="document.getElementById(\'pCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="pCustom" placeholder="Custom name" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="pSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="pEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="pBud" type="number" placeholder="0"/></div><div><label class="fl">Actual/Bid ($)</label><input class="fi" id="pAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="pAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'phaseForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPhase()">Add Phase</button></div></div>';
+    if(p.estimateTotal){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">💰 Estimate Total (Client Price)</div><div style="font-size:18px;font-weight:700;color:#E8713A">$'+p.estimateTotal.toLocaleString()+'</div></div>';}
+    if(items.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tB,tA)+'</div>';}
+    html+='<div class="sec-label">Scope of Work Items</div>';
+    items.forEach(function(it,i){
+      var c=it.complete||"Not Started",pct=c==="Complete"?100:c==="In Progress"?50:0;
+      var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#E8713A":"#CBD5E1";
+      html+='<div class="scope-item"><div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+it.desc+'</div>'+(it.category?'<div style="font-size:10px;color:#9B6BE8;margin-top:2px;text-transform:uppercase">'+it.category+'</div>':'')+(it.start?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' → '+fmt(it.end):'')+'</div>':'')+(it.assignTo?'<div style="font-size:11px;color:#9B6BE8;margin-top:2px">👤 '+it.assignTo+'</div>':'')+'</div><div style="display:flex;gap:6px"><button class="btn-blue" style="padding:6px 10px;font-size:11px" onclick="openEditScope('+i+')">Edit</button>'+(it.assignTo?'<button class="btn-notify" onclick="notifyAssignee('+i+')">Notify</button>':'')+'<button class="del-btn" onclick="delScopeItem('+i+')">×</button></div></div><div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateScopeStatus('+i+',this.value)">'+["Not Started","In Progress","Complete"].map(function(s){return'<option'+(s===c?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(it.budget||0,it.actual||0)+'</div>';
+    });
+    html+='<button class="btn-dashed" onclick="showForm(\'scopeForm\')">+ Add Scope Item</button>';
+    html+='<div class="inline-form" id="scopeForm"><label class="fl" style="margin-bottom:6px">Description</label><select class="fi" id="siSel" style="margin-bottom:8px" onchange="document.getElementById(\'siCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="siCustom" placeholder="Custom description" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="siSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="siEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="siBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="siAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="siAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'scopeForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addScopeItem()">Add Item</button></div></div>';
+
+  } else if(currentTab==="timeline"){
+    // Timeline = Gantt + Calendar only
+    html+='<div class="view-toggle"><button class="vt-btn on" id="vtGantt" onclick="switchTLView(\'gantt\',this)">📊 Gantt</button><button class="vt-btn" id="vtCal" onclick="switchTLView(\'cal\',this)">📅 Calendar</button></div>';
+    html+='<div id="tlContent">';
+    html+=renderGantt(p);
+    html+='</div>';
+
   } else if(currentTab==="choices"){
-    var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';}
+    var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
+    if(p.choices&&p.choices.length){html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';}
     html+='<div class="sec-label">Client Selections</div>';
     (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">×</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
     html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
+
   } else if(currentTab==="budget"){
-    var tPB2=0,tPA2=0,tCB2=0,tCA2=0;(p.phases||[]).forEach(function(ph){tPB2+=(parseFloat(ph.phaseBudget)||0);tPA2+=(parseFloat(ph.phaseActual)||0);});(p.choices||[]).forEach(function(ch){tCB2+=(parseFloat(ch.budgetAmt)||0);tCA2+=(parseFloat(ch.actualAmt)||0);});
-    var grandB=p.budget||0,grandA=p.spent||0;var coImpact=(p.changeOrders||[]).filter(function(c){return c.status==="Approved";}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
+    var tSB=0,tSA=0,tCB2=0,tCA2=0;
+    (p.scopeItems||[]).forEach(function(it){tSB+=(parseFloat(it.budget)||0);tSA+=(parseFloat(it.actual)||0);});
+    (p.choices||[]).forEach(function(ch){tCB2+=(parseFloat(ch.budgetAmt)||0);tCA2+=(parseFloat(ch.actualAmt)||0);});
+    var grandB=p.budget||0,grandA=p.spent||0;
+    var coImpact=(p.changeOrders||[]).filter(function(c){return c.status==="Approved";}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
     html+='<div class="wcard"><div style="font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:10px">Overall Budget vs Actual</div>'+bvaHtml(grandB,grandA)+'</div>';
-    if(coImpact){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">⚠️ Approved Change Orders</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+coImpact.toLocaleString()+' added to scope</div></div>';}
+    if(p.estimateTotal){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">Client Contract Price</div><div style="font-size:18px;font-weight:700;color:#E8713A">$'+p.estimateTotal.toLocaleString()+'</div><div style="font-size:12px;color:#888;margin-top:4px">Profit if on budget: $'+(p.estimateTotal-grandB).toLocaleString()+'</div></div>';}
+    if(coImpact){html+='<div class="wcard" style="background:#FFF8EC"><div style="font-size:12px;font-weight:700;color:#B87A00;margin-bottom:4px">⚠️ Approved Change Orders</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+coImpact.toLocaleString()+' added</div></div>';}
     html+='<div class="summary-grid"><div class="sbox"><div class="sbox-label">Budget</div><div class="sbox-val" style="color:#1A1A2E">$'+grandB.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Spent</div><div class="sbox-val" style="color:#E8713A">$'+grandA.toLocaleString()+'</div></div><div class="sbox"><div class="sbox-label">Remaining</div><div class="sbox-val" style="color:#2EAA72">$'+(grandB-grandA).toLocaleString()+'</div></div></div>';
-    if(tPB2||tPA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Phases</div>'+bvaHtml(tPB2,tPA2)+'</div>';}
+    if(tSB||tSA){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📋 From Scope of Work</div>'+bvaHtml(tSB,tSA)+'</div>';}
     if(tCB2||tCA2){html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">🎨 From Selections</div>'+bvaHtml(tCB2,tCA2)+'</div>';}
     html+='<div class="sec-label">Cost Line Items</div>';
     (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">×</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px;gap:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
     html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
     html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
+
   } else if(currentTab==="punch-list"){
     var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
@@ -811,6 +1006,7 @@ function renderTabBody(p){
     (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"✓":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">×</button></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
+
   } else if(currentTab==="change-orders"){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length){html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8713A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';}
@@ -818,11 +1014,13 @@ function renderTabBody(p){
     (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' · '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">×</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" placeholder="Details..." style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
+
   } else if(currentTab==="daily-log"){
     html+='<div class="sec-label">Daily Logs</div>';
     var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' · '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">×</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">⚠️ '+log.issues+'</div>':'')+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
     html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72°F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:10px"></textarea><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
+
   } else if(currentTab==="notes"){
     html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">General Notes</label><textarea class="fi" id="notesInput" rows="5" style="margin-bottom:10px">'+(p.notes||"")+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div>';
     html+='<div class="sec-label">Action Items</div>';
@@ -836,11 +1034,30 @@ function renderTabBody(p){
   document.getElementById("tabBody").innerHTML=html;
 }
 
+function switchTLView(mode,btn){
+  document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+  var p=gpr();if(!p)return;
+  var el=document.getElementById("tlContent");
+  if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);
+}
+
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
-function addPhase(){var sel=document.getElementById("pSel"),name=sel.value==="__c__"?document.getElementById("pCustom").value.trim():sel.value;if(!name){alert("Enter a phase name.");return;}var p=gpr();p.phases=p.phases||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("pAssign").value;});p.phases.push({name:name,start:document.getElementById("pSt").value,end:document.getElementById("pEn").value,phaseBudget:parseFloat(document.getElementById("pBud").value)||0,phaseActual:parseFloat(document.getElementById("pAct").value)||0,complete:"Not Started",assignTo:document.getElementById("pAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Phase '"+name+"' added to "+p.client);}
-function delPhase(i){if(!confirm("Delete phase?"))return;var p=gpr();p.phases.splice(i,1);saveP(p);}
-function updatePhaseStatus(i,v){var p=gpr();var old=p.phases[i].complete;p.phases[i].complete=v;saveP(p,old!==v?"Phase '"+p.phases[i].name+"' is now "+v+" on "+p.client:null);}
+
+// SCOPE CRUD
+function addScopeItem(){
+  var sel=document.getElementById("siSel"),desc=sel.value==="__c__"?document.getElementById("siCustom").value.trim():sel.value;
+  if(!desc){alert("Enter a description.");return;}
+  var p=gpr();p.scopeItems=p.scopeItems||[];
+  var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("siAssign").value;});
+  p.scopeItems.push({desc:desc,start:document.getElementById("siSt").value,end:document.getElementById("siEn").value,budget:parseFloat(document.getElementById("siBud").value)||0,actual:parseFloat(document.getElementById("siAct").value)||0,complete:"Not Started",assignTo:document.getElementById("siAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});
+  saveP(p,"Scope item '"+desc+"' added to "+p.client);
+}
+function delScopeItem(i){if(!confirm("Delete scope item?"))return;var p=gpr();p.scopeItems.splice(i,1);saveP(p);}
+function updateScopeStatus(i,v){var p=gpr();var old=p.scopeItems[i].complete;p.scopeItems[i].complete=v;saveP(p,old!==v?"'"+p.scopeItems[i].desc+"' is now "+v+" on "+p.client:null);}
+
+// ALL OTHER CRUD
 function addChoice(){var cat=document.getElementById("cCat").value.trim(),item=document.getElementById("cItem").value.trim();if(!cat||!item){alert("Enter category and item.");return;}var p=gpr();p.choices=p.choices||[];p.choices.push({category:cat,item:item,vendor:document.getElementById("cVend").value.trim(),notes:document.getElementById("cNotes").value.trim(),status:document.getElementById("cStat").value,budgetAmt:parseFloat(document.getElementById("cBud").value)||0,actualAmt:parseFloat(document.getElementById("cAct").value)||0});saveP(p,"Selection '"+cat+"' added to "+p.client);}
 function delChoice(i){if(!confirm("Delete?"))return;var p=gpr();p.choices.splice(i,1);saveP(p);}
 function updateChoiceStatus(i,v){var p=gpr();var old=p.choices[i].status;p.choices[i].status=v;saveP(p,old!==v?"Selection '"+p.choices[i].category+"' is now "+v+" on "+p.client:null);}
@@ -861,12 +1078,26 @@ function addNote(){var text=document.getElementById("noteText").value.trim();if(
 function delNote(i){if(!confirm("Delete?"))return;var p=gpr();p.notesLog.splice(i,1);saveP(p);}
 function toggleNote(i){var p=gpr();p.notesLog[i].resolved=!p.notesLog[i].resolved;saveP(p,p.notesLog[i].resolved?"Action item resolved on "+p.client:null);}
 function deleteProject(){if(!confirm("Delete project? Cannot be undone."))return;col.doc(currentId).delete().then(function(){document.getElementById("detailPage").classList.remove("show");T("Deleted");});}
+
+// ADD/EDIT PROJECT
 function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.projectStatuses.map(function(x){return'<option'+(x===(val||DD.projectStatuses[0])?" selected":"")+'>'+x+'</option>';}).join("");}
 function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
 function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
-function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],phases:existing.phases||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");pushNotification(editId?"Project '"+client+"' updated":"New project '"+client+"' created");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
-function openSettings(){renderTeamList();document.getElementById("companyName").value=DD.companyName||"Spence Contracting";renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("elTagsEl","estCategories");document.getElementById("settingsPage").classList.add("show");}
+function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),color:COLORS[selColor],choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"✅ Updated!":"✅ Added!");pushNotification(editId?"Project '"+client+"' updated":"New project '"+client+"' created");document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("❌ Error");});}
+
+// SETTINGS
+function openSettings(){
+  renderTeamList();
+  document.getElementById("companyName").value=DD.companyName||"Spence Contracting";
+  var profile=DD.aiProfile||{};
+  document.getElementById("aiLocation").value=profile.location||"";
+  document.getElementById("aiMarkup").value=profile.markup||20;
+  document.getElementById("aiLaborRate").value=profile.laborRate||85;
+  document.getElementById("aiInstructions").value=profile.instructions||"";
+  renderTagSet("psTagsEl","projectStatuses");renderTagSet("ptTagsEl","phaseTypes");renderTagSet("csTagsEl","choiceStatuses");renderTagSet("ccTagsEl","costCategories");renderTagSet("coTagsEl","changeOrderTypes");renderTagSet("plTagsEl","punchCategories");renderTagSet("elTagsEl","estCategories");
+  document.getElementById("settingsPage").classList.add("show");
+}
 function closeSettings(){document.getElementById("settingsPage").classList.remove("show");}
 function renderTagSet(elId,key){document.getElementById(elId).innerHTML=(DD[key]||[]).map(function(s,i){return'<span class="tag">'+s+'<button onclick="removeTag(\''+key+'\','+i+',\''+elId+'\')">×</button></span>';}).join("");}
 function addTag(key,inputId,elId){var v=document.getElementById(inputId).value.trim();if(!v||(DD[key]||[]).indexOf(v)>=0)return;DD[key]=DD[key]||[];DD[key].push(v);document.getElementById(inputId).value="";renderTagSet(elId,key);saveSettings();}
