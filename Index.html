@@ -1186,14 +1186,7 @@ function generateAIEstimate(){
     });
   })
   .catch(function(err){
-    var msg='Error: '+err.message+'\n\n';
-    if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
-      msg+='Network error - possible causes:\n';
-      msg+='1. Replit server is asleep - open Replit and check the server is running\n';
-      msg+='2. Try refreshing the page and testing again\n';
-      msg+='3. Check your internet connection';
-    }
-    alert(msg);
+    alert('Fetch error: '+err.name+' / '+err.message+'\nSystem prompt length: '+sp.length+'\nPrompt: '+prompt.slice(0,50));
   })
   .finally(function(){
     document.getElementById('aiLoading').style.display='none';
