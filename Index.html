@@ -412,7 +412,13 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
-    <div class="wcard" style="background:linear-gradient(135deg,#1A1A2E,#2B3990)">
+    <div class="wcard" style="border:1.5px solid #2B3990">
+        <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#129302; Test AI Connection</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Check if your Replit server and Anthropic API are working.</div>
+        <button class="btn-navy" onclick="testAIConnection()">Test Connection</button>
+        <div id="aiTestResult" style="font-size:13px;margin-top:8px;line-height:1.6;display:none"></div>
+      </div>
+      <div class="wcard" style="background:linear-gradient(135deg,#1A1A2E,#2B3990)">
       <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px">&#10024; AI Company Profile</div>
       <div class="fg" style="margin-bottom:0">
         <div><label class="fl" style="color:rgba(255,255,255,0.6)">Company Location</label><input class="fi" id="aiLocation" placeholder="e.g. Houston, TX" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"/></div>
