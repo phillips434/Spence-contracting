@@ -5,8 +5,23 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
+const corsOptions = {
+  origin: [
+    'https://spence-contracting--phillip95.replit.app',
+    /\.replit\.app$/,
+    /\.replit\.dev$/,
+    'http://localhost:5000'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false
+};
+
+// Handle preflight OPTIONS for all routes (must come before other middleware)
+app.options(/.*/, cors(corsOptions));
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/estimate', async (req, res) => {
