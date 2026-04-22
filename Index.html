@@ -1105,15 +1105,22 @@ function delExclusion(i){
   eCol.doc(e.id).set(e).then(function(){T('Deleted!');renderEstDetailBody(e);});
 }
 function generateAIEstimate(){
-  var prompt=document.getElementById('aiPrompt').value.trim();
-  if(!prompt){alert('Please enter a command or job description.');return;}
-  var e=ger();if(!e)return;
-  document.getElementById('aiLoading').style.display='block';
-  document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
-  var profile=DD.aiProfile||{};
-  var dm=parseFloat(e.markup)||parseFloat(profile.markup)||20,lr=parseFloat(profile.laborRate)||85;
-  var existingItems=JSON.stringify((e.lineItems||[]).map(function(li,i){return{index:i,desc:li.desc,category:li.category,total:li.total,markup:li.markup};}));
-  var existingExcls=JSON.stringify(e.exclusions||[]);
+  var prompt,e,profile,dm,lr,existingItems,existingExcls;
+  try {
+    prompt=document.getElementById('aiPrompt').value.trim();
+    if(!prompt){alert('Please enter a command or job description.');return;}
+    e=ger();if(!e){alert('No estimate loaded.');return;}
+    document.getElementById('aiLoading').style.display='block';
+    document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
+    profile=DD.aiProfile||{};
+    dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
+    lr=parseFloat(profile.laborRate)||85;
+    existingItems=JSON.stringify((e.lineItems||[]).map(function(li,idx2){return{index:idx2,desc:li.desc,category:li.category,total:li.total,markup:li.markup};}));
+    existingExcls=JSON.stringify(e.exclusions||[]);
+  } catch(setupErr){
+    alert('Setup error: '+setupErr.message);
+    return;
+  }
   var sp='You are an expert construction estimator assistant. You help manage construction estimates by adding, editing, and deleting line items, and generating job exclusions.'+
     ' Current line items ('+( e.lineItems||[]).length+' items): '+existingItems+
     ' Current exclusions: '+existingExcls+
