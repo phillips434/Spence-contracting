@@ -40,7 +40,7 @@ Server runs on port 5000. Workflow: "Start application".
 
 ## Patches Applied on Every Pull
 1. Curly double quotes → straight quotes
-2. API URL → `/api/estimate`
+2. API URL → `/api/estimate` (replace both `https://api.anthropic.com/v1/messages` AND `https://spence-contracting--phillip95.replit.app/api/estimate` with `/api/estimate`)
 3. Strip `x-api-key` headers → `Content-Type` only
 4. Model → `claude-sonnet-4-6` (use broad regex `/claude-(?:opus|sonnet|haiku)-[0-9][0-9a-z-]*/g` to catch all naming variants e.g. `claude-haiku-4-5-20251001`, `claude-sonnet-4-20250514`)
 5. `max_tokens:(1000|1500|2000)` → `max_tokens:4000` (generateAIEstimate needs ≥4000 for complex estimates; keep max_tokens:20 ping and max_tokens:200 log calls unchanged)
