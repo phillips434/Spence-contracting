@@ -205,9 +205,9 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
   <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span></div>
   <div class="main-nav">
-    <button class="nav-tab on" id="navProjects" onclick="switchMainTab('projects')">&#128193; Projects</button>
-    <button class="nav-tab" id="navEstimates" onclick="switchMainTab('estimates')">&#128203; Estimates</button>
-    <button class="nav-tab" id="navDashboard" onclick="switchMainTab('dashboard')">&#128200; Dashboard</button>
+    <button class="nav-tab on" id="navProjects" onclick="switchMainTab(\'projects\')">&#128193; Projects</button>
+    <button class="nav-tab" id="navEstimates" onclick="switchMainTab(\'estimates\')">&#128203; Estimates</button>
+    <button class="nav-tab" id="navDashboard" onclick="switchMainTab(\'dashboard\')">&#128200; Dashboard</button>
   </div>
   <div id="projectsView">
     <div class="stats" id="stats"></div>
@@ -232,7 +232,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- PROJECT DETAIL -->
 <div class="page" id="detailPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('detailPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'detailPage\');return false;">&#8249;</a>
     <span class="phead-title" id="dName"></span>
     <span class="phead-num" id="dJobNum"></span>
     <span class="pbadge" id="dBadge"></span>
@@ -244,7 +244,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ESTIMATE DETAIL -->
 <div class="page" id="estDetailPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('estDetailPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'estDetailPage\');return false;">&#8249;</a>
     <span class="phead-title" id="edName"></span>
     <span class="phead-num" id="edEstNum"></span>
     <span class="pbadge" id="edBadge"></span>
@@ -256,7 +256,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- CLIENT PORTAL -->
 <div class="page" id="portalPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('portalPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'portalPage\');return false;">&#8249;</a>
     <span class="phead-title">Client Portal Preview</span>
   </div>
   <div class="pbody" id="portalBody"></div>
@@ -265,7 +265,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ADD/EDIT PROJECT -->
 <div class="fpage" id="addPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('addPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'addPage\');return false;">&#8249;</a>
     <span class="phead-title" id="addPageTitle">New Project</span>
   </div>
   <div style="padding:14px">
@@ -291,16 +291,12 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <button class="btn-dark" style="flex:2" id="saveBtn">Save Project</button>
     </div>
   </div>
-  <!-- Fixed AI Run Bar - outside scroll container so touch always works -->
-  <div id="aiRunBar" style="display:none;position:sticky;bottom:0;left:0;right:0;background:#1A1A2E;padding:10px 14px;z-index:100;border-top:2px solid #2B3990">
-    <button style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer" onclick="generateAIEstimate()">&#10024; Run AI Command</button>
-  </div>
 </div>
 
 <!-- EDIT SCOPE ITEM -->
 <div class="fpage" id="editScopePage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('editScopePage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'editScopePage\');return false;">&#8249;</a>
     <span class="phead-title">Edit Scope Item</span>
   </div>
   <div style="padding:14px">
@@ -330,7 +326,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('editScopePage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(\'editScopePage\')">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveScopeEditPage()">Save</button>
     </div>
   </div>
@@ -339,7 +335,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- EDIT LINE ITEM PAGE -->
 <div class="fpage" id="editLineItemPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('editLineItemPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'editLineItemPage\');return false;">&#8249;</a>
     <span class="phead-title">Edit Line Item</span>
   </div>
   <div style="padding:14px">
@@ -358,7 +354,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('editLineItemPage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(\'editLineItemPage\')">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveEditLineItemPage()">Save</button>
     </div>
   </div>
@@ -367,7 +363,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ADD/EDIT ESTIMATE -->
 <div class="fpage" id="estFormPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('estFormPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'estFormPage\');return false;">&#8249;</a>
     <span class="phead-title" id="estFormTitle">New Estimate</span>
   </div>
   <div style="padding:14px">
@@ -393,7 +389,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('estFormPage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(\'estFormPage\')">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveEstimate()">Save Estimate</button>
     </div>
   </div>
@@ -402,7 +398,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- NOTIFICATIONS -->
 <div class="page" id="notifsPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('notifsPage');clearBellBadge();return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'notifsPage\');clearBellBadge();return false;">&#8249;</a>
     <span class="phead-title">Notifications</span>
     <button onclick="clearAllNotifs()" style="background:none;border:none;color:#E83A6C;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto">Clear All</button>
   </div>
@@ -412,7 +408,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- SETTINGS -->
 <div class="fpage" id="settingsPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('settingsPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(\'settingsPage\');return false;">&#8249;</a>
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
@@ -467,10 +463,10 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="editScopeModal"><div class="modal-box"><div class="modal-title">Edit Scope Item</div><div class="fg"><div><label class="fl">Description</label><input class="fi" id="esDesc"/></div><div class="fr2"><div><label class="fl">Start</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="esEnd" type="date"/></div></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div><div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div><div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="autoFillScopeAssignee()"><option value="">-- Unassigned --</option></select></div><div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editScopeModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div></div></div>
-<div class="modal-overlay" id="editChoiceModal"><div class="modal-box"><div class="modal-title">Edit Selection</div><div class="fg"><div><label class="fl">Category</label><input class="fi" id="ecCat"/></div><div><label class="fl">Item</label><input class="fi" id="ecItem"/></div><div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div><div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div><div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editChoiceModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div></div></div>
-<div class="modal-overlay" id="editLineItemModal"><div class="modal-box"><div class="modal-title">Edit Line Item</div><div class="fg"><div><label class="fl">Category</label><select class="fi" id="eliCat"></select></div><div><label class="fl">Description</label><input class="fi" id="eliDesc"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="eliQty" type="number"/></div><div><label class="fl">Unit</label><input class="fi" id="eliUnit"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="eliUnitCost" type="number"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="eliMarkup" type="number"/></div><div style="background:#F8F8F8;border-radius:8px;padding:10px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">CLIENT TOTAL</div><div style="font-size:18px;font-weight:700;color:#1A1A2E" id="eliPreview">$0</div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editLineItemModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditLineItem()">Save</button></div></div></div>
-<div class="modal-overlay" id="addLineItemModal"><div class="modal-box"><div class="modal-title">Add Line Item</div><div style="display:flex;gap:8px;margin-bottom:14px"><button class="vt-btn on" id="liTabDetailed" onclick="switchLiTab('detailed')">Detailed</button><button class="vt-btn" id="liTabSimple" onclick="switchLiTab('simple')">Quick Add</button></div><div id="liDetailedForm"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCat"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDesc" placeholder="e.g. Framing labor"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="liQty" type="number" value="1"/></div><div><label class="fl">Unit</label><input class="fi" id="liUnit" placeholder="hrs"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="liUnitCost" type="number" placeholder="0"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkup" type="number" placeholder="20"/></div></div></div><div id="liSimpleForm" style="display:none"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCatS"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDescS"/></div><div><label class="fl">Cost ($)</label><input class="fi" id="liCostS" type="number" placeholder="0"/></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkupS" type="number" placeholder="20"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('addLineItemModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveLineItem()">Add Item</button></div></div></div>
+<div class="modal-overlay" id="editScopeModal"><div class="modal-box"><div class="modal-title">Edit Scope Item</div><div class="fg"><div><label class="fl">Description</label><input class="fi" id="esDesc"/></div><div class="fr2"><div><label class="fl">Start</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="esEnd" type="date"/></div></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div><div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div><div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="autoFillScopeAssignee()"><option value="">-- Unassigned --</option></select></div><div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(\'editScopeModal\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div></div></div>
+<div class="modal-overlay" id="editChoiceModal"><div class="modal-box"><div class="modal-title">Edit Selection</div><div class="fg"><div><label class="fl">Category</label><input class="fi" id="ecCat"/></div><div><label class="fl">Item</label><input class="fi" id="ecItem"/></div><div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div><div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div><div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(\'editChoiceModal\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div></div></div>
+<div class="modal-overlay" id="editLineItemModal"><div class="modal-box"><div class="modal-title">Edit Line Item</div><div class="fg"><div><label class="fl">Category</label><select class="fi" id="eliCat"></select></div><div><label class="fl">Description</label><input class="fi" id="eliDesc"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="eliQty" type="number"/></div><div><label class="fl">Unit</label><input class="fi" id="eliUnit"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="eliUnitCost" type="number"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="eliMarkup" type="number"/></div><div style="background:#F8F8F8;border-radius:8px;padding:10px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">CLIENT TOTAL</div><div style="font-size:18px;font-weight:700;color:#1A1A2E" id="eliPreview">$0</div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(\'editLineItemModal\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditLineItem()">Save</button></div></div></div>
+<div class="modal-overlay" id="addLineItemModal"><div class="modal-box"><div class="modal-title">Add Line Item</div><div style="display:flex;gap:8px;margin-bottom:14px"><button class="vt-btn on" id="liTabDetailed" onclick="switchLiTab(\'detailed\')">Detailed</button><button class="vt-btn" id="liTabSimple" onclick="switchLiTab(\'simple\')">Quick Add</button></div><div id="liDetailedForm"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCat"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDesc" placeholder="e.g. Framing labor"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="liQty" type="number" value="1"/></div><div><label class="fl">Unit</label><input class="fi" id="liUnit" placeholder="hrs"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="liUnitCost" type="number" placeholder="0"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkup" type="number" placeholder="20"/></div></div></div><div id="liSimpleForm" style="display:none"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCatS"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDescS"/></div><div><label class="fl">Cost ($)</label><input class="fi" id="liCostS" type="number" placeholder="0"/></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkupS" type="number" placeholder="20"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(\'addLineItemModal\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveLineItem()">Add Item</button></div></div></div>
 
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)"/>
 <div class="toast" id="toast"></div>
@@ -841,8 +837,8 @@ function renderEstDetailBody(e){
         if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+li.unit+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
         html+='</div>';
         html+='<div style="display:flex;gap:6px;flex-shrink:0">';
-        html+='<button ontouchend="event.preventDefault();openEditLineItem(\'+i+\');" onclick="openEditLineItem(\'+i+\');" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
-        html+='<button ontouchend="event.preventDefault();delLineItem(\'+i+\');" onclick="if(confirm(\'Delete?\'))delLineItem(\'+i+\');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
+        html+='<button ontouchend="event.preventDefault();openEditLineItem('+i+');" onclick="openEditLineItem('+i+');" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
+        html+='<button ontouchend="event.preventDefault();delLineItem('+i+');" onclick="if(confirm(\'Delete?\'))delLineItem('+i+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
         html+='</div></div>';
         html+='<div style="display:flex;justify-content:space-between;font-size:12px">';
         html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
@@ -853,7 +849,6 @@ function renderEstDetailBody(e){
       });
     });
     html+='</div>';
-
   }
 
   // ── PAYMENT SCHEDULE ──────────────────────────────────
@@ -872,10 +867,10 @@ function renderEstDetailBody(e){
     html+='</div>';
     milestones.forEach(function(m,i){
       html+='<div class="pay-mile'+(m.paid?' paid':'')+'">';
-      html+='<div class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone(\'+i+\')">'+(m.paid?'&#10003;':'')+'</div>';
+      html+='<div class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone('+i+')">'+(m.paid?'&#10003;':'')+'</div>';
       html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+m.name+'</div>';
       html+='<div style="font-size:12px;color:#aaa;margin-top:2px">$'+m.amount.toLocaleString()+(m.pct?' ('+m.pct+'%)':'')+'</div></div>';
-      html+='<button class="del-btn" onclick="delMilestone(\'+i+\')">&#215;</button></div>';
+      html+='<button class="del-btn" onclick="delMilestone('+i+')">&#215;</button></div>';
     });
   }
   // Add milestone form inline
@@ -955,7 +950,7 @@ function renderEstDetailBody(e){
       html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="width:8px;height:8px;border-radius:50%;background:#E83A6C;flex-shrink:0"></div>';
       html+='<div style="flex:1;font-size:13px;color:#333">'+ex+'</div>';
-      html+='<button ontouchend="event.preventDefault();delExclusion(\'+xi+\');" onclick="delExclusion(\'+xi+\');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
+      html+='<button ontouchend="event.preventDefault();delExclusion('+xi+');" onclick="delExclusion('+xi+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
       html+='</div>';
     });
   } else {
@@ -1153,7 +1148,7 @@ function generateAIEstimate(){
     // Sanitize system prompt - remove any chars that could break JSON
     sp=sp.replace(/[\u0000-\u001F\u007F-\u009F]/g,' ').replace(/'/g,"'");
 
-  fetch('/api/estimate',{
+    fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
@@ -1778,7 +1773,7 @@ function renderTabBody(p){
       } else {
         html+='<button class="btn-notify" onclick="notifyPerson(\'\','+i+')">Notify</button>';
       }
-      html+='<button class="del-btn" onclick="delScopeItem(\'+i+\')">&#215;</button>';
+      html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
       html+='</div></div>';
       // Progress bar
       html+='<div style="background:#EEE;border-radius:5px;height:6px;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:5px"></div></div>';
@@ -1798,7 +1793,7 @@ function renderTabBody(p){
     var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
     if(p.choices&&p.choices.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';
     html+='<div class="sec-label">Client Selections</div>';
-    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice(\'+i+\')">Edit</button><button class="del-btn" onclick="delChoice(\'+i+\')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
+    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
     html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
   } else if(currentTab==="budget"){
@@ -1810,7 +1805,7 @@ function renderTabBody(p){
     if(tSB||tSA)html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">From Scope of Work</div>'+bvaHtml(tSB,tSA)+'</div>';
     if(tCB2||tCA2)html+='<div class="wcard"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">From Selections</div>'+bvaHtml(tCB2,tCA2)+'</div>';
     html+='<div class="sec-label">Cost Line Items</div>';
-    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost(\'+i+\')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
+    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
     html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
     html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
@@ -1818,19 +1813,19 @@ function renderTabBody(p){
     var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
-    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch(\'+i+\')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch(\'+i+\')">&#215;</button></div>';});
+    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
   } else if(currentTab==="change-orders"){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length)html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8B43A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';
     html+='<div class="sec-label">Change Orders</div>';
-    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO(\'+i+\')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
+    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
   } else if(currentTab==="daily-log"){
     html+='<div class="sec-label">Daily Logs</div>';
-    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog(\'+ri+\')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
+    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
     html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" onclick="generateAILog()">&#10024; AI Generate Log Entry</button><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
   } else if(currentTab==="notes"){
@@ -1838,7 +1833,7 @@ function renderTabBody(p){
     html+='<div class="sec-label">Action Items &amp; Photos</div>';
     var resolved=(p.notesLog||[]).filter(function(n){return n.resolved;}).length,totalNL=(p.notesLog||[]).length;
     if(totalNL>0)html+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">'+resolved+'/'+totalNL+' resolved</div>';
-    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote(\'+i+\')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote(\'+i+\')">&#215;</button></div></div>';});
+    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote('+i+')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote('+i+')">&#215;</button></div></div>';});
     html+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-dashed" style="flex:1;margin-top:0" onclick="showForm(\'noteForm\')">+ Add Action Item</button><button class="btn-dashed" style="flex:1;margin-top:0" onclick="triggerPhotoUpload()">&#128247; Add Photo</button></div>';
     html+='<div class="inline-form" id="noteForm"><label class="fl" style="margin-bottom:6px">Action Item</label><input class="fi" id="noteText" placeholder="e.g. Follow up with client on cabinet selection" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Added By</label><input class="fi" id="noteAuthor" placeholder="Your name" style="margin-bottom:10px"/><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'noteForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addNote()">Add Item</button></div></div>';
     html+='<div class="wcard" style="margin-top:12px">';
@@ -1950,5 +1945,9 @@ document.getElementById("searchInput").oninput=renderCards;
 loadSettings(function(){startSync();startNotifSync();checkClientView();});
 
 </script>
+<!-- AI Run Bar - body level so fixed positioning works on iOS -->
+<div id="aiRunBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1A1A2E;padding:12px 14px;z-index:9999;border-top:2px solid #2B3990">
+  <button style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer" onclick="generateAIEstimate()">&#10024; Run AI Command</button>
+</div>
 </body>
 </html>
