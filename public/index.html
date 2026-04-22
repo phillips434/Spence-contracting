@@ -693,13 +693,33 @@ function migrateAllProjects(){var count=0,batch=db.batch();projects.forEach(func
 function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
 function calcEstimate(est){var items=est.lineItems||[];var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);var clientTotal=items.reduce(function(a,li){return a+calcLineItemTotal(li);},0);var tax=parseFloat(est.tax)||0;var taxAmt=clientTotal*(tax/100);var grandTotal=clientTotal+taxAmt;var profit=grandTotal-subtotal-taxAmt;var margin=grandTotal>0?(profit/grandTotal*100):0;return{subtotal:subtotal,clientTotal:clientTotal,taxAmt:taxAmt,grandTotal:grandTotal,profit:profit,margin:margin};}
 
-function switchMainTab(tab){mainTabMode=tab;document.getElementById("navProjects").classList.toggle("on",tab==="projects");document.getElementById("navEstimates").classList.toggle("on",tab==="estimates");document.getElementById("navDashboard").classList.toggle("on",tab==="dashboard");document.getElementById("projectsView").style.display=tab==="projects"?"block":"none";document.getElementById("estimatesView").style.display=tab==="estimates"?"block":"none";document.getElementById("dashboardView").style.display=tab==="dashboard"?"block":"none";if(tab==="projects"){document.getElementById("btnNew").textContent="+ New";document.getElementById("btnNew").onclick=openAdd;
+function switchMainTab(tab){
+  mainTabMode=tab;
+  document.getElementById("navProjects").classList.toggle("on",tab==="projects");
+  document.getElementById("navEstimates").classList.toggle("on",tab==="estimates");
+  document.getElementById("navDashboard").classList.toggle("on",tab==="dashboard");
+  document.getElementById("projectsView").style.display=tab==="projects"?"block":"none";
+  document.getElementById("estimatesView").style.display=tab==="estimates"?"block":"none";
+  document.getElementById("dashboardView").style.display=tab==="dashboard"?"block":"none";
+  if(tab==="projects"){
+    document.getElementById("btnNew").textContent="+ New";
+    document.getElementById("btnNew").onclick=openAdd;
+    renderCards();
+  } else if(tab==="estimates"){
+    document.getElementById("btnNew").textContent="+ New Est";
+    document.getElementById("btnNew").onclick=openNewEstimate;
+    renderEstCards();
+  } else if(tab==="dashboard"){
+    document.getElementById("btnNew").textContent="+ New";
+    document.getElementById("btnNew").onclick=openAdd;
+    renderDashboard();
+  }
+}
 
 // Document-level capture listener - fires BEFORE scroll handler, works on all iOS
 document.addEventListener('click',function(ev){
   var btn=ev.target.closest('[data-action]');
   if(!btn)return;
-  // Only handle if we're on the estimate detail page
   var page=document.getElementById('estDetailPage');
   if(!page||!page.classList.contains('show'))return;
   ev.preventDefault();
@@ -715,9 +735,6 @@ document.addEventListener('click',function(ev){
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
 },true);
-}else if(tab==="estimates"){document.getElementById("btnNew").textContent="+ New Est";document.getElementById("btnNew").onclick=openNewEstimate;renderEstCards();}else if(tab==="dashboard"){document.getElementById("btnNew").textContent="+ New";document.getElementById("btnNew").onclick=openAdd;
-
-enderDashboard();}}
 function pushNotification(text,proj){nCol.add({text:text,project:proj||"",ts:Date.now(),read:false});}
 function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
 function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
