@@ -251,9 +251,23 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 
   <div class="pbody" id="estDetailBody"></div>
-<div id="aiCmdBar" style="display:none;padding:10px 14px 24px;background:#1A1A2E">
-  <button style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700" onclick="generateAIEstimate()">&#10024; Run AI Command</button>
-</div>
+
+  <!-- STATIC AI PANEL - always in DOM, never dynamically rendered -->
+  <div id="aiPanel" style="display:none;padding:14px;background:#fff;border-top:1px solid #EEE">
+    <div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">
+      <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:10px">Add items, remove items, adjust markup, generate exclusions</div>
+      <textarea id="aiPrompt" rows="3" style="width:100%;border-radius:10px;border:none;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px" placeholder="e.g. Generate line items for kitchen remodel Houston TX&#10;Remove permit fees&#10;Change all markup to 28%&#10;Generate exclusions for bathroom remodel"></textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="document.getElementById('aiPrompt').value='Generate line items for '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>
+        <button onclick="document.getElementById('aiPrompt').value='Remove the line item: '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>
+        <button onclick="document.getElementById('aiPrompt').value='Change markup on all items to '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>
+        <button onclick="document.getElementById('aiPrompt').value='Generate standard exclusions for '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>
+      </div>
+      <button onclick="generateAIEstimate()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">&#10024; Run AI Command</button>
+      <div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>
+    </div>
+  </div>
 </div>
 
 <!-- CLIENT PORTAL -->
@@ -776,18 +790,7 @@ function renderEstDetailBody(e){
   var html='';
 
   // AI Generator
-  html+='<div class="ai-box">';
-  html+='<div class="ai-title">&#10024; AI Estimate Assistant</div>';
-  html+='<div class="ai-sub">Describe the job OR give commands to add, edit, delete items and generate exclusions</div>';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
-  html+='<button ontouchend="event.preventDefault();setAIPrompt('Generate line items for ');" onclick="setAIPrompt('Generate line items for ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
-  html+='<button ontouchend="event.preventDefault();setAIPrompt('Remove the line item: ');" onclick="setAIPrompt('Remove the line item: ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove item</button>';
-  html+='<button ontouchend="event.preventDefault();setAIPrompt('Change markup on all items to ');" onclick="setAIPrompt('Change markup on all items to ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Adjust markup</button>';
-  html+='<button ontouchend="event.preventDefault();setAIPrompt('Generate standard exclusions for ');" onclick="setAIPrompt('Generate standard exclusions for ');" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
-  html+='</div>';
-  html+='<textarea class="ai-input" id="aiPrompt" rows="3" placeholder="Try: Generate line items for kitchen remodel Houston TX&#10;Or: Remove permit fees&#10;Or: Change labor markup to 30%&#10;Or: Generate exclusions for bathroom remodel"></textarea>';
-  html+='<button class="btn-ai" ontouchend="event.preventDefault();generateAIEstimate();" onclick="generateAIEstimate();" style="margin-top:10px">&#10024; Run AI Command</button>';
-  html+='<div class="ai-loading" id="aiLoading"><span class="ai-spinner"></span>AI is working...</div>';'</div>';
+  // AI panel is static HTML above - see id='aiPanel''</div>';
 
   // Header info
   html+='<div class="wcard">';
@@ -965,7 +968,7 @@ function renderEstDetailBody(e){
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
 
   document.getElementById('estDetailBody').innerHTML=html;
-  var _b=document.getElementById('aiCmdBar');if(_b)_b.style.display='block';
+  var _ap=document.getElementById('aiPanel');if(_ap)_ap.style.display='block';
   // Event delegation - handles ALL button clicks in estimate detail reliably on iOS
   var body=document.getElementById('estDetailBody');
   body.onclick=null;
@@ -1142,17 +1145,12 @@ function generateAIEstimate(){
     ' - For "generate exclusions" commands: create 5-10 standard exclusions for that project type'+
     ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
     ' - For "change markup to X%" commands: put all item updates in updateItems';
-    // Sanitize system prompt - remove any chars that could break JSON
-    sp=sp.replace(/[\u0000-\u001F\u007F-\u009F]/g,' ').replace(/'/g,"'");
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
-  }).then(function(r){
-    if(!r.ok){return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t.slice(0,100));});}
-    return r.json();
-  })
+  }).then(function(r){return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     var clean=text.replace(/```json\n?|```\n?/g,'').trim();
@@ -1195,7 +1193,14 @@ function generateAIEstimate(){
     });
   })
   .catch(function(err){
-    alert('Fetch error: '+err.name+' / '+err.message+'\nSystem prompt length: '+sp.length+'\nPrompt: '+prompt.slice(0,50));
+    var msg='Error: '+err.message+'\n\n';
+    if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
+      msg+='Network error - possible causes:\n';
+      msg+='1. Replit server is asleep - open Replit and check the server is running\n';
+      msg+='2. Try refreshing the page and testing again\n';
+      msg+='3. Check your internet connection';
+    }
+    alert(msg);
   })
   .finally(function(){
     document.getElementById('aiLoading').style.display='none';
