@@ -733,7 +733,7 @@ function testAIConnection(){
   el.style.display='block';
   el.style.color='#2B3990';
   el.textContent='Testing...';
-  fetch('/api/estimate',{
+  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
@@ -1139,7 +1139,7 @@ function generateAIEstimate(){
     ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
     ' - For "change markup to X%" commands: put all item updates in updateItems';
 
-  fetch('/api/estimate',{
+  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
