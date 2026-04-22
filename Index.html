@@ -291,10 +291,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <button class="btn-dark" style="flex:2" id="saveBtn">Save Project</button>
     </div>
   </div>
-  <!-- Fixed AI Run Bar - outside scroll container so touch always works -->
-  <div id="aiRunBar" style="display:none;position:sticky;bottom:0;left:0;right:0;background:#1A1A2E;padding:10px 14px;z-index:100;border-top:2px solid #2B3990">
-    <button style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer" onclick="generateAIEstimate()">&#10024; Run AI Command</button>
-  </div>
 </div>
 
 <!-- EDIT SCOPE ITEM -->
@@ -1943,5 +1939,9 @@ document.getElementById("searchInput").oninput=renderCards;
 loadSettings(function(){startSync();startNotifSync();checkClientView();});
 
 </script>
+<!-- AI Run Bar - body level so fixed positioning works on iOS -->
+<div id="aiRunBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1A1A2E;padding:12px 14px;z-index:9999;border-top:2px solid #2B3990">
+  <button style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer" onclick="generateAIEstimate()">&#10024; Run AI Command</button>
+</div>
 </body>
 </html>
