@@ -1138,12 +1138,17 @@ function generateAIEstimate(){
     ' - For "generate exclusions" commands: create 5-10 standard exclusions for that project type'+
     ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
     ' - For "change markup to X%" commands: put all item updates in updateItems';
+    // Sanitize system prompt - remove any chars that could break JSON
+    sp=sp.replace(/[\u0000-\u001F\u007F-\u009F]/g,' ').replace(/'/g,"'");
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
-  }).then(function(r){return r.json();})
+  }).then(function(r){
+    if(!r.ok){return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t.slice(0,100));});}
+    return r.json();
+  })
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     var clean=text.replace(/```json\n?|```\n?/g,'').trim();
