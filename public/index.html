@@ -790,6 +790,7 @@ function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();i
 
 function renderEstDetailBody(e){
   var calc=calcEstimate(e);
+  console.log('CALC:',JSON.stringify({sub:calc.subtotal,client:calc.clientTotal,grand:calc.grandTotal,profit:calc.profit,margin:calc.margin,items:(e.lineItems||[]).length}));
   var html='';
 
   // AI Generator
@@ -967,6 +968,18 @@ function renderEstDetailBody(e){
   html+='<label class="fl" style="margin-bottom:6px">Exclusion Item</label>';
   html+='<input class="fi" id="exclInput" placeholder="e.g. Painting, debris removal, permits..." style="margin-bottom:10px"/>';
   html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();document.getElementById(\'exclForm\').style.display=\'none\';" onclick="document.getElementById(\'exclForm\').style.display=\'none\';">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addExclusion();" onclick="addExclusion();">Add</button></div>';
+  html+='</div>';
+
+  // Grand total summary
+  html+='<div class="est-summary" style="margin-top:16px">';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  if(calc.taxAmt>0){
+    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  }
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+Math.round(calc.profit).toLocaleString()+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Margin</span><span>'+calc.margin.toFixed(1)+'%</span></div>';
   html+='</div>';
 
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
@@ -1510,13 +1523,16 @@ function renderClientView(e,wrapper){
     html+='</div>';
   }
 
-  // Total
+  // Total summary
   html+='<div class="est-summary">';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
   if(calc.taxAmt){
-    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-    html+='<div class="est-sum-row"><span>Tax</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Subtotal (w/ markup)</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Tax ('+( e.tax||0)+'%)</span><span>+$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
   }
-  html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+Math.round(calc.profit).toLocaleString()+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Margin</span><span>'+calc.margin.toFixed(1)+'%</span></div>';
   html+='</div>';
 
   // Payment schedule
