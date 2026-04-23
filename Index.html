@@ -1128,24 +1128,12 @@ function generateAIEstimate(){
     alert('Setup error: '+setupErr.message);
     return;
   }
-  var sp='You are an expert construction estimator assistant. You help manage construction estimates by adding, editing, and deleting line items, and generating job exclusions.'+
-    ' Current line items ('+( e.lineItems||[]).length+' items): '+existingItems+
-    ' Current exclusions: '+existingExcls+
-    ' Default markup: '+dm+'%. Labor rate: $'+lr+'/hr.'+
-    (profile.location?' Location: '+profile.location+'.':' National pricing.')+
-    (profile.instructions?' '+profile.instructions:'')+
-    ' RESPOND ONLY WITH VALID JSON. No markdown, no explanation.'+
-    ' Format: {"action":"add","lineItems":[...],"deleteIndexes":[...],"updateItems":[...],"exclusions":[...],"message":"what was done"}'+
-    ' RULES:'+
-    ' - To ADD items: put them in lineItems array with fields: category, desc, qty, unit, unitCost, total (qty*unitCost), markup'+
-    ' - To DELETE items: put their index numbers in deleteIndexes array'+
-    ' - To UPDATE items: put {index, and fields to change} in updateItems array'+
-    ' - To add EXCLUSIONS: put strings in exclusions array'+
-    ' - You can combine multiple actions in one response'+
-    ' - For "generate exclusions" commands: create 5-10 standard exclusions for that project type'+
-    ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
-    ' - For "change markup to X%" commands: put all item updates in updateItems'+
-    ' CRITICAL: Return ONLY the raw JSON object. No markdown. No backticks. No explanation. Start your response with { and end with }. Nothing before or after.';
+  var sp='You are a construction estimator. Respond ONLY with a JSON object, no other text.'+
+    ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}'+
+    ' Current items ('+( e.lineItems||[]).length+' total): '+existingItems+
+    ' Markup default: '+dm+'%. Labor rate: $'+lr+'/hr.'+
+    (profile.location?' Location: '+profile.location+'.':'')+
+    ' Rules: lineItems=items to ADD, deleteIndexes=indexes to DELETE, updateItems=items to UPDATE, exclusions=strings to add as exclusions.';
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
