@@ -1141,11 +1141,13 @@ function generateAIEstimate(){
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
   }).then(function(r){return r.json();})
   .then(function(data){
+    // Debug: log full response
+    console.log('AI RAW RESPONSE:', JSON.stringify(data).slice(0,500));
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     var clean=text.replace(/```json\n?|```\n?/g,'').trim();
     var parsed;
     try{parsed=JSON.parse(clean);}catch(pe){
-      alert('AI response could not be parsed.\n\nFirst 200 chars received:\n'+text.slice(0,200));
+      alert('Parse failed.\nRaw text length: '+text.length+'\nData keys: '+Object.keys(data).join(',')+'\nContent blocks: '+(data.content?data.content.length:0)+'\nFirst block type: '+(data.content&&data.content[0]?data.content[0].type:'none')+'\nText preview: '+text.slice(0,300));
       return;
     }
     var e2=ger();if(!e2)return;
