@@ -1144,7 +1144,8 @@ function generateAIEstimate(){
     ' - You can combine multiple actions in one response'+
     ' - For "generate exclusions" commands: create 5-10 standard exclusions for that project type'+
     ' - For "remove X" commands: find matching item index and put in deleteIndexes'+
-    ' - For "change markup to X%" commands: put all item updates in updateItems';
+    ' - For "change markup to X%" commands: put all item updates in updateItems'+
+    ' CRITICAL: Return ONLY the raw JSON object. No markdown. No backticks. No explanation. Start your response with { and end with }. Nothing before or after.';
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
@@ -1155,7 +1156,10 @@ function generateAIEstimate(){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     var clean=text.replace(/```json\n?|```\n?/g,'').trim();
     var parsed;
-    try{parsed=JSON.parse(clean);}catch(pe){alert('Could not parse AI response. Try again.');return;}
+    try{parsed=JSON.parse(clean);}catch(pe){
+      alert('AI response could not be parsed.\n\nFirst 200 chars received:\n'+text.slice(0,200));
+      return;
+    }
     var e2=ger();if(!e2)return;
     e2.lineItems=e2.lineItems||[];
     e2.exclusions=e2.exclusions||[];
