@@ -690,7 +690,11 @@ function forceLoadTeam(){
 }
 
 function migrateAllProjects(){var count=0,batch=db.batch();projects.forEach(function(p){if(migratePhases(p)){batch.set(col.doc(p.id),p);count++;}});var el=document.getElementById("migrateStatus");el.style.display="block";if(count===0){el.style.color="#888";el.textContent="All projects are already up to date.";return;}batch.commit().then(function(){el.style.color="#2EAA72";el.textContent="Restored scope items for "+count+" project"+(count!==1?"s":"")+". Open each project to see your data.";T("Restored "+count+" project"+(count!==1?"s":"")+"!");}).catch(function(err){el.style.color="#E83A6C";el.textContent="Error: "+err.message;});}
-function calcLineItemTotal(li){return(parseFloat(li.total)||0)*(1+(parseFloat(li.markup)||0)/100);}
+function calcLineItemTotal(li){
+  var cost=parseFloat(li.total)||((parseFloat(li.qty)||1)*(parseFloat(li.unitCost)||0));
+  var markup=parseFloat(li.markup)||0;
+  return cost*(1+markup/100);
+}
 function calcEstimate(est){var items=est.lineItems||[];var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);var clientTotal=items.reduce(function(a,li){return a+calcLineItemTotal(li);},0);var tax=parseFloat(est.tax)||0;var taxAmt=clientTotal*(tax/100);var grandTotal=clientTotal+taxAmt;var profit=grandTotal-subtotal-taxAmt;var margin=grandTotal>0?(profit/grandTotal*100):0;return{subtotal:subtotal,clientTotal:clientTotal,taxAmt:taxAmt,grandTotal:grandTotal,profit:profit,margin:margin};}
 
 function switchMainTab(tab){
@@ -1130,6 +1134,7 @@ function generateAIEstimate(){
   }
   var sp='You are a construction estimator. Respond ONLY with a JSON object, no other text.'+
     ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}'+
+    ' IMPORTANT: total = qty * unitCost (pre-markup cost). markup is percentage added on top for client price.'+
     ' Current items ('+( e.lineItems||[]).length+' total): '+existingItems+
     ' Markup default: '+dm+'%. Labor rate: $'+lr+'/hr.'+
     (profile.location?' Location: '+profile.location+'.':'')+
