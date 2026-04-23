@@ -203,11 +203,11 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v49</span> <button onclick="alert('JS OK: '+typeof switchMainTab+' | '+typeof closePage)" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v50</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
-    <button class="nav-tab on" id="navProjects" onclick="switchMainTab('projects')">&#128193; Projects</button>
-    <button class="nav-tab" id="navEstimates" onclick="switchMainTab('estimates')">&#128203; Estimates</button>
-    <button class="nav-tab" id="navDashboard" onclick="switchMainTab('dashboard')">&#128200; Dashboard</button>
+    <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
+    <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
+    <button class="nav-tab" id="navDashboard">&#128200; Dashboard</button>
   </div>
   <div id="projectsView">
     <div class="stats" id="stats"></div>
@@ -232,7 +232,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- PROJECT DETAIL -->
 <div class="page" id="detailPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('detailPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;detailPage&quot;);return false;">&#8249;</a>
     <span class="phead-title" id="dName"></span>
     <span class="phead-num" id="dJobNum"></span>
     <span class="pbadge" id="dBadge"></span>
@@ -244,7 +244,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ESTIMATE DETAIL -->
 <div class="page" id="estDetailPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('estDetailPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;estDetailPage&quot;);return false;">&#8249;</a>
     <span class="phead-title" id="edName"></span>
     <span class="phead-num" id="edEstNum"></span>
     <span class="pbadge" id="edBadge"></span>
@@ -259,10 +259,10 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:10px">Add items, remove items, adjust markup, generate exclusions</div>
       <textarea id="aiPrompt" rows="3" style="width:100%;border-radius:10px;border:none;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px" placeholder="e.g. Generate line items for kitchen remodel Houston TX&#10;Remove permit fees&#10;Change all markup to 28%&#10;Generate exclusions for bathroom remodel"></textarea>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-        <button onclick="document.getElementById('aiPrompt').value='Generate line items for '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>
-        <button onclick="document.getElementById('aiPrompt').value='Remove the line item: '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>
-        <button onclick="document.getElementById('aiPrompt').value='Change markup on all items to '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>
-        <button onclick="document.getElementById('aiPrompt').value='Generate standard exclusions for '" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>
+        <button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate line items for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>
+        <button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Remove the line item: &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>
+        <button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Change markup on all items to &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>
+        <button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate standard exclusions for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>
       </div>
       <button onclick="generateAIEstimate()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">&#10024; Run AI Command</button>
       <div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>
@@ -273,7 +273,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- CLIENT PORTAL -->
 <div class="page" id="portalPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('portalPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;portalPage&quot;);return false;">&#8249;</a>
     <span class="phead-title">Client Portal Preview</span>
   </div>
   <div class="pbody" id="portalBody"></div>
@@ -282,7 +282,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ADD/EDIT PROJECT -->
 <div class="fpage" id="addPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('addPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;addPage&quot;);return false;">&#8249;</a>
     <span class="phead-title" id="addPageTitle">New Project</span>
   </div>
   <div style="padding:14px">
@@ -313,7 +313,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- EDIT SCOPE ITEM -->
 <div class="fpage" id="editScopePage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('editScopePage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;editScopePage&quot;);return false;">&#8249;</a>
     <span class="phead-title">Edit Scope Item</span>
   </div>
   <div style="padding:14px">
@@ -343,7 +343,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('editScopePage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(&quot;editScopePage&quot;)">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveScopeEditPage()">Save</button>
     </div>
   </div>
@@ -352,7 +352,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- EDIT LINE ITEM PAGE -->
 <div class="fpage" id="editLineItemPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('editLineItemPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;editLineItemPage&quot;);return false;">&#8249;</a>
     <span class="phead-title">Edit Line Item</span>
   </div>
   <div style="padding:14px">
@@ -371,7 +371,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('editLineItemPage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(&quot;editLineItemPage&quot;)">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveEditLineItemPage()">Save</button>
     </div>
   </div>
@@ -380,7 +380,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- ADD/EDIT ESTIMATE -->
 <div class="fpage" id="estFormPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('estFormPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;estFormPage&quot;);return false;">&#8249;</a>
     <span class="phead-title" id="estFormTitle">New Estimate</span>
   </div>
   <div style="padding:14px">
@@ -406,7 +406,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="fbtns">
-      <button class="btn-ghost" onclick="closePage('estFormPage')">Cancel</button>
+      <button class="btn-ghost" onclick="closePage(&quot;estFormPage&quot;)">Cancel</button>
       <button class="btn-dark" style="flex:2" onclick="saveEstimate()">Save Estimate</button>
     </div>
   </div>
@@ -415,7 +415,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- NOTIFICATIONS -->
 <div class="page" id="notifsPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('notifsPage');clearBellBadge();return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;notifsPage&quot;);clearBellBadge();return false;">&#8249;</a>
     <span class="phead-title">Notifications</span>
     <button onclick="clearAllNotifs()" style="background:none;border:none;color:#E83A6C;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto">Clear All</button>
   </div>
@@ -425,7 +425,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- SETTINGS -->
 <div class="fpage" id="settingsPage">
   <div class="phead">
-    <a href="#" class="phead-back" onclick="closePage('settingsPage');return false;">&#8249;</a>
+    <a href="#" class="phead-back" onclick="closePage(&quot;settingsPage&quot;);return false;">&#8249;</a>
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
@@ -469,21 +469,21 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
         <button class="btn-dark" onclick="addTeamMember()">Add Team Member</button>
       </div>
     </div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('projectStatuses','psInput','psTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Scope of Work Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add scope item..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('phaseTypes','ptInput','ptTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('choiceStatuses','csInput','csTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('costCategories','ccInput','ccTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('changeOrderTypes','coInput','coTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Punch List Categories</label><div id="plTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="plInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('punchCategories','plInput','plTagsEl')">Add</button></div></div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Estimate Line Item Categories</label><div id="elTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="elInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag('estCategories','elInput','elTagsEl')">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;projectStatuses&quot;,&quot;psInput&quot;,&quot;psTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Scope of Work Types</label><div id="ptTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ptInput" placeholder="Add scope item..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;phaseTypes&quot;,&quot;ptInput&quot;,&quot;ptTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Selection Statuses</label><div id="csTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="csInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;choiceStatuses&quot;,&quot;csInput&quot;,&quot;csTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Cost Categories</label><div id="ccTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="ccInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;costCategories&quot;,&quot;ccInput&quot;,&quot;ccTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Change Order Types</label><div id="coTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="coInput" placeholder="Add type..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;changeOrderTypes&quot;,&quot;coInput&quot;,&quot;coTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Punch List Categories</label><div id="plTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="plInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;punchCategories&quot;,&quot;plInput&quot;,&quot;plTagsEl&quot;)">Add</button></div></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Estimate Line Item Categories</label><div id="elTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="elInput" placeholder="Add category..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;estCategories&quot;,&quot;elInput&quot;,&quot;elTagsEl&quot;)">Add</button></div></div>
   </div>
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="editScopeModal"><div class="modal-box"><div class="modal-title">Edit Scope Item</div><div class="fg"><div><label class="fl">Description</label><input class="fi" id="esDesc"/></div><div class="fr2"><div><label class="fl">Start</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="esEnd" type="date"/></div></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div><div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div><div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="autoFillScopeAssignee()"><option value="">-- Unassigned --</option></select></div><div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editScopeModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div></div></div>
-<div class="modal-overlay" id="editChoiceModal"><div class="modal-box"><div class="modal-title">Edit Selection</div><div class="fg"><div><label class="fl">Category</label><input class="fi" id="ecCat"/></div><div><label class="fl">Item</label><input class="fi" id="ecItem"/></div><div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div><div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div><div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editChoiceModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div></div></div>
-<div class="modal-overlay" id="editLineItemModal"><div class="modal-box"><div class="modal-title">Edit Line Item</div><div class="fg"><div><label class="fl">Category</label><select class="fi" id="eliCat"></select></div><div><label class="fl">Description</label><input class="fi" id="eliDesc"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="eliQty" type="number"/></div><div><label class="fl">Unit</label><input class="fi" id="eliUnit"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="eliUnitCost" type="number"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="eliMarkup" type="number"/></div><div style="background:#F8F8F8;border-radius:8px;padding:10px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">CLIENT TOTAL</div><div style="font-size:18px;font-weight:700;color:#1A1A2E" id="eliPreview">$0</div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('editLineItemModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditLineItem()">Save</button></div></div></div>
-<div class="modal-overlay" id="addLineItemModal"><div class="modal-box"><div class="modal-title">Add Line Item</div><div style="display:flex;gap:8px;margin-bottom:14px"><button class="vt-btn on" id="liTabDetailed" onclick="switchLiTab('detailed')">Detailed</button><button class="vt-btn" id="liTabSimple" onclick="switchLiTab('simple')">Quick Add</button></div><div id="liDetailedForm"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCat"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDesc" placeholder="e.g. Framing labor"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="liQty" type="number" value="1"/></div><div><label class="fl">Unit</label><input class="fi" id="liUnit" placeholder="hrs"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="liUnitCost" type="number" placeholder="0"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkup" type="number" placeholder="20"/></div></div></div><div id="liSimpleForm" style="display:none"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCatS"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDescS"/></div><div><label class="fl">Cost ($)</label><input class="fi" id="liCostS" type="number" placeholder="0"/></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkupS" type="number" placeholder="20"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal('addLineItemModal')">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveLineItem()">Add Item</button></div></div></div>
+<div class="modal-overlay" id="editScopeModal"><div class="modal-box"><div class="modal-title">Edit Scope Item</div><div class="fg"><div><label class="fl">Description</label><input class="fi" id="esDesc"/></div><div class="fr2"><div><label class="fl">Start</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="esEnd" type="date"/></div></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div><div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div><div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="autoFillScopeAssignee()"><option value="">-- Unassigned --</option></select></div><div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;editScopeModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div></div></div>
+<div class="modal-overlay" id="editChoiceModal"><div class="modal-box"><div class="modal-title">Edit Selection</div><div class="fg"><div><label class="fl">Category</label><input class="fi" id="ecCat"/></div><div><label class="fl">Item</label><input class="fi" id="ecItem"/></div><div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div><div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div><div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;editChoiceModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div></div></div>
+<div class="modal-overlay" id="editLineItemModal"><div class="modal-box"><div class="modal-title">Edit Line Item</div><div class="fg"><div><label class="fl">Category</label><select class="fi" id="eliCat"></select></div><div><label class="fl">Description</label><input class="fi" id="eliDesc"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="eliQty" type="number"/></div><div><label class="fl">Unit</label><input class="fi" id="eliUnit"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="eliUnitCost" type="number"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="eliMarkup" type="number"/></div><div style="background:#F8F8F8;border-radius:8px;padding:10px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">CLIENT TOTAL</div><div style="font-size:18px;font-weight:700;color:#1A1A2E" id="eliPreview">$0</div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;editLineItemModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditLineItem()">Save</button></div></div></div>
+<div class="modal-overlay" id="addLineItemModal"><div class="modal-box"><div class="modal-title">Add Line Item</div><div style="display:flex;gap:8px;margin-bottom:14px"><button class="vt-btn on" id="liTabDetailed" onclick="switchLiTab(&quot;detailed&quot;)">Detailed</button><button class="vt-btn" id="liTabSimple" onclick="switchLiTab(&quot;simple&quot;)">Quick Add</button></div><div id="liDetailedForm"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCat"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDesc" placeholder="e.g. Framing labor"/></div><div class="fr3"><div><label class="fl">Qty</label><input class="fi" id="liQty" type="number" value="1"/></div><div><label class="fl">Unit</label><input class="fi" id="liUnit" placeholder="hrs"/></div><div><label class="fl">Unit Cost</label><input class="fi" id="liUnitCost" type="number" placeholder="0"/></div></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkup" type="number" placeholder="20"/></div></div></div><div id="liSimpleForm" style="display:none"><div class="fg"><div><label class="fl">Category</label><select class="fi" id="liCatS"></select></div><div><label class="fl">Description *</label><input class="fi" id="liDescS"/></div><div><label class="fl">Cost ($)</label><input class="fi" id="liCostS" type="number" placeholder="0"/></div><div><label class="fl">Markup %</label><input class="fi" id="liMarkupS" type="number" placeholder="20"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;addLineItemModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveLineItem()">Add Item</button></div></div></div>
 
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)"/>
 <div class="toast" id="toast"></div>
@@ -1968,6 +1968,9 @@ document.addEventListener('click',function(ev){
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
 },true);
+document.getElementById("navProjects").onclick=function(){switchMainTab("projects");};
+document.getElementById("navEstimates").onclick=function(){switchMainTab("estimates");};
+document.getElementById("navDashboard").onclick=function(){switchMainTab("dashboard");};
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("saveBtn").onclick=saveProject;
 document.getElementById("searchInput").oninput=renderCards;
