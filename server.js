@@ -48,8 +48,7 @@ app.post('/api/estimate', async (req, res) => {
       console.error('[/api/estimate] Anthropic error body:', JSON.stringify(data, null, 2));
     } else {
       console.log('[/api/estimate] Success — tokens used:', data.usage);
-      const bodyPreview = JSON.stringify(data).slice(0, 500);
-      console.log('[/api/estimate] Response body (first 500 chars):', bodyPreview);
+      console.log('[/api/estimate] FULL RESPONSE DATA:', JSON.stringify(data, null, 2));
     }
     res.status(response.status).json(data);
   } catch (err) {
