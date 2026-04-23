@@ -40,7 +40,7 @@ app.post('/api/estimate', async (req, res) => {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(Object.assign({}, req.body, { model: 'claude-opus-4-5-20251101' }))
     });
     console.log('[/api/estimate] Anthropic response status:', response.status);
     const data = await response.json();
