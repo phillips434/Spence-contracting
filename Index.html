@@ -752,7 +752,7 @@ function testAIConnection(){
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+    body:JSON.stringify({model:'claude-opus-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
   }).then(function(r){
     if(!r.ok){el.style.color='#E83A6C';el.textContent='Server responded but with error: HTTP '+r.status;return null;}
     return r.json();
@@ -1138,7 +1138,7 @@ function generateAIEstimate(){
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model:'claude-opus-4-5-20251101',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
   }).then(function(r){return r.json();})
   .then(function(data){
     // Debug: log full response
@@ -1205,7 +1205,7 @@ function generateAIEstimate(){
 function generateAILog(){var p=gpr();if(!p)return;var logBtn=document.getElementById("aiLogBtn");if(logBtn)logBtn.disabled=true;var items=(p.scopeItems||[]).filter(function(s){return s.complete==="In Progress";}).map(function(s){return s.desc;}).join(", ");var sp="You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: "+(items||"General construction");fetch("/api/estimate",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,system:"You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.",messages:[{role:"user",content:"Project: "+p.client+" - "+p.type+". Active items: "+(items||"general work")}]})
+    body:JSON.stringify({model:"claude-opus-4-5-20251101",max_tokens:200,system:"You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.",messages:[{role:"user",content:"Project: "+p.client+" - "+p.type+". Active items: "+(items||"general work")}]})
   }).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";document.getElementById("logWork").value=text.trim();T("AI log generated!");}).catch(function(err){alert("Error: "+err.message);}).finally(function(){if(logBtn)logBtn.disabled=false;});}
 function openEditLineItem(i){
   editLineItemIdx=i;
