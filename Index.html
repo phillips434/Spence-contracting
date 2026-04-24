@@ -1164,7 +1164,9 @@ function generateAIEstimate(){
     // Debug: log full response
     console.log('AIRAW:'+JSON.stringify(data).slice(0,500));
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    var clean=text.replace(/```json\n?|```\n?/g,'').trim();
+    // Extract JSON object from response - ignore any explanation text around it
+    var jsonMatch=text.match(/\{[\s\S]*\}/);
+    var clean=jsonMatch?jsonMatch[0]:'';
     var parsed;
     try{parsed=JSON.parse(clean);}catch(pe){
       alert('Parse failed.\nRaw text length: '+text.length+'\nData keys: '+Object.keys(data).join(',')+'\nContent blocks: '+(data.content?data.content.length:0)+'\nFirst block type: '+(data.content&&data.content[0]?data.content[0].type:'none')+'\nText preview: '+text.slice(0,300));
@@ -1452,7 +1454,15 @@ function checkClientView(){
     });
     return;
   }
-  var estId=params.get('est');if(!estId)return;document.getElementById("mainView").style.display="none";document.body.style.background="#fff";var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}var est=doc.data();est.id=estId;renderClientView(est,wrapper);});}
+  var estId=params.get('est');if(!estId)return;
+  // Hide ALL contractor UI
+  document.getElementById("mainView").style.display="none";
+  ['detailPage','estDetailPage','settingsPage','addPage','estFormPage',
+   'editScopePage','editLineItemPage','notifsPage'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.classList.remove('show');
+  });
+  var ap=document.getElementById('aiPanel');if(ap)ap.style.display='none';
+  document.body.style.background="#fff";var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}var est=doc.data();est.id=estId;renderClientView(est,wrapper);});}
 function initSigCanvas(canvasId){
   var cc=document.getElementById(canvasId);
   if(!cc)return;
