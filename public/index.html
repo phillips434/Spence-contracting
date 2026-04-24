@@ -185,6 +185,12 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
   .fr2{gap:8px}
   .bva-val{font-size:13px}
 }
+
+/* Client view: hide all contractor UI */
+body.client-mode #aiPanel,
+body.client-mode #estDetailPage,
+body.client-mode #mainView,
+body.client-mode .phead { display:none !important; }
 </style>
 </head>
 <body>
@@ -249,8 +255,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
     <span class="phead-num" id="edEstNum"></span>
     <span class="pbadge" id="edBadge"></span>
   </div>
-
-  <!-- STATIC AI PANEL - at top, always in DOM -->
   <div id="aiPanel" style="display:none;padding:14px;background:#fff;border-bottom:2px solid #EEE">
     <div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">
       <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>
@@ -266,9 +270,6 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
       <div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>
     </div>
   </div>
-</di
-  </div>
-
   <div class="pbody" id="estDetailBody"></div>
 </div>
 
@@ -925,7 +926,10 @@ function renderEstDetailBody(e){
     html+='<label class="fl" style="margin-bottom:6px">Your Name</label>';
     html+='<input class="fi" id="contractorName" placeholder="Your full name" value="'+(DD.companyName||"Spence Construction")+'" style="margin-bottom:10px"/>';
     html+='<label class="fl" style="margin-bottom:6px">Signature</label>';
-    html+='<canvas id="contractorSigCanvas" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:150px;cursor:crosshair;touch-action:none;background:#FAFAFA"></canvas>';
+    html+='<div style="position:relative">';
+    html+='<canvas id="contractorSigCanvas" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:150px;cursor:crosshair;touch-action:none;-ms-touch-action:none;pointer-events:all;display:block;background:#FAFAFA"></canvas>';
+    html+='<div id="sigActivate" onclick="initSigCanvas(\'contractorSigCanvas\');this.style.display=\'none\';" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,255,255,0.85);font-size:13px;color:#2B3990;font-weight:700;cursor:pointer">&#9997; Tap here to sign</div>';
+    html+='</div>';
     html+='<div style="display:flex;gap:8px;margin-top:10px">';
     html+='<button onclick="clearContractorCanvas()" class="btn-ghost" style="flex:1">Clear</button>';
     html+='<button onclick="saveContractorSig()" class="btn-dark" style="flex:2">&#9997; Sign as Contractor</button>';
@@ -1020,6 +1024,8 @@ function saveContractorSig(){
   if(!name||!name.value.trim()){alert("Enter your name.");return;}
   var canvas=document.getElementById("contractorSigCanvas");
   if(!canvas){alert("Signature canvas not found.");return;}
+  // Re-init canvas in case it wasn't ready earlier
+  if(!canvas._initialized){initSigCanvas("contractorSigCanvas");canvas._initialized=true;}
   var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;
   if(canvas.toDataURL()===blank.toDataURL()){alert("Please sign before saving.");return;}
   var e=ger();if(!e)return;
@@ -1462,7 +1468,7 @@ function checkClientView(){
     var el=document.getElementById(id);if(el)el.classList.remove('show');
   });
   var ap=document.getElementById('aiPanel');if(ap)ap.style.display='none';
-  document.body.style.background="#fff";var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}var est=doc.data();est.id=estId;renderClientView(est,wrapper);});}
+  document.body.style.background="#fff";document.body.classList.add("client-mode");document.body.classList.add('client-mode');var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);eCol.doc(estId).get().then(function(doc){if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found.</div>';return;}var est=doc.data();est.id=estId;renderClientView(est,wrapper);});}
 function initSigCanvas(canvasId){
   var cc=document.getElementById(canvasId);
   if(!cc)return;
@@ -1620,7 +1626,7 @@ function renderClientView(e,wrapper){
   // Init contractor signature canvas - delay to ensure DOM ready
   setTimeout(function(){
     initSigCanvas("contractorSigCanvas");
-  },300);
+  },500);
 
   // Init client signature canvas
   setTimeout(function(){initSigCanvas('sigCanvas');},300);
