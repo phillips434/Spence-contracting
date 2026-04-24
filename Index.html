@@ -1504,6 +1504,9 @@ function initSigCanvas(canvasId){
 }
 
 function renderClientView(e,wrapper){
+  // Always hide contractor UI when rendering client view
+  var idsToHide=['estDetailPage','detailPage','addPage','estFormPage','settingsPage','editScopePage','editLineItemPage','notifsPage','mainView','aiPanel'];
+  idsToHide.forEach(function(id){var el=document.getElementById(id);if(el){el.style.display='none';el.classList.remove('show');}});
   var calc=calcEstimate(e);
   var html='<div class="client-view">';
 
