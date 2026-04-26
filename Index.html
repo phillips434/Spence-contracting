@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v53</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v55</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1400,24 +1400,52 @@ function renderProjectPortal(p, est, wrapper){
     html+='</div>';
   }
 
-  // Approved change orders
-  var approvedCOs=(p.changeOrders||[]).filter(function(c){return c.status==='Approved';});
-  if(approvedCOs.length){
-    html+='<div class="portal-section">';
-    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128260; Approved Changes</div>';
-    approvedCOs.forEach(function(co){
-      html+='<div style="padding:10px 0;border-bottom:1px solid #F5F5F5">';
-      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-      html+='<div><div style="font-size:14px;font-weight:600;color:#1A1A2E">'+co.title+'</div>';
-      if(co.description) html+='<div style="font-size:12px;color:#888;margin-top:3px">'+co.description+'</div>';
-      html+='<div style="font-size:11px;color:#aaa;margin-top:3px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div>';
-      if(co.budgetImpact) html+='<div style="font-size:13px;font-weight:700;color:#E8B43A;white-space:nowrap;margin-left:12px">+$'+parseFloat(co.budgetImpact).toLocaleString()+'</div>';
+  // Change orders needing client signature
+  var allCOs=p.changeOrders||[];
+  var pendingCOs=allCOs.filter(function(c){return c.status==='Pending';});
+
+  if(pendingCOs.length){
+    html+='<div class="portal-section" style="border:2px solid #E8B43A">';
+    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:4px">&#9888; Change Orders Pending Approval</div>';
+    html+='<div style="font-size:12px;color:#888;margin-bottom:14px">Please review and sign each item below.</div>';
+    pendingCOs.forEach(function(co){
+      var realIdx=allCOs.indexOf(co);
+      html+='<div style="background:#FFFBF0;border:1px solid #E8B43A;border-radius:12px;padding:14px;margin-bottom:12px">';
+      html+='<div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+co.title+'</div>';
+      if(co.description) html+='<div style="font-size:13px;color:#333;margin-bottom:10px;line-height:1.5">'+co.description+'</div>';
+      html+='<div style="display:flex;justify-content:space-between;background:#fff;border-radius:8px;padding:10px;margin-bottom:12px">';
+      html+='<span style="font-size:13px;color:#666">Cost Impact</span>';
+      html+='<span style="font-size:15px;font-weight:700;color:#E8B43A">+$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'</span></div>';
+      html+='<label style="font-size:12px;color:#666;display:block;margin-bottom:6px">Your Full Name</label>';
+      html+='<input id="coSigName'+realIdx+'" class="fi" placeholder="Type your full name" style="margin-bottom:10px"/>';
+      html+='<label style="font-size:12px;color:#666;display:block;margin-bottom:6px">Signature</label>';
+      html+='<canvas id="coSigCanvas'+realIdx+'" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:120px;touch-action:none;background:#FAFAFA;display:block;margin-bottom:10px"></canvas>';
+      html+='<div style="display:flex;gap:8px">';
+      html+='<button ontouchend="event.preventDefault();clearCOCanvas('+realIdx+');" onclick="clearCOCanvas('+realIdx+');" style="flex:1;padding:10px;border:1.5px solid #DDD;border-radius:8px;background:#fff;font-size:13px;cursor:pointer">Clear</button>';
+      html+='<button data-projid="'+p.id+'" data-coidx="'+realIdx+'" ontouchend="event.preventDefault();signCOBtn(this);" onclick="signCOBtn(this);" style="flex:2;padding:10px;border:none;border-radius:8px;background:#E8B43A;color:#fff;font-size:13px;font-weight:700;cursor:pointer">&#10003; Approve &amp; Sign</button>';
       html+='</div></div>';
     });
     html+='</div>';
   }
 
+  // Approved change orders
+  var approvedCOs=allCOs.filter(function(c){return c.status==='Approved';});
+  if(approvedCOs.length){
+    html+='<div class="portal-section">';
+    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128260; Approved Changes</div>';
+    approvedCOs.forEach(function(co){
+      html+='<div style="padding:10px 0;border-bottom:1px solid #F5F5F5;display:flex;justify-content:space-between;align-items:center">';
+      html+='<div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+co.title+'</div>';
+      if(co.clientSignedBy) html+='<div style="font-size:11px;color:#2EAA72;margin-top:2px">&#10003; Signed by '+co.clientSignedBy+'</div>';
+      html+='</div>';
+      html+='<span style="font-size:13px;font-weight:700;color:#2EAA72">+$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
   // Photos from notes
+// Photos from notes
   var photos=(p.notesLog||[]).filter(function(n){return n.photo;});
   if(photos.length){
     html+='<div class="portal-section">';
@@ -1632,7 +1660,12 @@ function renderClientView(e,wrapper){
   },500);
 
   // Init client signature canvas
-  setTimeout(function(){initSigCanvas('sigCanvas');},300);
+  setTimeout(function(){
+    initSigCanvas('sigCanvas');
+    (p.changeOrders||[]).forEach(function(co,i){
+      if(co.status==='Pending') initSigCanvas('coSigCanvas'+i);
+    });
+  },300);
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
@@ -1654,7 +1687,26 @@ function submitSignature(estId){var name=document.getElementById("sigName").valu
   });
 }
 
-function openDetail(id){currentId=id;currentTab="scope";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};document.getElementById("dName").textContent=p.client;document.getElementById("dJobNum").textContent=p.jobNum||"";var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
+function changeProjectStatus(){
+  var p=gpr();if(!p)return;
+  var statuses=DD.projectStatuses||["Planning","In Progress","On Hold","Completed"];
+  var current=p.status||"Planning";
+  var menu=statuses.map(function(s,i){return (i+1)+". "+s;}).join("\n");
+  var choice=prompt("Current status: "+current+"\n\nChange to:\n"+menu+"\n\nEnter number or name:");
+  if(!choice)return;
+  choice=choice.trim();
+  var match=statuses.find(function(s){return s.toLowerCase()===choice.toLowerCase();});
+  if(!match){var n=parseInt(choice);if(n>=1&&n<=statuses.length)match=statuses[n-1];}
+  if(!match){alert("Not recognized. Try again.");return;}
+  if(match===current){T("Status unchanged.");return;}
+  p.status=match;
+  saveP(p,"Status changed to "+match+" on "+p.client);
+  var s2=sc(match)||{bg:"#EEF2FF",text:"#2B3990"};
+  var b=document.getElementById("dBadge");
+  if(b){b.textContent=match;b.style.background=s2.bg;b.style.color=s2.text;}
+  T("Status: "+match);
+}
+function openDetail(id){currentId=id;currentTab="scope";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};document.getElementById("dName").textContent=p.client;document.getElementById("dJobNum").textContent=p.jobNum||"";var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;b.style.cursor="pointer";b.onclick=changeProjectStatus;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
 function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","punch-list","change-orders","comms","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
 function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';var minD=null,maxD=null;items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+label+'">'+label+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+label+'</div></div></div>';});html+='</div></div>';return html;}
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
@@ -1911,7 +1963,9 @@ function renderTabBody(p){
       html+='</div>';
       html+='</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
-    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
+    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
+    html+='<button class="btn-dark" style="width:100%;background:#1A1A2E;margin-top:8px" ontouchend="event.preventDefault();generateCOWithAI();" onclick="generateCOWithAI();">&#10024; AI Draft Change Order</button>';
+    html+='</div>';
   } else if(currentTab==="comms"){
     // Client Communication Log
     var comms=p.commsLog||[];
@@ -2029,16 +2083,99 @@ function delComm(i){
 function sendCOToClient(i){
   var p=gpr();if(!p)return;
   var co=p.changeOrders[i];if(!co)return;
-  var url=window.location.href.split('?')[0]+'?co='+p.id+'&coidx='+i;
-  var msg='Hi '+p.client+',\n\nA change order requires your review and approval:\n\n'+
-    'Project: '+p.type+'\n'+
+  var url=window.location.href.split('?')[0]+'?portal='+p.id;
+  var msg='Hi '+p.client+',\n\nA change order on your project requires your approval:\n\n'+
     'Change Order: '+co.title+'\n'+
-    'Description: '+(co.description||'')+'\n'+
+    (co.description?'Details: '+co.description+'\n':'')+
     'Cost Impact: +$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'\n\n'+
-    'Please review and approve:\n'+url+'\n\nThank you,\n'+(DD.companyName||'Spence Construction');
-  window.location.href='sms:'+encodeURIComponent(p.clientPhone||'')+
-    '?body='+encodeURIComponent(msg);
+    'Please review and sign here:\n'+url+
+    '\n\nThank you,\n'+(DD.companyName||'Spence Construction');
+  var phone=p.clientPhone||'';
+  var email=p.clientEmail||'';
+  if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
+  else if(email){window.location.href='mailto:'+email+'?subject=Change Order Requires Your Approval&body='+encodeURIComponent(msg);}
+  else{alert('No client phone or email on file. Add contact info to this project first.');}
 }
+function clearCOCanvas(idx){
+  var c=document.getElementById('coSigCanvas'+idx);
+  if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+function generateCOWithAI(){
+  var p=gpr();if(!p)return;
+  var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';
+  var desc=document.getElementById('coDesc')?document.getElementById('coDesc').value.trim():'';
+  var combined=title+(desc?' - '+desc:'');
+  if(!combined){alert('Enter a title or description first, then tap AI Draft.');return;}
+  var btn=event.target;btn.disabled=true;btn.textContent='Drafting...';
+  var profile=DD.aiProfile||{};
+  var sp='You are a construction change order writer. Given a brief description of additional work, write a professional change order. Respond ONLY with valid JSON: {"title":"short title","description":"detailed professional description of the work","budgetImpact":number}. The budgetImpact should be a realistic cost estimate in dollars for this type of work. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
+  fetch('/api/estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sp,
+      messages:[{role:'user',content:combined}]})
+  }).then(function(r){return r.json();})
+  .then(function(data){
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    var clean=text.replace(/```json[\s\S]*?```|```/g,'').trim();clean=clean.replace(/^\s*|\s*$/g,'');
+    var parsed=JSON.parse(clean);
+    if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
+    if(document.getElementById('coDesc')) document.getElementById('coDesc').value=parsed.description||desc;
+    if(document.getElementById('coBudget')) document.getElementById('coBudget').value=parsed.budgetImpact||0;
+    T('Change order drafted!');
+  }).catch(function(err){alert('AI error: '+err.message);})
+  .finally(function(){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';});
+}
+
+function signCOBtn(btn){
+  var projectId=btn.getAttribute('data-projid');
+  var coIdx=parseInt(btn.getAttribute('data-coidx'));
+  var nameEl=document.getElementById('coSigName'+coIdx);
+  if(!nameEl||!nameEl.value.trim()){alert('Please enter your full name.');return;}
+  var canvas=document.getElementById('coSigCanvas'+coIdx);
+  if(!canvas){alert('Signature canvas not found.');return;}
+  var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
+  if(canvas.toDataURL()===blank.toDataURL()){alert('Please sign before approving.');return;}
+  var name=nameEl.value.trim();
+  col.doc(projectId).get().then(function(doc){
+    if(!doc.exists)return;
+    var p=doc.data();
+    var co=(p.changeOrders||[])[coIdx];if(!co)return;
+    // Mark CO approved
+    co.status='Approved';
+    co.clientSignedBy=name;
+    co.clientSignedAt=Date.now();
+    co.clientSigData=canvas.toDataURL('image/png');
+    // AUTO: Add to scope items
+    p.scopeItems=p.scopeItems||[];
+    p.scopeItems.push({
+      desc:'[CO] '+co.title,
+      start:'',end:'',
+      budget:parseFloat(co.budgetImpact)||0,
+      actual:parseFloat(co.budgetImpact)||0,
+      complete:'Not Started',
+      assignTo:'',assignPhone:'',assignEmail:'',
+      category:'Change Order'
+    });
+    // AUTO: Increase project budget
+    p.budget=(parseFloat(p.budget)||0)+(parseFloat(co.budgetImpact)||0);
+    // AUTO: Log the approval
+    p.notesLog=p.notesLog||[];
+    p.notesLog.push({
+      date:new Date().toISOString().split('T')[0],
+      weather:'',
+      work:'Change Order Approved by client ('+name+'): '+co.title+' — +$'+(parseFloat(co.budgetImpact)||0).toLocaleString(),
+      ts:Date.now()
+    });
+    col.doc(projectId).set(p).then(function(){
+      pushNotification('Change order "'+co.title+'" approved by '+name+'. Budget updated.');
+      var wrapper=document.getElementById('clientWrapper');
+      if(wrapper)renderProjectPortal(p,null,wrapper);
+    });
+  });
+}
+
+
 function generatePunchListAI(){
   var p=gpr();if(!p)return;
   var btn=document.getElementById('punchAIBtn');
