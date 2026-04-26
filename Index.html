@@ -780,6 +780,10 @@ function renderEstDetailBody(e){
   var calc=calcEstimate(e);
   console.log('CALC:',JSON.stringify({sub:calc.subtotal,client:calc.clientTotal,grand:calc.grandTotal,profit:calc.profit,margin:calc.margin,items:(e.lineItems||[]).length}));
   var html='';
+  // AI panel - only show for contractor, not client view
+  if(!document.body.classList.contains('client-mode')){
+  // AI panel - only for contractor, not client
+  if(!document.body.classList.contains('client-mode')){
   // Inject AI panel at top (only for contractor - not in client view)
   html+='<div style="padding:14px;background:#fff;border-bottom:2px solid #EEE">';
   html+='<div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">';
@@ -795,9 +799,12 @@ function renderEstDetailBody(e){
   html+='<button onclick="generateAIEstimate()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">&#10024; Run AI Command</button>';
   html+='<div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>';
   html+='</div></div>';
+  }
+
+  }
+
 
   // AI Generator
-  // AI panel is static HTML above - see id='aiPanel''</div>';
 
   // Header info
   html+='<div class="wcard">';
@@ -1502,6 +1509,7 @@ function initSigCanvas(canvasId){
 }
 
 function renderClientView(e,wrapper){
+  if(e&&e.id) currentEstId=e.id;
   // Always hide contractor UI when rendering client view
   var idsToHide=['estDetailPage','detailPage','addPage','estFormPage','settingsPage','editScopePage','editLineItemPage','notifsPage','mainView','aiPanel'];
   idsToHide.forEach(function(id){var el=document.getElementById(id);if(el){el.style.display='none';el.classList.remove('show');}});
@@ -1614,8 +1622,8 @@ function renderClientView(e,wrapper){
     html+='<label class="fl" style="margin-bottom:6px">Signature</label>';
     html+='<canvas class="sig-canvas" id="sigCanvas" width="560" height="150"></canvas>';
     html+='<div style="display:flex;gap:8px;margin-top:10px">';
-    html+='<button onclick="clearSig()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;font-size:13px;cursor:pointer">Clear</button>';
-    html+='<button onclick="submitSignature(e.id)" style="flex:2;padding:10px;border:none;border-radius:10px;background:#2B3990;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Approve &amp; Sign</button>';
+    html+='<button ontouchend="event.preventDefault();clearSig();" onclick="clearSig();" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;font-size:13px;cursor:pointer;min-height:48px">Clear</button>';
+    html+='<button ontouchend="event.preventDefault();submitSignature(currentEstId);" onclick="submitSignature(currentEstId);" style="flex:2;padding:10px;border:none;border-radius:10px;background:#2B3990;color:#fff;font-size:14px;font-weight:700;cursor:pointer;min-height:48px">&#9989; Approve &amp; Sign</button>';
     html+='</div>';
     html+='<div style="font-size:11px;color:#aaa;margin-top:8px;text-align:center">Digital signature is legally binding.</div>';
     html+='</div>';
@@ -1634,7 +1642,23 @@ function renderClientView(e,wrapper){
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
-function submitSignature(estId){var name=document.getElementById("sigName").value.trim();if(!name){alert("Please enter your full name.");return;}var canvas=document.getElementById("sigCanvas");var sigData=canvas.toDataURL("image/png");var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;if(sigData===blank.toDataURL("image/png")){alert("Please sign above.");return;}eCol.doc(estId).update({signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"}).then(function(){pushNotification("Estimate signed by "+name);eCol.doc(estId).get().then(function(doc){renderClientView(doc.data(),document.getElementById("clientWrapper"));});});}
+function submitSignature(estId){var name=document.getElementById("sigName").value.trim();if(!name){alert("Please enter your full name.");return;}var canvas=document.getElementById("sigCanvas");var sigData=canvas.toDataURL("image/png");var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;if(sigData===blank.toDataURL("image/png")){alert("Please sign above.");return;}eCol.doc(estId).update({signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"}).then(function(){
+    pushNotification("Estimate signed by "+name);
+    // Show success screen
+    var wrapper=document.getElementById("clientWrapper");
+    if(wrapper){
+      wrapper.innerHTML='<div style="text-align:center;padding:60px 24px;font-family:sans-serif">'
+        +'<div style="font-size:64px;margin-bottom:20px">&#9989;</div>'
+        +'<div style="font-size:22px;font-weight:700;color:#1A1A2E;margin-bottom:12px">Estimate Approved!</div>'
+        +'<div style="font-size:15px;color:#666;margin-bottom:8px">Signed by: '+name+'</div>'
+        +'<div style="font-size:13px;color:#aaa;margin-bottom:32px">'+new Date().toLocaleDateString('en-US',{weekday:"long",year:"numeric",month:"long",day:"numeric"})+'</div>'
+        +'<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:12px;padding:20px;max-width:400px;margin:0 auto">'
+        +'<div style="font-size:14px;color:#2EAA72;font-weight:700;margin-bottom:8px">What happens next?</div>'
+        +'<div style="font-size:13px;color:#444;line-height:1.7">Your contractor has been notified. They will be in touch to schedule the work and confirm next steps.</div>'
+        +'</div></div>';
+    }
+  });
+}
 
 function openDetail(id){currentId=id;currentTab="scope";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};document.getElementById("dName").textContent=p.client;document.getElementById("dJobNum").textContent=p.jobNum||"";var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
 function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","punch-list","change-orders","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
