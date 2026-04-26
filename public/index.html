@@ -780,11 +780,9 @@ function renderEstDetailBody(e){
   var calc=calcEstimate(e);
   console.log('CALC:',JSON.stringify({sub:calc.subtotal,client:calc.clientTotal,grand:calc.grandTotal,profit:calc.profit,margin:calc.margin,items:(e.lineItems||[]).length}));
   var html='';
-  // AI panel - only show for contractor, not client view
-  if(!document.body.classList.contains('client-mode')){
-  // AI panel - only for contractor, not client
-  if(!document.body.classList.contains('client-mode')){
-  // Inject AI panel at top (only for contractor - not in client view)
+  // AI panel - only for contractor, never in client view
+  var isClientMode=document.body.classList.contains('client-mode')||window.location.search.indexOf('est=')>=0;
+  if(!isClientMode){
   html+='<div style="padding:14px;background:#fff;border-bottom:2px solid #EEE">';
   html+='<div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">';
   html+='<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>';
@@ -800,10 +798,6 @@ function renderEstDetailBody(e){
   html+='<div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>';
   html+='</div></div>';
   }
-
-  }
-
-
   // AI Generator
 
   // Header info
@@ -2033,9 +2027,4 @@ loadSettings(function(){startSync();startNotifSync();checkClientView();});
 
 </script>
 </body>
-</html>  html+='<div class="est-summary">';
-  if(calc.taxAmt>0){
-    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  }
-  html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+</html>
