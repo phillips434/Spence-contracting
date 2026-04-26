@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v50</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v53</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1655,7 +1655,7 @@ function submitSignature(estId){var name=document.getElementById("sigName").valu
 }
 
 function openDetail(id){currentId=id;currentTab="scope";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};document.getElementById("dName").textContent=p.client;document.getElementById("dJobNum").textContent=p.jobNum||"";var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
-function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","punch-list","change-orders","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
+function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","punch-list","change-orders","comms","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
 function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';var minD=null,maxD=null;items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+label+'">'+label+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+label+'</div></div></div>';});html+='</div></div>';return html;}
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
@@ -1892,15 +1892,69 @@ function renderTabBody(p){
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
     (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
-    html+='<button class="btn-dashed" onclick="showForm(\'punchForm\')">+ Add Item</button>';
+    html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
+    html+='<button class="btn-dashed" style="flex:1" ontouchend="event.preventDefault();showForm(\'punchForm\');" onclick="showForm(\'punchForm\');">+ Add Item</button>';
+    html+='<button id="punchAIBtn" class="btn-dark" style="flex:1;background:#2B3990" ontouchend="event.preventDefault();generatePunchListAI();" onclick="generatePunchListAI();">&#10024; AI Generate</button>';
+    html+='</div>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
   } else if(currentTab==="change-orders"){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length)html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8B43A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';
     html+='<div class="sec-label">Change Orders</div>';
-    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div></div>';});
+    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div>';
+      html+='<div style="display:flex;gap:8px;margin-top:10px">';
+      if(co.status==="Pending"){
+        html+='<button ontouchend="event.preventDefault();approveCOContractor('+i+');" onclick="approveCOContractor('+i+');" style="flex:1;padding:8px;background:#2EAA72;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#10003; Approve</button>';
+        html+='<button ontouchend="event.preventDefault();sendCOToClient('+i+');" onclick="sendCOToClient('+i+');" style="flex:1;padding:8px;background:#2B3990;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#128228; Send to Client</button>';
+      }
+      if(co.approvedAt) html+='<div style="font-size:11px;color:#2EAA72;padding:8px 0">&#10003; Approved '+fmtTS(co.approvedAt)+(co.approvedBy?' by '+co.approvedBy:'')+'</div>';
+      html+='</div>';
+      html+='</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div></div>';
+  } else if(currentTab==="comms"){
+    // Client Communication Log
+    var comms=p.commsLog||[];
+    html+='<div class="wcard" style="background:#EEF2FF;border:1px solid #2B3990;margin-bottom:12px">';
+    html+='<div style="font-size:13px;font-weight:700;color:#2B3990;margin-bottom:4px">&#128222; Client Communication Log</div>';
+    html+='<div style="font-size:12px;color:#2B3990">Track every call, text, email, and meeting with your client.</div></div>';
+    if(comms.length){
+      comms.slice().reverse().forEach(function(c,ri){
+        var i=comms.length-1-ri;
+        var typeIcon=c.type==='Call'?'&#128222;':c.type==='Text'?'&#128172;':c.type==='Email'?'&#128140;':c.type==='Meeting'?'&#129309;':'&#128172;';
+        html+='<div class="wcard" style="margin-bottom:8px">';
+        html+='<div style="display:flex;align-items:flex-start;gap:10px">';
+        html+='<div style="font-size:22px;flex-shrink:0">'+typeIcon+'</div>';
+        html+='<div style="flex:1">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+        html+='<span style="font-size:13px;font-weight:700;color:#1A1A2E">'+c.type+'</span>';
+        html+='<span style="font-size:11px;color:#aaa">'+fmtTS(c.ts)+'</span></div>';
+        html+='<div style="font-size:13px;color:#333;line-height:1.5">'+c.notes+'</div>';
+        if(c.followUp) html+='<div style="font-size:11px;color:#E8B43A;margin-top:6px;font-weight:600">&#9888; Follow up: '+c.followUp+'</div>';
+        html+='</div>';
+        html+='<button ontouchend="event.preventDefault();delComm('+i+');" onclick="delComm('+i+');" style="background:none;border:none;color:#E83A6C;font-size:20px;cursor:pointer;padding:4px 8px;min-height:36px">&#215;</button>';
+        html+='</div>';
+        html+='<div style="display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">';
+        html+='<button ontouchend="event.preventDefault();sendCommSummary('+i+');" onclick="sendCommSummary('+i+');" style="flex:1;padding:8px;background:#2B3990;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;min-height:36px">&#128228; Send Summary to Client</button>';
+        html+='</div>';
+        html+='</div>';
+      });
+    } else {
+      html+='<div style="text-align:center;padding:30px;color:#aaa;font-size:13px">No communications logged yet.<br>Use the form below to add your first entry.</div>';
+    }
+    html+='<button class="btn-dashed" ontouchend="event.preventDefault();showForm(\'commForm\');" onclick="showForm(\'commForm\');">+ Log Communication</button>';
+    html+='<div class="inline-form" id="commForm">';
+    html+='<div class="fr2" style="margin-bottom:8px">';
+    html+='<div><label class="fl" style="margin-bottom:6px">Type</label>';
+    html+='<select class="fi" id="commType"><option>Call</option><option>Text</option><option>Email</option><option>Meeting</option><option>Other</option></select></div>';
+    html+='<div><label class="fl" style="margin-bottom:6px">Date</label>';
+    html+='<input class="fi" id="commDate" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div></div>';
+    html+='<label class="fl" style="margin-bottom:6px">Notes</label>';
+    html+='<textarea class="fi" id="commNotes" rows="3" placeholder="What was discussed? Any decisions made? Next steps?" style="margin-bottom:8px"></textarea>';
+    html+='<label class="fl" style="margin-bottom:6px">Follow-up Required</label>';
+    html+='<input class="fi" id="commFollowUp" placeholder="e.g. Send revised quote by Friday (optional)" style="margin-bottom:10px"/>';
+    html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();hideForm(\'commForm\');" onclick="hideForm(\'commForm\');">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addComm();" onclick="addComm();">Save Log</button></div></div>';
+
   } else if(currentTab==="daily-log"){
     html+='<div class="sec-label">Daily Logs</div>';
     var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
@@ -1936,6 +1990,92 @@ function addCost(){var p=gpr();p.costs=p.costs||[];var b=parseFloat(document.get
 function delCost(i){if(!confirm("Delete?"))return;var p=gpr();p.costs.splice(i,1);p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function updateCostAmt(i,k,v){var p=gpr();p.costs[i][k]=parseFloat(v)||0;p.spent=p.costs.reduce(function(s,c){return s+(c.actualAmt||0);},0);saveP(p);}
 function saveBudgetTotals(){var p=gpr();p.budget=parseFloat(document.getElementById("bBud").value)||0;p.spent=parseFloat(document.getElementById("bSpt").value)||0;saveP(p);}
+function addComm(){
+  var notes=document.getElementById('commNotes').value.trim();
+  if(!notes){alert('Please enter notes.');return;}
+  var p=gpr();if(!p)return;
+  p.commsLog=p.commsLog||[];
+  p.commsLog.push({
+    type:document.getElementById('commType').value,
+    date:document.getElementById('commDate').value,
+    notes:notes,
+    followUp:document.getElementById('commFollowUp').value.trim(),
+    ts:Date.now()
+  });
+  saveP(p,'Communication logged on '+p.client);
+  document.getElementById('commNotes').value='';
+  document.getElementById('commFollowUp').value='';
+  hideForm('commForm');
+}
+function sendCommSummary(i){
+  var p=gpr();if(!p)return;
+  var c=(p.commsLog||[])[i];if(!c)return;
+  var typeIcon=c.type==='Call'?'call':c.type==='Text'?'text message':c.type==='Email'?'email':c.type==='Meeting'?'meeting':'conversation';
+  var date=c.date?new Date(c.date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'today';
+  var msg='Hi '+p.client+',\n\nFollowing up on our '+typeIcon+' on '+date+'. Here is a summary of what we discussed:\n\n'+c.notes+(c.followUp?'\n\nNext step: '+c.followUp:'')+'\n\nPlease reply if anything looks incorrect or if you have questions.\n\nThank you,\n'+(DD.companyName||'Spence Construction');
+  var phone=p.clientPhone||'';
+  var email=p.clientEmail||'';
+  if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
+  else if(email){window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Summary: Our '+c.type+' - '+p.client)+'&body='+encodeURIComponent(msg);}
+  else{if(confirm('No client contact info on file. Copy message to clipboard?')){navigator.clipboard.writeText(msg).then(function(){T('Copied!');}).catch(function(){alert(msg);});}}
+}
+
+function delComm(i){
+  if(!confirm('Delete this log entry?'))return;
+  var p=gpr();if(!p)return;
+  p.commsLog.splice(i,1);
+  saveP(p);
+}
+function sendCOToClient(i){
+  var p=gpr();if(!p)return;
+  var co=p.changeOrders[i];if(!co)return;
+  var url=window.location.href.split('?')[0]+'?co='+p.id+'&coidx='+i;
+  var msg='Hi '+p.client+',\n\nA change order requires your review and approval:\n\n'+
+    'Project: '+p.type+'\n'+
+    'Change Order: '+co.title+'\n'+
+    'Description: '+(co.description||'')+'\n'+
+    'Cost Impact: +$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'\n\n'+
+    'Please review and approve:\n'+url+'\n\nThank you,\n'+(DD.companyName||'Spence Construction');
+  window.location.href='sms:'+encodeURIComponent(p.clientPhone||'')+
+    '?body='+encodeURIComponent(msg);
+}
+function generatePunchListAI(){
+  var p=gpr();if(!p)return;
+  var btn=document.getElementById('punchAIBtn');
+  if(btn){btn.disabled=true;btn.textContent='Generating...';}
+  var scope=(p.scopeItems||[]).map(function(s){return s.desc;}).join(', ')||p.type||'construction';
+  var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, each being a specific inspection/completion item. No markdown, no explanation. Example: ["Touch up paint in hallway","Verify all outlets work","Clean all surfaces","Remove debris"]';
+  fetch('/api/estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sp,
+      messages:[{role:'user',content:'Project type: '+p.type+'. Scope: '+scope}]})
+  }).then(function(r){return r.json();})
+  .then(function(data){
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'[]';
+    var clean=text.replace(/```json\n?|```\n?/g,'').trim();
+    var items=JSON.parse(clean);
+    p.punchList=p.punchList||[];
+    items.forEach(function(item){
+      p.punchList.push({text:item,category:'General',done:false});
+    });
+    saveP(p,'AI punch list generated for '+p.client);
+    T('Added '+items.length+' punch list items!');
+  }).catch(function(err){
+    alert('Error: '+err.message);
+  }).finally(function(){
+    if(btn){btn.disabled=false;btn.textContent='&#10024; AI Generate Punch List';}
+  });
+}
+function approveCOContractor(i){
+  var p=gpr();if(!p)return;
+  p.changeOrders[i].status='Approved';
+  p.changeOrders[i].approvedAt=Date.now();
+  p.changeOrders[i].approvedBy='Contractor';
+  saveP(p,'Change order approved: '+p.changeOrders[i].title);
+  T('Change order approved!');
+}
+function addPunchItem(text,cat){addPunch();}
 function addPunch(){var text=document.getElementById("plText").value.trim();if(!text){alert("Enter an item.");return;}var p=gpr();p.punchList=p.punchList||[];p.punchList.push({text:text,category:document.getElementById("plCat").value,done:false});saveP(p);}
 function delPunch(i){if(!confirm("Delete?"))return;var p=gpr();p.punchList.splice(i,1);saveP(p);}
 function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p,p.punchList[i].done?"Punch item completed on "+p.client:null);}
