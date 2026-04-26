@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v56</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v57</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1660,13 +1660,20 @@ function renderClientView(e,wrapper){
     initSigCanvas("contractorSigCanvas");
   },500);
 
-  // Init client signature canvas
-  setTimeout(function(){
+  // Init client signature canvas - retry until elements are found
+  var _initAttempts=0;
+  function initAllCanvases(){
+    _initAttempts++;
     initSigCanvas('sigCanvas');
     (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending') initSigCanvas('coSigCanvas'+i);
+      if(co.status==='Pending'){
+        var el=document.getElementById('coSigCanvas'+i);
+        if(el) initSigCanvas('coSigCanvas'+i);
+        else if(_initAttempts<5) setTimeout(initAllCanvases,300);
+      }
     });
-  },300);
+  }
+  setTimeout(initAllCanvases,400);
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
@@ -2109,7 +2116,8 @@ function generateCOWithAI(){
   if(!combined){alert('Enter a title or description first, then tap AI Draft.');return;}
   var btn=event.target;btn.disabled=true;btn.textContent='Drafting...';
   var profile=DD.aiProfile||{};
-  var sp='You are a construction change order writer. Given a brief description of additional work, write a professional change order. Respond ONLY with valid JSON: {"title":"short title","description":"detailed professional description of the work","budgetImpact":number}. The budgetImpact should be a realistic cost estimate in dollars for this type of work. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
+  var markup=parseFloat(profile.markup)||20;
+  var sp='You are a construction change order estimator. Given a brief description of additional work, write a professional change order with detailed line item breakdown. Respond ONLY with valid JSON: {"title":"short title","description":"detailed professional description","lineItems":[{"desc":"item description","qty":1,"unit":"hrs","unitCost":85,"total":85}],"laborSubtotal":number,"materialsSubtotal":number,"overhead":number,"profit":number,"budgetImpact":number}. overhead should be 10% of subtotal. profit should be '+markup+'% of subtotal. budgetImpact = sum of all + overhead + profit. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -2121,9 +2129,21 @@ function generateCOWithAI(){
     var clean=text.replace(/```json[\s\S]*?```|```/g,'').trim();clean=clean.replace(/^\s*|\s*$/g,'');
     var parsed=JSON.parse(clean);
     if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
-    if(document.getElementById('coDesc')) document.getElementById('coDesc').value=parsed.description||desc;
     if(document.getElementById('coBudget')) document.getElementById('coBudget').value=parsed.budgetImpact||0;
-    T('Change order drafted!');
+    // Build detailed description with line items + overhead/profit
+    var detailDesc=parsed.description+'\n\n--- COST BREAKDOWN ---';
+    if(parsed.lineItems&&parsed.lineItems.length){
+      parsed.lineItems.forEach(function(li){
+        detailDesc+='\n• '+li.desc+': '+li.qty+' '+li.unit+' @ $'+li.unitCost+'/'+li.unit+' = $'+li.total.toLocaleString();
+      });
+    }
+    if(parsed.laborSubtotal) detailDesc+='\n\nLabor Subtotal: $'+parsed.laborSubtotal.toLocaleString();
+    if(parsed.materialsSubtotal) detailDesc+='\nMaterials Subtotal: $'+parsed.materialsSubtotal.toLocaleString();
+    if(parsed.overhead) detailDesc+='\nOverhead (10%): $'+parsed.overhead.toLocaleString();
+    if(parsed.profit) detailDesc+='\nProfit ('+((DD.aiProfile||{}).markup||20)+'%): $'+parsed.profit.toLocaleString();
+    detailDesc+='\n\nTotal: $'+(parsed.budgetImpact||0).toLocaleString();
+    if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
+    T('Change order drafted with line items!');
   }).catch(function(err){alert('AI error: '+err.message);})
   .finally(function(){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';});
 }
