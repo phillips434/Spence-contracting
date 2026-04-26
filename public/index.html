@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v57</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v58</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2126,8 +2126,19 @@ function generateCOWithAI(){
   }).then(function(r){return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    var clean=text.replace(/```json[\s\S]*?```|```/g,'').trim();clean=clean.replace(/^\s*|\s*$/g,'');
-    var parsed=JSON.parse(clean);
+    // Extract JSON from response - handle markdown code blocks and extra text
+    var clean=text;
+    var jsonMatch=text.match(/\{[\s\S]*\}/);
+    if(jsonMatch) clean=jsonMatch[0];
+    else clean=text.replace(/```json/gi,'').replace(/```/g,'').trim();
+    var parsed;
+    try{parsed=JSON.parse(clean);}
+    catch(pe){
+      // Show raw response so user can see what AI returned
+      if(document.getElementById('coDesc')) document.getElementById('coDesc').value='AI returned:\n\n'+text.slice(0,500);
+      T('Could not parse AI response - showing raw text');
+      return;
+    }
     if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
     if(document.getElementById('coBudget')) document.getElementById('coBudget').value=parsed.budgetImpact||0;
     // Build detailed description with line items + overhead/profit
