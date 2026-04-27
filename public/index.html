@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v60</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v61</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1500,9 +1500,12 @@ function checkClientView(){
 function initSigCanvas(canvasId){
   var cc=document.getElementById(canvasId);
   if(!cc)return;
-  // Use parent width for proper sizing
-  var w=cc.parentElement?cc.parentElement.offsetWidth-32:320;
-  if(w<100)w=320;
+  // Force layout read to get actual width
+  var w=320;
+  if(cc.parentElement){
+    var pw=cc.parentElement.getBoundingClientRect().width;
+    if(pw>100) w=Math.floor(pw)-32;
+  }
   cc.width=w;
   cc.height=150;
   var ctx=cc.getContext("2d");
@@ -1661,19 +1664,24 @@ function renderClientView(e,wrapper){
   },500);
 
   // Init client signature canvas - retry until elements are found
-  var _initAttempts=0;
-  function initAllCanvases(){
-    _initAttempts++;
+  setTimeout(function(){
     initSigCanvas('sigCanvas');
-    (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending'){
-        var el=document.getElementById('coSigCanvas'+i);
-        if(el) initSigCanvas('coSigCanvas'+i);
-        else if(_initAttempts<5) setTimeout(initAllCanvases,300);
-      }
-    });
-  }
-  setTimeout(initAllCanvases,400);
+    // Retry CO canvases until found
+    var coAttempts=0;
+    function initCOCanvases(){
+      coAttempts++;
+      var allFound=true;
+      (p.changeOrders||[]).forEach(function(co,i){
+        if(co.status==='Pending'){
+          var el=document.getElementById('coSigCanvas'+i);
+          if(el){initSigCanvas('coSigCanvas'+i);}
+          else{allFound=false;}
+        }
+      });
+      if(!allFound&&coAttempts<8) setTimeout(initCOCanvases,400);
+    }
+    initCOCanvases();
+  },500);
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
@@ -2117,7 +2125,7 @@ function generateCOWithAI(){
   var btn=event.target;btn.disabled=true;btn.textContent='Drafting...';
   var profile=DD.aiProfile||{};
   var markup=parseFloat(profile.markup)||20;
-  var sp='You are a construction change order estimator. Return ONLY valid JSON, no markdown, no extra text. Format: {"title":"brief title","description":"2-3 sentence scope description","lineItems":[{"desc":"item","qty":1,"unit":"hrs","unitCost":85,"total":85}],"laborSubtotal":0,"materialsSubtotal":0,"overhead":0,"profit":0,"budgetImpact":0}. overhead=10% of (labor+materials). profit='+markup+'% of (labor+materials). budgetImpact=labor+materials+overhead+profit. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
+  var sp='You are a construction change order estimator. Return ONLY valid JSON, no markdown, no extra text. IMPORTANT: Bake all overhead and profit ('+markup+'% markup) directly into each line item unit cost - do NOT show overhead/profit as separate line items. Format: {"title":"brief title","description":"2-3 sentence scope description","lineItems":[{"desc":"item","qty":1,"unit":"hrs","unitCost":95,"total":95}],"budgetImpact":0}. budgetImpact = sum of all line item totals. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -2140,17 +2148,16 @@ function generateCOWithAI(){
     if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
     if(document.getElementById('coBudget')) document.getElementById('coBudget').value=parsed.budgetImpact||0;
     // Build detailed description with line items + overhead/profit
-    var detailDesc=parsed.description+'\n\n--- COST BREAKDOWN ---';
+    var detailDesc=parsed.description+'\n\n--- SCOPE & PRICING ---';
     if(parsed.lineItems&&parsed.lineItems.length){
       parsed.lineItems.forEach(function(li){
-        detailDesc+='\n• '+li.desc+': '+li.qty+' '+li.unit+' @ $'+li.unitCost+'/'+li.unit+' = $'+li.total.toLocaleString();
+        var total=li.total||(li.qty*li.unitCost);
+        detailDesc+='\n• '+li.desc+': '+li.qty+' '+li.unit+' @ $'+li.unitCost+'/'+li.unit+' = $'+Math.round(total).toLocaleString();
       });
+      // Recalculate budgetImpact from line items
+      parsed.budgetImpact=parsed.lineItems.reduce(function(s,li){return s+(li.total||(li.qty*li.unitCost));},0);
     }
-    if(parsed.laborSubtotal) detailDesc+='\n\nLabor Subtotal: $'+parsed.laborSubtotal.toLocaleString();
-    if(parsed.materialsSubtotal) detailDesc+='\nMaterials Subtotal: $'+parsed.materialsSubtotal.toLocaleString();
-    if(parsed.overhead) detailDesc+='\nOverhead (10%): $'+parsed.overhead.toLocaleString();
-    if(parsed.profit) detailDesc+='\nProfit ('+((DD.aiProfile||{}).markup||20)+'%): $'+parsed.profit.toLocaleString();
-    detailDesc+='\n\nTotal: $'+(parsed.budgetImpact||0).toLocaleString();
+    detailDesc+='\n\nContract Total: $'+Math.round(parsed.budgetImpact||0).toLocaleString();
     if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
     T('Change order drafted with line items!');
   }).catch(function(err){alert('AI error: '+err.message);})
