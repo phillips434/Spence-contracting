@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v62</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v63</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1462,6 +1462,24 @@ function renderProjectPortal(p, est, wrapper){
   html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:12px">'+co+' &middot; Powered by Spence Construction</div>';
   html+='</div>';
   wrapper.innerHTML=html;
+
+  // Init all signature canvases after DOM renders
+  setTimeout(function(){
+    initSigCanvas('sigCanvas');
+    (p.changeOrders||[]).forEach(function(co,i){
+      if(co.status==='Pending') initSigCanvas('coSigCanvas'+i);
+    });
+  },500);
+
+  // Retry CO canvases - they may need more time
+  setTimeout(function(){
+    (p.changeOrders||[]).forEach(function(co,i){
+      if(co.status==='Pending'){
+        var el=document.getElementById('coSigCanvas'+i);
+        if(el) initSigCanvas('coSigCanvas'+i);
+      }
+    });
+  },1200);
 }
 
 
