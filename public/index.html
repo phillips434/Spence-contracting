@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v63</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v64</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1980,7 +1980,7 @@ function renderTabBody(p){
     (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
     html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
     html+='<button class="btn-dashed" style="flex:1" ontouchend="event.preventDefault();showForm(\'punchForm\');" onclick="showForm(\'punchForm\');">+ Add Item</button>';
-    html+='<button id="punchAIBtn" class="btn-dark" style="flex:1;background:#2B3990" ontouchend="event.preventDefault();generatePunchListAI();" onclick="generatePunchListAI();">&#10024; AI Generate</button>';
+    html+='<button id="punchAIBtn" class="btn-dark" style="flex:1;background:#2B3990" ontouchend="event.preventDefault();generatePunchListAI(this);" onclick="generatePunchListAI(this);">&#10024; AI Generate</button>';
     html+='</div>';
     html+='<div class="inline-form" id="punchForm"><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="plText" placeholder="e.g. Touch up paint in hallway" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="plCat" style="margin-bottom:10px">'+DD.punchCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'punchForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addPunch()">Add Item</button></div></div>';
   } else if(currentTab==="change-orders"){
@@ -2231,12 +2231,12 @@ function signCOBtn(btn){
 }
 
 
-function generatePunchListAI(){
+function generatePunchListAI(btnEl){
   var p=gpr();if(!p)return;
-  var btn=document.getElementById('punchAIBtn');
+  var btn=btnEl||document.getElementById('punchAIBtn');
   if(btn){btn.disabled=true;btn.textContent='Generating...';}
   var scope=(p.scopeItems||[]).map(function(s){return s.desc;}).join(', ')||p.type||'construction';
-  var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, each being a specific inspection/completion item. No markdown, no explanation. Example: ["Touch up paint in hallway","Verify all outlets work","Clean all surfaces","Remove debris"]';
+  var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, no markdown, no code fences, no explanation. Example: ["Touch up paint","Verify all outlets work","Clean all surfaces","Remove debris"]';
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -2245,8 +2245,11 @@ function generatePunchListAI(){
   }).then(function(r){return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'[]';
-    var clean=text.replace(/```json\n?|```\n?/g,'').trim();
-    var items=JSON.parse(clean);
+    var stripped=text.replace(/```json/gi,'').replace(/```/g,'').trim();
+    var arrMatch=stripped.match(/\[[\s\S]*\]/);
+    var clean=arrMatch?arrMatch[0]:stripped;
+    var items;
+    try{items=JSON.parse(clean);}catch(pe){alert('Could not parse response. Try again.');return;}
     p.punchList=p.punchList||[];
     items.forEach(function(item){
       p.punchList.push({text:item,category:'General',done:false});
@@ -2256,7 +2259,7 @@ function generatePunchListAI(){
   }).catch(function(err){
     alert('Error: '+err.message);
   }).finally(function(){
-    if(btn){btn.disabled=false;btn.textContent='&#10024; AI Generate Punch List';}
+    if(btn){btn.disabled=false;btn.textContent='&#10024; AI Generate';}
   });
 }
 function approveCOContractor(i){
