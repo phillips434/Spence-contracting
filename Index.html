@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v65</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v66</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2144,7 +2144,7 @@ function generateCOWithAI(btnEl){
   var profile=DD.aiProfile||{};
   var markup=parseFloat(profile.markup)||20;
   var sp='You are a construction change order estimator. Return ONLY valid JSON, no markdown, no extra text. IMPORTANT: Bake all overhead and profit ('+markup+'% markup) directly into each line item unit cost - do NOT show overhead/profit as separate line items. Format: {"title":"brief title","description":"2-3 sentence scope description","lineItems":[{"desc":"item","qty":1,"unit":"hrs","unitCost":95,"total":95}],"budgetImpact":0}. budgetImpact = sum of all line item totals. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
-  fetch('/api/estimate',{
+  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sp,
