@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v64</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v65</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1998,7 +1998,7 @@ function renderTabBody(p){
       html+='</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
     html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
-    html+='<button class="btn-dark" style="width:100%;background:#1A1A2E;margin-top:8px" ontouchend="event.preventDefault();generateCOWithAI(this);" onclick="generateCOWithAI(this);" class="co-ai-btn">&#10024; AI Draft Change Order</button>';
+    html+='<button class="btn-dark" style="width:100%;background:#1A1A2E;margin-top:8px" ontouchend="event.preventDefault();generateCOWithAI(this);" onclick="generateCOWithAI(this);">&#10024; AI Draft Change Order</button>';
     html+='</div>';
   } else if(currentTab==="comms"){
     // Client Communication Log
@@ -2237,7 +2237,7 @@ function generatePunchListAI(btnEl){
   if(btn){btn.disabled=true;btn.textContent='Generating...';}
   var scope=(p.scopeItems||[]).map(function(s){return s.desc;}).join(', ')||p.type||'construction';
   var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, no markdown, no code fences, no explanation. Example: ["Touch up paint","Verify all outlets work","Clean all surfaces","Remove debris"]';
-  fetch('/api/estimate',{
+  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sp,
