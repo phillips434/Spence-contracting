@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v66</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v67</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -435,6 +435,26 @@ body.client-mode .phead { display:none !important; }
         <div><label class="fl" style="color:rgba(255,255,255,0.6)">Special AI Instructions</label><textarea class="fi" id="aiInstructions" rows="2" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"></textarea></div>
         <button class="btn-ai" onclick="saveAIProfile()">Save AI Profile</button>
       </div>
+    </div>
+    <div class="wcard">
+      <div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#128295; Trade / Project Type Template</div>
+      <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.5">Select your trade to auto-fill AI estimating defaults for that project type.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="tradeButtons"></div>
+      <label class="fl" style="margin-bottom:6px">Active Trade Template</label>
+      <select class="fi" id="tradePicker" onchange="applyTradeTemplate(this.value)" style="margin-bottom:0">
+        <option value="">-- General Contractor (default) --</option>
+        <option value="roofing">Roofing</option>
+        <option value="plumbing">Plumbing / MEP</option>
+        <option value="electrical">Electrical</option>
+        <option value="hvac">HVAC</option>
+        <option value="framing">Framing / Carpentry</option>
+        <option value="painting">Painting</option>
+        <option value="flooring">Flooring</option>
+        <option value="masonry">Masonry / Concrete</option>
+        <option value="landscaping">Landscaping</option>
+        <option value="demo">Demo / Excavation</option>
+        <option value="custom">Custom (use AI instructions)</option>
+      </select>
     </div>
     <div class="wcard" style="border:2px solid #2B3990;background:#EEF2FF">
       <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#128101; Restore Team from Firebase</div>
@@ -736,6 +756,32 @@ function openNotifications(){var el=document.getElementById("notifsList");if(!no
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){sCol.doc("dropdowns").get().then(function(d){if(d.exists)DD=Object.assign({},DD,d.data());if(cb)cb();}).catch(function(){if(cb)cb();});}
+var TRADE_TEMPLATES={
+  roofing:{labor:75,markup:25,categories:["Labor","Materials","Tear-off","Shingles","Flashing","Gutters","Disposal"],instructions:"Include tear-off, underlayment, drip edge, and debris disposal. Price per square (100 sq ft). Factor in pitch complexity."},
+  plumbing:{labor:110,markup:30,categories:["Labor","Rough-in","Fixtures","Pipe & Fittings","Permits","Inspections"],instructions:"Include permit fees and inspection costs. Separate rough-in from finish work. Note water heater and fixture allowances."},
+  electrical:{labor:100,markup:25,categories:["Labor","Panel/Service","Wiring","Fixtures","Devices","Permits"],instructions:"Include permit and inspection fees. Separate rough-in from trim-out. Note panel capacity and service size."},
+  hvac:{labor:95,markup:28,categories:["Labor","Equipment","Ductwork","Refrigerant","Permits","Startup"],instructions:"Include equipment, ductwork, refrigerant, permits, and startup/commissioning. Note SEER ratings and warranties."},
+  framing:{labor:65,markup:20,categories:["Labor","Lumber","Hardware","Sheathing","Engineering","Crane"],instructions:"Include lumber take-off, hardware, sheathing. Note engineering requirements and crane costs if needed."},
+  painting:{labor:50,markup:30,categories:["Labor","Paint","Primer","Prep","Sundries","Protection"],instructions:"Separate interior from exterior. Include prep work, primer, number of coats. Price per square foot."},
+  flooring:{labor:60,markup:25,categories:["Labor","Flooring Material","Underlayment","Trim","Demo","Disposal"],instructions:"Include material, underlayment, transition strips, and disposal of existing flooring. Note square footage and waste factor."},
+  masonry:{labor:80,markup:22,categories:["Labor","Block/Brick","Mortar","Rebar","Forms","Finishing"],instructions:"Include forming, rebar, concrete/block, and finishing. Note mix design and curing requirements."},
+  landscaping:{labor:55,markup:30,categories:["Labor","Plants","Soil","Mulch","Hardscape","Irrigation"],instructions:"Separate softscape from hardscape. Include soil amendments, mulch, irrigation if applicable."},
+  demo:{labor:70,markup:20,categories:["Labor","Equipment","Dumpster","Haul-off","Hazmat","Permits"],instructions:"Include dumpster rental, haul-off fees, and hazmat testing/abatement if applicable. Price per cubic yard for disposal."}
+};
+function applyTradeTemplate(trade){
+  if(!trade||!TRADE_TEMPLATES[trade])return;
+  var t=TRADE_TEMPLATES[trade];
+  if(document.getElementById("aiLaborRate")) document.getElementById("aiLaborRate").value=t.labor;
+  if(document.getElementById("aiMarkup")) document.getElementById("aiMarkup").value=t.markup;
+  if(document.getElementById("aiInstructions")) document.getElementById("aiInstructions").value=t.instructions;
+  // Update estimate categories
+  if(t.categories){
+    DD.estCategories=t.categories;
+    renderTagSet("elTagsEl","estCategories");
+  }
+  DD.activeTrade=trade;
+  T("Trade template applied: "+trade);
+}
 function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("Saved!");});}
 function testAIConnection(){
   var el=document.getElementById('aiTestResult');
@@ -772,7 +818,150 @@ function renderStats(){var total=projects.length,active=projects.filter(function
 function renderFilters(){document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
 function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <b>+ New</b> to add one.</div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990",dot:"#2B3990"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+p.id+'">'+(p.jobNum?'<div class="card-num">'+p.jobNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' &middot; '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"--")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
 
-function renderDashboard(){var el=document.getElementById("dashContent");var totalB=projects.reduce(function(a,p){return a+(p.budget||0);},0),totalS=projects.reduce(function(a,p){return a+(p.spent||0);},0);var active=projects.filter(function(p){return p.status==="In Progress";});var completed=projects.filter(function(p){return p.status==="Completed";});var totalEstVal=estimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);var signedEst=estimates.filter(function(e){return e.signedAt;}).length;var openPunch=projects.reduce(function(a,p){return a+(p.punchList||[]).filter(function(i){return !i.done;}).length;},0);var openCO=projects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);var html='<div style="font-size:18px;font-weight:700;color:#1A1A2E;margin-bottom:14px">Overview</div>';html+='<div class="dash-grid">';html+='<div class="dash-card"><div class="dash-label">Total Budget</div><div class="dash-val">$'+Math.round(totalB/1000)+'k</div><div class="dash-sub">'+projects.length+' total jobs</div></div>';html+='<div class="dash-card"><div class="dash-label">Total Spent</div><div class="dash-val" style="color:#2B3990">$'+Math.round(totalS/1000)+'k</div><div class="dash-sub">'+(totalB>0?Math.round(totalS/totalB*100):0)+'% of budget</div></div>';html+='<div class="dash-card"><div class="dash-label">Active Jobs</div><div class="dash-val" style="color:#E8B43A">'+active.length+'</div><div class="dash-sub">'+completed.length+' completed</div></div>';html+='<div class="dash-card"><div class="dash-label">Est. Pipeline</div><div class="dash-val" style="color:#2EAA72">$'+Math.round(totalEstVal/1000)+'k</div><div class="dash-sub">'+signedEst+' signed</div></div>';html+='</div>';html+='<div class="dash-grid"><div class="dash-card"><div class="dash-label">Open Punch Items</div><div class="dash-val" style="color:#9B6BE8">'+openPunch+'</div></div><div class="dash-card"><div class="dash-label">Pending Change Orders</div><div class="dash-val" style="color:#E83A6C">'+openCO+'</div></div></div>';html+='<div class="sec-label" style="margin-top:8px">Recent Activity</div><div class="wcard">';var activity=[];projects.forEach(function(p){(p.dailyLogs||[]).forEach(function(l){activity.push({ts:new Date(l.date).getTime()||0,text:l.work,proj:p.client,color:"#2B3990"});});(p.changeOrders||[]).filter(function(c){return c.date;}).forEach(function(c){activity.push({ts:new Date(c.date).getTime()||0,text:c.title+" ("+c.status+")",proj:p.client,color:"#E8B43A"});});});activity.sort(function(a,b){return b.ts-a.ts;});if(!activity.length){html+='<div style="color:#bbb;font-size:13px;text-align:center;padding:20px">No recent activity.</div>';}else{activity.slice(0,8).forEach(function(a){html+='<div class="activity-item"><div class="activity-dot" style="background:'+a.color+'"></div><div><div style="font-size:13px;color:#333">'+a.text+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+a.proj+'</div></div></div>';});}html+='</div>';if(active.length){html+='<div class="sec-label">Active Jobs</div>';active.forEach(function(p){var pr=gp(p),pct=Math.round((p.spent||0)/((p.budget||1))*100);html+='<div class="wcard" style="cursor:pointer" onclick="openDetail(\'' + p.id + '\')"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+p.client+'</div><span style="font-size:11px;color:#2B3990;font-weight:700">'+(p.jobNum||"")+'</span></div><div class="brow"><div class="blr"><span>Scope</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';});}el.innerHTML=html;}
+function renderDashboard(){
+  var el=document.getElementById("dashContent");
+  var now=Date.now();
+  var today=new Date().toISOString().split('T')[0];
+
+  // Core metrics
+  var totalB=projects.reduce(function(a,p){return a+(parseFloat(p.budget)||0);},0);
+  var totalS=projects.reduce(function(a,p){return a+(parseFloat(p.spent)||0);},0);
+  var active=projects.filter(function(p){return p.status==="In Progress";});
+  var planning=projects.filter(function(p){return p.status==="Planning";});
+  var completed=projects.filter(function(p){return p.status==="Completed";});
+  var onHold=projects.filter(function(p){return p.status==="On Hold";});
+
+  // Estimate pipeline
+  var totalEstVal=estimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
+  var signedEst=estimates.filter(function(e){return e.signedAt;});
+  var signedVal=signedEst.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
+  var pendingEst=estimates.filter(function(e){return !e.signedAt&&e.status!=="Rejected";});
+
+  // Alerts
+  var openCO=projects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);
+  var openPunch=projects.reduce(function(a,p){return a+(p.punchList||[]).filter(function(i){return !i.done;}).length;},0);
+  var overdueProjects=active.filter(function(p){return p.endDate&&p.endDate<today;});
+  var unpaidMilestones=0;
+  projects.forEach(function(p){
+    (p.milestones||[]).forEach(function(m){if(!m.paid&&m.dueDate&&m.dueDate<today)unpaidMilestones++;});
+  });
+
+  var html='';
+
+  // ALERTS ROW - only show if there's something to flag
+  var alerts=[];
+  if(openCO>0) alerts.push({icon:'&#9888;',text:openCO+' change order'+(openCO>1?'s':'')+' pending client approval',color:'#E8B43A'});
+  if(overdueProjects.length>0) alerts.push({icon:'&#128198;',text:overdueProjects.length+' project'+(overdueProjects.length>1?'s':'')+' past end date',color:'#E83A6C'});
+  if(unpaidMilestones>0) alerts.push({icon:'&#128176;',text:unpaidMilestones+' payment milestone'+(unpaidMilestones>1?'s':'')+' overdue',color:'#E83A6C'});
+  if(openPunch>0) alerts.push({icon:'&#9989;',text:openPunch+' punch list item'+(openPunch>1?'s':'')+' remaining',color:'#9B6BE8'});
+
+  if(alerts.length){
+    html+='<div style="margin-bottom:14px">';
+    alerts.forEach(function(a){
+      html+='<div style="background:#fff;border-left:4px solid '+a.color+';border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">';
+      html+='<span style="font-size:18px">'+a.icon+'</span>';
+      html+='<span style="font-size:13px;color:#333;font-weight:600">'+a.text+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // MONEY SECTION
+  html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Money Overview</div>';
+  html+='<div class="dash-grid" style="margin-bottom:14px">';
+  // Revenue in (signed estimates)
+  html+='<div class="dash-card" style="border-left:4px solid #2EAA72">';
+  html+='<div class="dash-label">Contracted Revenue</div>';
+  html+='<div class="dash-val" style="color:#2EAA72">$'+Math.round(signedVal/1000)+'k</div>';
+  html+='<div class="dash-sub">'+signedEst.length+' signed estimate'+(signedEst.length!==1?'s':'')+'</div></div>';
+  // Pipeline
+  html+='<div class="dash-card" style="border-left:4px solid #2B3990">';
+  html+='<div class="dash-label">Estimate Pipeline</div>';
+  html+='<div class="dash-val" style="color:#2B3990">$'+Math.round(totalEstVal/1000)+'k</div>';
+  html+='<div class="dash-sub">'+pendingEst.length+' pending</div></div>';
+  // Total project budget
+  html+='<div class="dash-card" style="border-left:4px solid #E8B43A">';
+  html+='<div class="dash-label">Total Project Budget</div>';
+  html+='<div class="dash-val">$'+Math.round(totalB/1000)+'k</div>';
+  html+='<div class="dash-sub">Across '+projects.length+' project'+(projects.length!==1?'s':'')+'</div></div>';
+  // Spent
+  var spentPct=totalB>0?Math.round(totalS/totalB*100):0;
+  html+='<div class="dash-card" style="border-left:4px solid '+(spentPct>90?'#E83A6C':'#888')+'">';
+  html+='<div class="dash-label">Total Spent</div>';
+  html+='<div class="dash-val" style="color:'+(spentPct>90?'#E83A6C':'#333')+'">$'+Math.round(totalS/1000)+'k</div>';
+  html+='<div class="dash-sub">'+spentPct+'% of budget</div></div>';
+  html+='</div>';
+
+  // JOB STATUS SECTION
+  html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Job Status</div>';
+  html+='<div class="dash-grid" style="margin-bottom:14px">';
+  html+='<div class="dash-card" style="border-left:4px solid #E8B43A"><div class="dash-label">In Progress</div><div class="dash-val" style="color:#E8B43A">'+active.length+'</div></div>';
+  html+='<div class="dash-card" style="border-left:4px solid #2B3990"><div class="dash-label">Planning</div><div class="dash-val" style="color:#2B3990">'+planning.length+'</div></div>';
+  html+='<div class="dash-card" style="border-left:4px solid #2EAA72"><div class="dash-label">Completed</div><div class="dash-val" style="color:#2EAA72">'+completed.length+'</div></div>';
+  html+='<div class="dash-card" style="border-left:4px solid #888"><div class="dash-label">On Hold</div><div class="dash-val" style="color:#888">'+onHold.length+'</div></div>';
+  html+='</div>';
+
+  // ACTIVE JOBS
+  if(active.length){
+    html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Active Jobs</div>';
+    active.forEach(function(p){
+      var pr=gp(p);
+      var pct=Math.round((parseFloat(p.spent)||0)/((parseFloat(p.budget)||1))*100);
+      var daysLeft='';
+      if(p.endDate){
+        var dl=Math.round((new Date(p.endDate)-new Date())/(1000*60*60*24));
+        daysLeft=dl<0?'<span style="color:#E83A6C;font-weight:700">'+Math.abs(dl)+' days overdue</span>':'<span style="color:'+(dl<7?'#E83A6C':dl<14?'#E8B43A':'#2EAA72')+'">'+dl+' days left</span>';
+      }
+      var pendingCOs=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;
+      html+='<div class="wcard" style="cursor:pointer;margin-bottom:10px" ontouchend="event.preventDefault();openDetail(\''+p.id+'\');" onclick="openDetail(\''+p.id+'\')">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+      html+='<div><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+p.client+'</div>';
+      html+='<div style="font-size:12px;color:#888;margin-top:2px">'+p.type+(p.jobNum?' &middot; '+p.jobNum:'')+'</div></div>';
+      html+='<div style="text-align:right">';
+      if(daysLeft) html+='<div style="font-size:11px">'+daysLeft+'</div>';
+      if(pendingCOs) html+='<div style="font-size:11px;color:#E8B43A;margin-top:2px">'+pendingCOs+' CO pending</div>';
+      html+='</div></div>';
+      html+='<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px"><span>Scope</span><span>'+pr+'%</span></div><div style="background:#EEF2F7;border-radius:4px;height:6px"><div style="width:'+pr+'%;background:'+(p.color||'#2B3990')+';height:6px;border-radius:4px;transition:width .3s"></div></div></div>';
+      html+='<div><div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px"><span>Budget</span><span>$'+(parseFloat(p.spent)||0).toLocaleString()+' / $'+(parseFloat(p.budget)||0).toLocaleString()+'</span></div><div style="background:#EEF2F7;border-radius:4px;height:6px"><div style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?'#E83A6C':'#2EAA72')+';height:6px;border-radius:4px;transition:width .3s"></div></div></div>';
+      html+='</div>';
+    });
+  }
+
+  // RECENT ACTIVITY
+  html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Recent Activity</div>';
+  html+='<div class="wcard">';
+  var activity=[];
+  projects.forEach(function(p){
+    (p.dailyLogs||p.notesLog||[]).forEach(function(l){
+      if(l.work||l.text) activity.push({ts:l.ts||new Date(l.date).getTime()||0,text:(l.work||l.text||'').slice(0,80),proj:p.client,icon:'&#128197;',color:'#2B3990'});
+    });
+    (p.changeOrders||[]).forEach(function(c){
+      if(c.clientSignedAt) activity.push({ts:c.clientSignedAt,text:'CO Approved: '+c.title,proj:p.client,icon:'&#9989;',color:'#2EAA72'});
+    });
+    (p.commsLog||[]).forEach(function(c){
+      activity.push({ts:c.ts||0,text:c.type+': '+c.notes.slice(0,60),proj:p.client,icon:'&#128222;',color:'#888'});
+    });
+  });
+  estimates.forEach(function(e){
+    if(e.signedAt) activity.push({ts:e.signedAt,text:'Estimate signed: '+e.type,proj:e.client,icon:'&#9997;',color:'#2EAA72'});
+  });
+  activity.sort(function(a,b){return b.ts-a.ts;});
+  if(!activity.length){
+    html+='<div style="color:#bbb;font-size:13px;text-align:center;padding:20px">No recent activity yet.</div>';
+  } else {
+    activity.slice(0,10).forEach(function(a){
+      html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #F5F5F5">';
+      html+='<span style="font-size:16px;margin-top:1px">'+a.icon+'</span>';
+      html+='<div style="flex:1"><div style="font-size:13px;color:#333">'+a.text+'</div>';
+      html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+a.proj+(a.ts?' &middot; '+new Date(a.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'')+'</div></div>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
 function renderEstCards(){var el=document.getElementById("estCards");if(!estimates.length){el.innerHTML='<div class="empty">No estimates yet.<br>Tap <b>+ New Estimate</b> to create one.</div>';return;}el.innerHTML=estimates.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+e.id+'">'+(e.estNum?'<div class="card-num">'+e.estNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' &middot; '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
 function switchEstTab(tab,btn){}
 function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();if(!e)return;var sc2=EST_SC[e.status]||"#888";document.getElementById("edName").textContent=e.client+" - "+e.type;document.getElementById("edEstNum").textContent=e.estNum||"";var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;document.querySelectorAll(".est-subtab").forEach(function(t,i){t.classList.toggle("on",i===0);});renderEstDetailBody(e);var dp=document.getElementById("estDetailPage");dp.classList.add("show");dp.scrollTop=0;}
