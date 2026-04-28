@@ -12,6 +12,7 @@
 <title>Spence Construction</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;min-height:100vh}
@@ -207,17 +208,99 @@ body.client-mode .phead { display:none !important; }
   <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer">&times;</button>
 </div>
 
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F5F7;z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="max-width:420px;margin:0 auto;padding:40px 24px 60px">
+    <div style="text-align:center;margin-bottom:32px">
+      <img id="authLogo" src="" style="max-height:70px;object-fit:contain;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto"/>
+      <div style="font-size:26px;font-weight:900;color:#1A1A2E">Spence Construction</div>
+      <div style="font-size:14px;color:#888;margin-top:6px">Project Management for Contractors</div>
+    </div>
+
+    <!-- TAB SWITCHER -->
+    <div style="display:flex;background:#E8ECF0;border-radius:12px;padding:4px;margin-bottom:24px">
+      <button id="tabSignIn" onclick="switchAuthTab('signin')" style="flex:1;padding:10px;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;background:#1A1A2E;color:#fff">Sign In</button>
+      <button id="tabSignUp" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;background:transparent;color:#888">Sign Up</button>
+    </div>
+
+    <!-- SIGN IN FORM -->
+    <div id="signInForm">
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Email</label>
+        <input id="siEmail" type="email" placeholder="you@email.com" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Password</label>
+        <input id="siPassword" type="password" placeholder="Your password" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <button onclick="signIn()" style="width:100%;background:#1A1A2E;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Sign In</button>
+      <button onclick="resetPassword()" style="width:100%;background:none;border:none;color:#2B3990;font-size:13px;cursor:pointer;padding:8px">Forgot password?</button>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <div id="signUpForm" style="display:none">
+      <div style="background:#EEF2FF;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#2B3990;line-height:1.5">
+        &#127381; <strong>14-day free trial</strong> — no credit card required. Full access to everything.
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Your Name</label>
+        <input id="suName" type="text" placeholder="John Smith" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Company Name</label>
+        <input id="suCompany" type="text" placeholder="Smith Contracting" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Email</label>
+        <input id="suEmail" type="email" placeholder="you@email.com" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Password</label>
+        <input id="suPassword" type="password" placeholder="Min 6 characters" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
+      </div>
+      <button onclick="signUp()" style="width:100%;background:#2EAA72;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Start Free Trial</button>
+    </div>
+
+    <div id="authError" style="background:#FFF0F3;border:1px solid #E83A6C;border-radius:10px;padding:12px;font-size:13px;color:#E83A6C;margin-top:12px;display:none"></div>
+    <div id="authLoading" style="text-align:center;padding:16px;color:#888;font-size:14px;display:none">&#9889; Please wait...</div>
+  </div>
+</div>
+
+<!-- TRIAL EXPIRED SCREEN -->
+<div id="trialExpiredScreen" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F5F7;z-index:200;overflow-y:auto">
+  <div style="max-width:420px;margin:0 auto;padding:60px 24px;text-align:center">
+    <div style="font-size:56px;margin-bottom:20px">&#9200;</div>
+    <div style="font-size:22px;font-weight:800;color:#1A1A2E;margin-bottom:12px">Your Trial Has Ended</div>
+    <div style="font-size:15px;color:#666;margin-bottom:32px;line-height:1.6">Your 14-day free trial is over. Subscribe to keep access to all your projects and data.</div>
+    <div style="background:#fff;border-radius:14px;padding:24px;margin-bottom:24px;border:2px solid #2B3990">
+      <div style="font-size:36px;font-weight:900;color:#2B3990">$79<span style="font-size:16px;font-weight:400;color:#888">/month</span></div>
+      <div style="font-size:13px;color:#888;margin-top:4px;margin-bottom:16px">Unlimited projects &amp; estimates</div>
+      <div style="font-size:13px;color:#555;line-height:2;text-align:left">
+        &#10003; All project management features<br/>
+        &#10003; AI-powered estimating<br/>
+        &#10003; Client portal &amp; e-signatures<br/>
+        &#10003; Daily logs, punch lists, change orders<br/>
+        &#10003; Unlimited storage
+      </div>
+    </div>
+    <button onclick="contactForSubscription()" style="width:100%;background:#2B3990;border:none;border-radius:12px;color:#fff;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Subscribe Now — $79/month</button>
+    <button onclick="signOutUser()" style="width:100%;background:none;border:none;color:#888;font-size:13px;cursor:pointer;padding:8px">Sign out</button>
+  </div>
+</div>
+
 <div id="mainView">
   <div class="topbar">
     <img id="topbarLogo" class="topbar-logo" src="" alt="Spence Construction"/>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="bell-btn" onclick="openNotifications()">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
       <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()">&#9881;</button>
+      <button onclick="signOutUser()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer">Out</button>
       <button id="pwaInstallBtn" onclick="showInstallPrompt()" title="Install App" style="display:none;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center">&#8681;</button>
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v72</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v73</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -655,7 +738,16 @@ document.getElementById("topbarLogo").src = LOGO_SRC;
 function closePage(id) { document.getElementById(id).classList.remove('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-var db=firebase.firestore(),col=db.collection("projects"),sCol=db.collection("settings"),nCol=db.collection("notifications"),eCol=db.collection("estimates");
+var db=firebase.firestore(),auth=firebase.auth();
+var col,sCol,nCol,eCol,currentUser=null;
+
+function initUserCollections(uid){
+  var base='users/'+uid;
+  col=db.collection(base+'/projects');
+  sCol=db.collection(base+'/settings');
+  nCol=db.collection(base+'/notifications');
+  eCol=db.collection(base+'/estimates');
+}
 var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Spence Construction",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2B3990","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#2B3990","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
@@ -2662,16 +2754,62 @@ document.getElementById("navDashboard").onclick=function(){switchMainTab("dashbo
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("saveBtn").onclick=saveProject;
 document.getElementById("searchInput").oninput=renderCards;
-loadSettings(function(){
-  if(DD.logoData && DD.logoData.length > 10){
-    LOGO_SRC = DD.logoData;
-    var tl = document.getElementById('topbarLogo');
-    if(tl) tl.src = DD.logoData;
+// Auth state drives everything
+auth.onAuthStateChanged(function(user){
+  var params = new URLSearchParams(window.location.search);
+  var isClientView = params.get('est') || params.get('portal');
+
+  // Client portal — no login needed
+  if(isClientView){
+    // Need minimal collections for client view — use a temp read-only path
+    col=db.collection('projects');
+    sCol=db.collection('settings');
+    nCol=db.collection('notifications');
+    eCol=db.collection('estimates');
+    checkClientView();
+    return;
   }
-  startSync();
-  startNotifSync();
-  checkClientView();
-  initPWA();
+
+  if(!user){
+    // Not logged in — show auth screen
+    document.getElementById('authScreen').style.display='block';
+    document.getElementById('mainView').style.display='none';
+    var logo = document.getElementById('authLogo');
+    if(logo) logo.src = LOGO_SRC;
+    return;
+  }
+
+  // Logged in — set up user collections
+  currentUser = user;
+  initUserCollections(user.uid);
+
+  // Check trial
+  checkTrialStatus(user, function(ok){
+    if(!ok){
+      document.getElementById('authScreen').style.display='none';
+      document.getElementById('mainView').style.display='none';
+      document.getElementById('trialExpiredScreen').style.display='block';
+      return;
+    }
+    // Good to go
+    document.getElementById('authScreen').style.display='none';
+    document.getElementById('trialExpiredScreen').style.display='none';
+    document.getElementById('mainView').style.display='block';
+    loadSettings(function(){
+      if(DD.logoData && DD.logoData.length > 10){
+        LOGO_SRC = DD.logoData;
+        var tl = document.getElementById('topbarLogo');
+        if(tl) tl.src = DD.logoData;
+      }
+      // Update company name from user profile if first time
+      if(!DD.companyName || DD.companyName==='Spence Construction'){
+        var meta = getUserMeta(user.uid);
+      }
+      startSync();
+      startNotifSync();
+      initPWA();
+    });
+  });
 });
 
 
@@ -2890,6 +3028,170 @@ function backupAllData(){
     statusEl.textContent = 'Error: ' + err.message;
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 3 — Authentication & Multi-tenant
+// ═══════════════════════════════════════════════════════════════
+
+function switchAuthTab(tab){
+  document.getElementById('signInForm').style.display = tab==='signin'?'block':'none';
+  document.getElementById('signUpForm').style.display = tab==='signup'?'block':'none';
+  document.getElementById('tabSignIn').style.background = tab==='signin'?'#1A1A2E':'transparent';
+  document.getElementById('tabSignIn').style.color = tab==='signin'?'#fff':'#888';
+  document.getElementById('tabSignUp').style.background = tab==='signup'?'#1A1A2E':'transparent';
+  document.getElementById('tabSignUp').style.color = tab==='signup'?'#fff':'#888';
+  document.getElementById('authError').style.display = 'none';
+}
+
+function showAuthError(msg){
+  var el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function setAuthLoading(on){
+  document.getElementById('authLoading').style.display = on?'block':'none';
+}
+
+function signIn(){
+  var email = document.getElementById('siEmail').value.trim();
+  var pass = document.getElementById('siPassword').value;
+  if(!email||!pass){ showAuthError('Please enter your email and password.'); return; }
+  setAuthLoading(true);
+  document.getElementById('authError').style.display='none';
+  auth.signInWithEmailAndPassword(email, pass).catch(function(err){
+    setAuthLoading(false);
+    var msg = err.code==='auth/user-not-found'?'No account found with that email.':
+              err.code==='auth/wrong-password'?'Incorrect password. Try again.':
+              err.code==='auth/invalid-email'?'Please enter a valid email address.':
+              err.message;
+    showAuthError(msg);
+  });
+}
+
+function signUp(){
+  var name = document.getElementById('suName').value.trim();
+  var company = document.getElementById('suCompany').value.trim();
+  var email = document.getElementById('suEmail').value.trim();
+  var pass = document.getElementById('suPassword').value;
+  if(!name){ showAuthError('Please enter your name.'); return; }
+  if(!company){ showAuthError('Please enter your company name.'); return; }
+  if(!email){ showAuthError('Please enter your email.'); return; }
+  if(!pass||pass.length<6){ showAuthError('Password must be at least 6 characters.'); return; }
+  setAuthLoading(true);
+  document.getElementById('authError').style.display='none';
+  auth.createUserWithEmailAndPassword(email, pass).then(function(cred){
+    var uid = cred.user.uid;
+    var trialEnd = Date.now() + (14 * 24 * 60 * 60 * 1000); // 14 days
+    // Save user profile
+    return db.collection('userProfiles').doc(uid).set({
+      name: name,
+      company: company,
+      email: email,
+      trialEnd: trialEnd,
+      createdAt: Date.now(),
+      plan: 'trial'
+    });
+  }).then(function(){
+    setAuthLoading(false);
+  }).catch(function(err){
+    setAuthLoading(false);
+    var msg = err.code==='auth/email-already-in-use'?'An account with that email already exists. Try signing in.':
+              err.code==='auth/invalid-email'?'Please enter a valid email address.':
+              err.code==='auth/weak-password'?'Password is too weak. Use at least 6 characters.':
+              err.message;
+    showAuthError(msg);
+  });
+}
+
+function signOutUser(){
+  if(!confirm('Sign out?')) return;
+  auth.signOut().then(function(){
+    // Reset app state
+    projects=[];estimates=[];currentId=null;currentEstId=null;
+    document.getElementById('mainView').style.display='none';
+    document.getElementById('trialExpiredScreen').style.display='none';
+    document.getElementById('authScreen').style.display='block';
+    switchAuthTab('signin');
+  });
+}
+
+function resetPassword(){
+  var email = document.getElementById('siEmail').value.trim();
+  if(!email){ showAuthError('Enter your email address above first.'); return; }
+  auth.sendPasswordResetEmail(email).then(function(){
+    showAuthError('Password reset email sent! Check your inbox.');
+    document.getElementById('authError').style.color='#2EAA72';
+    document.getElementById('authError').style.borderColor='#2EAA72';
+    document.getElementById('authError').style.background='#EDFAF4';
+  }).catch(function(err){
+    showAuthError(err.message);
+  });
+}
+
+function checkTrialStatus(user, cb){
+  db.collection('userProfiles').doc(user.uid).get().then(function(doc){
+    if(!doc.exists){
+      // Existing user (Phillip) — give full access, create profile
+      db.collection('userProfiles').doc(user.uid).set({
+        name: user.displayName || 'Phillip',
+        company: 'Spence Construction',
+        email: user.email || '',
+        trialEnd: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year for owner
+        createdAt: Date.now(),
+        plan: 'owner'
+      });
+      cb(true);
+      return;
+    }
+    var data = doc.data();
+    // Owner or paid plan always gets in
+    if(data.plan==='owner'||data.plan==='paid'){ cb(true); return; }
+    // Check trial
+    if(Date.now() < data.trialEnd){ cb(true); return; }
+    // Trial expired
+    cb(false);
+  }).catch(function(){ cb(true); }); // fail open
+}
+
+function contactForSubscription(){
+  window.location.href='mailto:phillip@spencecontracting.com?subject=Subscription - Spence Construction App&body=Hi, I would like to subscribe to the Spence Construction app at $79/month. My account email is: ';
+}
+
+function getUserMeta(uid){
+  db.collection('userProfiles').doc(uid).get().then(function(doc){
+    if(doc.exists){
+      var data=doc.data();
+      if(data.company && (!DD.companyName||DD.companyName==='Spence Construction')){
+        DD.companyName=data.company;
+        var cn=document.getElementById('companyName');
+        if(cn) cn.value=data.company;
+      }
+    }
+  });
+}
+
+// Show logged in user email in settings
+var _origRenderSettings = typeof renderSettingsForm === 'function' ? renderSettingsForm : null;
+if(_origRenderSettings){
+  renderSettingsForm = function(){
+    _origRenderSettings();
+    if(currentUser){
+      var el=document.getElementById('companyName');
+      if(el && el.parentElement){
+        var emailDiv=document.createElement('div');
+        emailDiv.style.cssText='font-size:11px;color:#888;margin-top:6px';
+        emailDiv.textContent='Signed in as: '+currentUser.email;
+        el.parentElement.appendChild(emailDiv);
+      }
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// END PHASE 3
+// ═══════════════════════════════════════════════════════════════
 
 </script>
 </body>
