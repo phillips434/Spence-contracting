@@ -209,7 +209,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v67</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v69</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -811,7 +811,46 @@ function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocat
 function saveP(p,notifText){setSS("saving");return col.doc(p.id).set(p).then(function(){T("Saved!");if(notifText){pushNotification(notifText,p.client);showBanner(notifText);}}).catch(function(){T("Error");setSS("error");});}
 function addTeamMember(){var type=document.getElementById("tmType").value,trade=document.getElementById("tmTrade").value.trim(),name=document.getElementById("tmName").value.trim(),company=document.getElementById("tmCompany").value.trim(),phone=document.getElementById("tmPhone").value.trim(),email=document.getElementById("tmEmail").value.trim();if(!name){alert("Please enter a name.");return;}DD.team=DD.team||[];DD.team.push({type:type,trade:trade,name:name,company:company,phone:phone,email:email});["tmTrade","tmName","tmCompany","tmPhone","tmEmail"].forEach(function(id){document.getElementById(id).value="";});renderTeamList();saveSettings();}
 function removeTeamMember(i){DD.team.splice(i,1);renderTeamList();saveSettings();}
-function renderTeamList(){var el=document.getElementById("teamList");if(!el)return;if(!(DD.team||[]).length){el.innerHTML='<div style="color:#bbb;font-size:13px;margin-bottom:8px">No team members added yet.</div>';return;}el.innerHTML=(DD.team||[]).map(function(m,i){var tc=m.type==="Employee"?"#2EAA72":"#2B3990";return'<div class="sub-card"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span class="sub-type-badge" style="background:'+tc+'22;color:'+tc+'">'+m.type+'</span>'+(m.trade?'<span style="font-size:11px;color:#888">'+m.trade+'</span>':'')+'</div><div style="font-size:13px;font-weight:700;color:#333">'+m.name+(m.company?' &middot; '+m.company:'')+'</div>'+(m.phone||m.email?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+(m.phone||"")+(m.phone&&m.email?" &middot; ":"")+(m.email||"")+'</div>':'')+'</div><button class="del-btn" onclick="removeTeamMember('+i+')">&#215;</button></div>';}).join("");}
+function renderTeamList(){
+  var el=document.getElementById("teamList");if(!el)return;
+  if(!(DD.team||[]).length){el.innerHTML='<div style="color:#bbb;font-size:13px;margin-bottom:8px">No team members added yet.</div>';return;}
+  el.innerHTML=(DD.team||[]).map(function(m,i){
+    var tc=m.type==="Employee"?"#2EAA72":"#2B3990";
+    return'<div style="background:#F8F9FF;border:1px solid #EEF2F7;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      +'<span style="background:'+tc+'22;color:'+tc+';font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+(m.type||"Sub")+'</span>'
+      +'<span style="font-size:14px;font-weight:700;color:#1A1A2E">'+m.name+'</span>'
+      +'</div>'
+      +(m.trade?'<div style="font-size:12px;color:#888">'+m.trade+'</div>':'')
+      +(m.phone?'<div style="font-size:12px;color:#555">&#128222; '+m.phone+'</div>':'')
+      +(m.email?'<div style="font-size:12px;color:#555">&#128140; '+m.email+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button ontouchend="event.preventDefault();editTeamMember('+i+');" onclick="editTeamMember('+i+');" style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:6px 12px;font-size:12px;cursor:pointer;min-height:36px">&#9999;</button>'
+      +'<button ontouchend="event.preventDefault();delTeamMember('+i+');" onclick="delTeamMember('+i+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:6px 10px;font-size:12px;cursor:pointer;min-height:36px">&#215;</button>'
+      +'</div></div>';
+  }).join('');
+}
+function editTeamMember(i){
+  var m=(DD.team||[])[i];if(!m)return;
+  var name=prompt("Name:",m.name||"");if(name===null)return;
+  var trade=prompt("Trade / Role:",m.trade||"");if(trade===null)return;
+  var phone=prompt("Phone:",m.phone||"");if(phone===null)return;
+  var email=prompt("Email:",m.email||"");if(email===null)return;
+  DD.team[i]={name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"};
+  sCol.doc("dropdowns").set(DD);
+  renderTeamList();
+  T("Updated: "+name.trim());
+}
+function delTeamMember(i){
+  if(!confirm("Remove this team member?"))return;
+  DD.team.splice(i,1);
+  sCol.doc("dropdowns").set(DD);
+  renderTeamList();
+  T("Removed.");
+}
+
 function startSync(){col.orderBy("client").onSnapshot(function(snap){if(snap.empty){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}projects=[];snap.forEach(function(d){projects.push(d.data());});setSS("live");renderAll();if(currentId&&document.getElementById("detailPage").classList.contains("show")){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}},function(){setSS("error");});eCol.orderBy("createdAt","desc").onSnapshot(function(snap){estimates=[];snap.forEach(function(d){estimates.push(d.data());});if(mainTabMode==="estimates")renderEstCards();});}
 function renderAll(){renderStats();renderFilters();renderCards();}
 function renderStats(){var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
@@ -1473,7 +1512,7 @@ function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
 function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){alert("Share:\n"+url);});}
 function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Spence Construction")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail)alert("No client contact info found.");if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
-function convertToProject(){var e=ger();if(!e)return;if(!confirm("Convert to project?"))return;var calc=calcEstimate(e);var scopeItems=(e.lineItems||[]).map(function(li){return{desc:li.desc+(li.qty&&li.unit?" ("+li.qty+" "+li.unit+")":""),start:"",end:"",budget:parseFloat(li.total)||0,actual:0,complete:"Not Started",assignTo:"",assignPhone:"",assignEmail:"",category:li.category};});var jobNum=nextJobNumber();var np={id:"p"+Date.now(),client:e.client,type:e.type,address:e.address||"",pm:"",startDate:"",endDate:"",budget:Math.round(calc.subtotal),spent:0,status:DD.projectStatuses[0]||"Planning",notes:"From estimate "+e.estNum+". "+e.notes,color:COLORS[Math.floor(Math.random()*COLORS.length)],jobNum:jobNum,scopeItems:scopeItems,choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[],estimateId:e.id,estimateTotal:Math.round(calc.grandTotal)};col.doc(np.id).set(np).then(function(){e.projectId=np.id;eCol.doc(e.id).set(e);T("Project "+jobNum+" created!");document.getElementById("estDetailPage").classList.remove("show");switchMainTab("projects");setTimeout(function(){openDetail(np.id);},500);});}
+function convertToProject(){var e=ger();if(!e)return;if(!confirm("Convert to project?"))return;var calc=calcEstimate(e);var scopeItems=(e.lineItems||[]).map(function(li){return{desc:li.desc+(li.qty&&li.unit?" ("+li.qty+" "+li.unit+")":""),start:"",end:"",budget:parseFloat(li.total)||0,actual:0,complete:"Not Started",assignTo:"",assignPhone:"",assignEmail:"",category:li.category};});var jobNum=nextJobNumber();var np={id:"p"+Date.now(),client:e.client,clientPhone:e.clientPhone||e.phone||"",clientEmail:e.clientEmail||e.email||"",type:e.type,address:e.address||"",pm:"",startDate:"",endDate:"",budget:Math.round(calc.subtotal),spent:0,status:DD.projectStatuses[0]||"Planning",notes:"From estimate "+e.estNum+". "+e.notes,color:COLORS[Math.floor(Math.random()*COLORS.length)],jobNum:jobNum,scopeItems:scopeItems,choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[],estimateId:e.id,estimateTotal:Math.round(calc.grandTotal)};col.doc(np.id).set(np).then(function(){e.projectId=np.id;eCol.doc(e.id).set(e);T("Project "+jobNum+" created!");document.getElementById("estDetailPage").classList.remove("show");switchMainTab("projects");setTimeout(function(){openDetail(np.id);},500);});}
 function deleteEstimate(){if(!confirm("Delete?"))return;eCol.doc(currentEstId).delete().then(function(){document.getElementById("estDetailPage").classList.remove("show");T("Deleted");renderEstCards();});}
 
 function shareClientPortal(){
@@ -2233,12 +2272,21 @@ function renderTabBody(p){
     html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();hideForm(\'commForm\');" onclick="hideForm(\'commForm\');">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addComm();" onclick="addComm();">Save Log</button></div></div>';
 
   } else if(currentTab==="daily-log"){
+    html+='<button class="btn-dashed" ontouchend="event.preventDefault();showForm(\'logForm\');" onclick="showForm(\'logForm\');">+ Add Daily Log</button>';
     html+='<div class="sec-label">Daily Logs</div>';
-    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+'</div>';});
+    var logs=(p.dailyLogs||[]).slice().reverse();logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(log.crew||"")+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+(log.photos&&log.photos.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">'+log.photos.map(function(ph){return'<img src="'+ph+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:4/3"/>';}).join('')+'</div>':'')+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'logForm\')">+ Add Daily Log</button>';
-    html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" onclick="generateAILog()">&#10024; AI Generate Log Entry</button><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
+    html+='<div class="inline-form" id="logForm"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" ontouchend="event.preventDefault();generateAILog(this);" onclick="generateAILog(this);">&#10024; AI Generate Log Entry</button><label class="fl" style="margin-bottom:6px">Site Photos (optional)</label><input type="file" id="logPhoto" accept="image/*" capture="environment" multiple style="margin-bottom:10px;font-size:13px"/><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'logForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addLog()">Save Log</button></div></div>';
   } else if(currentTab==="notes"){
     html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">General Notes</label><textarea class="fi" id="notesInput" rows="5" style="margin-bottom:10px">'+(p.notes||"")+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div>';
+    html+='<button class="btn-dashed" ontouchend="event.preventDefault();showForm(\'noteForm\');" onclick="showForm(\'noteForm\');">+ Add Action Item / Photo</button>';
+    html+='<div class="inline-form" id="noteFormTop"><div class="fr2" style="margin-bottom:8px">';
+    html+='<div><label class="fl">Date</label><input class="fi" id="nDateTop" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
+    html+='<div><label class="fl">Priority</label><select class="fi" id="nPriorityTop"><option>Normal</option><option>High</option><option>Low</option></select></div>';
+    html+='</div><label class="fl" style="margin-bottom:6px">Note / Action Item</label>';
+    html+='<textarea class="fi" id="nTextTop" rows="3" placeholder="Describe the action item..." style="margin-bottom:8px"></textarea>';
+    html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();hideForm(\'noteFormTop\');" onclick="hideForm(\'noteFormTop\');">Cancel</button>';
+    html+='<button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addNoteTop();" onclick="addNoteTop();">Save</button></div></div>';
     html+='<div class="sec-label">Action Items &amp; Photos</div>';
     var resolved=(p.notesLog||[]).filter(function(n){return n.resolved;}).length,totalNL=(p.notesLog||[]).length;
     if(totalNL>0)html+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">'+resolved+'/'+totalNL+' resolved</div>';
@@ -2466,9 +2514,48 @@ function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;sav
 function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p,"Change order '"+title+"' added to "+p.client);}
 function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
 function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.changeOrders[i].status=v;saveP(p,old!==v?"Change order '"+p.changeOrders[i].title+"' "+v+" on "+p.client:null);}
-function addLog(){var work=document.getElementById("logWork").value.trim();if(!work){alert("Enter work completed.");return;}var p=gpr();p.dailyLogs=p.dailyLogs||[];p.dailyLogs.push({date:document.getElementById("logDate").value,weather:document.getElementById("logWeather").value.trim(),crew:document.getElementById("logCrew").value.trim(),work:work,issues:document.getElementById("logIssues").value.trim()});saveP(p,"Daily log added to "+p.client);}
+function addLog(){
+  var work=document.getElementById("logWork").value.trim();
+  if(!work){alert("Enter work completed.");return;}
+  var p=gpr();
+  p.dailyLogs=p.dailyLogs||[];
+  var entry={date:document.getElementById("logDate").value,weather:document.getElementById("logWeather").value.trim(),crew:document.getElementById("logCrew").value.trim(),work:work,issues:document.getElementById("logIssues").value.trim(),photos:[],ts:Date.now()};
+  var photoInput=document.getElementById("logPhoto");
+  if(photoInput&&photoInput.files&&photoInput.files.length>0){
+    var files=Array.from(photoInput.files);
+    var processed=0;
+    files.forEach(function(file){
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        entry.photos.push(ev.target.result);
+        processed++;
+        if(processed===files.length){
+          p.dailyLogs.push(entry);
+          saveP(p,"Daily log added to "+p.client);
+          photoInput.value="";
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  } else {
+    p.dailyLogs.push(entry);
+    saveP(p,"Daily log added to "+p.client);
+  }
+}
 function delLog(i){if(!confirm("Delete?"))return;var p=gpr();p.dailyLogs.splice(i,1);saveP(p);}
 function saveNotes(){var p=gpr();p.notes=document.getElementById("notesInput").value;saveP(p);}
+function addNoteTop(){
+  var text=document.getElementById('nTextTop');
+  var date=document.getElementById('nDateTop');
+  var priority=document.getElementById('nPriorityTop');
+  if(!text||!text.value.trim()){alert('Enter a note.');return;}
+  var p=gpr();if(!p)return;
+  p.notesLog=p.notesLog||[];
+  p.notesLog.push({date:date?date.value:new Date().toISOString().split('T')[0],text:text.value.trim(),priority:priority?priority.value:'Normal',resolved:false,ts:Date.now()});
+  saveP(p,'Note added on '+p.client);
+  text.value='';
+  hideForm('noteFormTop');
+}
 function addNote(){var text=document.getElementById("noteText").value.trim();if(!text){alert("Enter an action item.");return;}var p=gpr();p.notesLog=p.notesLog||[];p.notesLog.push({text:text,author:document.getElementById("noteAuthor").value.trim(),ts:Date.now(),resolved:false});saveP(p);}
 function delNote(i){if(!confirm("Delete?"))return;var p=gpr();p.notesLog.splice(i,1);saveP(p);}
 function toggleNote(i){var p=gpr();p.notesLog[i].resolved=!p.notesLog[i].resolved;saveP(p,p.notesLog[i].resolved?"Action item resolved on "+p.client:null);}
