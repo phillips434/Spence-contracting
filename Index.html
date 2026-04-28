@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v79</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v80</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2464,8 +2464,9 @@ function renderTabBody(p){
     html+='<button class="btn-green" style="margin-bottom:8px" onclick="shareClientPortal()">&#128279; Share Client Portal</button>';
     html+='<button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button>';
     html+='</div>';
-    document.getElementById("tabBody").innerHTML=html;
-}}
+  }
+  document.getElementById("tabBody").innerHTML=html;
+}
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
