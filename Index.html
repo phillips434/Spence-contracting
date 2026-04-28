@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#1A1A2E"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Spence"/>
+<link rel="apple-touch-icon" id="pwaAppleIcon" href=""/>
+<link id="pwaManifestLink" rel="manifest" href=""/>
 <title>Spence Construction</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -206,10 +212,11 @@ body.client-mode .phead { display:none !important; }
     <div style="display:flex;gap:8px;align-items:center">
       <button class="bell-btn" onclick="openNotifications()">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
       <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()">&#9881;</button>
+      <button id="pwaInstallBtn" onclick="showInstallPrompt()" title="Install App" style="display:none;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center">&#8681;</button>
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v69</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v70</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -468,6 +475,20 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateAllProjects()">&#128260; Restore All Phase Data</button>
       <div id="migrateStatus" style="margin-top:10px;font-size:13px;display:none;font-weight:600"></div>
     </div>
+    <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
+      <div style="font-size:14px;font-weight:700;color:#1A7A4E;margin-bottom:6px">&#128444;&#65039; Company Logo</div>
+      <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Upload your logo. Shows in the top bar, client portal, and printed documents.</div>
+      <div id="logoPreviewWrap" style="margin-bottom:12px;display:none">
+        <img id="logoPreviewImg" src="" style="max-height:60px;max-width:200px;object-fit:contain;border-radius:8px;border:1px solid #D0F0E0;padding:6px;background:#fff"/>
+        <button onclick="removeLogo()" style="display:block;margin-top:8px;background:none;border:none;color:#E83A6C;font-size:12px;font-weight:700;cursor:pointer">&#215; Remove Logo</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;background:#fff;border:2px dashed #2EAA72;border-radius:10px;padding:14px;cursor:pointer">
+        <span style="font-size:24px">&#128444;&#65039;</span>
+        <div><div style="font-size:14px;font-weight:700;color:#1A1A2E">Choose Logo Image</div><div style="font-size:11px;color:#888">PNG, JPG, SVG &mdash; max 300KB</div></div>
+        <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/svg+xml,image/gif" style="display:none" onchange="handleLogoUpload(event)"/>
+      </label>
+      <div id="logoUploadStatus" style="font-size:12px;margin-top:8px;display:none"></div>
+    </div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
 
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
@@ -497,7 +518,7 @@ body.client-mode .phead { display:none !important; }
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)"/>
 <div class="toast" id="toast"></div>
 <script>
-var LOGO_SRC = 
+let LOGO_SRC = 
     "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCARXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAKgAgAEAAAAAQAAAsSgAwAEAAAAAQAAAi4AAAAA/+0AOFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAAAAOEJJTQQlAAAAAAAQ1B2M2Y8AsgTpgAmY7PhCfv/AABEIAi4CxAMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZ" +
     "mdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2wBDAAICAgICAgMCAgMFAwMDBQYFBQUFBggGBgYGBggKCAgICAgICgoKCgoKCgoMDAwMDAwODg4ODg8PDw8PDw8PDw//2wBDA" +
     "QICAgQEBAcEBAcQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/3QAEAC3/2gAMAwEAAhEDEQA/AP38ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/9D9/KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAo" +
@@ -2634,7 +2655,197 @@ document.getElementById("navDashboard").onclick=function(){switchMainTab("dashbo
 document.getElementById("cancelBtn").onclick=function(){document.getElementById("addPage").classList.remove("show");};
 document.getElementById("saveBtn").onclick=saveProject;
 document.getElementById("searchInput").oninput=renderCards;
-loadSettings(function(){startSync();startNotifSync();checkClientView();});
+loadSettings(function(){
+  if(DD.logoData && DD.logoData.length > 10){
+    LOGO_SRC = DD.logoData;
+    var tl = document.getElementById('topbarLogo');
+    if(tl) tl.src = DD.logoData;
+  }
+  startSync();
+  startNotifSync();
+  checkClientView();
+  initPWA();
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// PWA PHASE 2 — v70: Manifest · Service Worker · Install · Logo
+// ═══════════════════════════════════════════════════════════════
+var _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  var btn = document.getElementById('pwaInstallBtn');
+  if(btn){ btn.style.display = 'flex'; }
+});
+
+window.addEventListener('appinstalled', function(){
+  _deferredInstallPrompt = null;
+  var btn = document.getElementById('pwaInstallBtn');
+  if(btn) btn.style.display = 'none';
+  T('App installed! Open Spence from your home screen.');
+});
+
+function showInstallPrompt(){
+  if(!_deferredInstallPrompt){
+    T('Tap \u22ee or Share \u2192 Add to Home Screen to install.');
+    return;
+  }
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(function(r){
+    if(r.outcome === 'accepted') T('Installing Spence Construction\u2026');
+    _deferredInstallPrompt = null;
+    var btn = document.getElementById('pwaInstallBtn');
+    if(btn) btn.style.display = 'none';
+  });
+}
+
+function injectPWAManifest(logoDataUrl){
+  var icons = [];
+  if(logoDataUrl && logoDataUrl.length > 10){
+    icons = [
+      {src: logoDataUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable'},
+      {src: logoDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable'}
+    ];
+    var appleLink = document.getElementById('pwaAppleIcon');
+    if(appleLink) appleLink.href = logoDataUrl;
+  }
+  var manifest = {
+    name: (DD.companyName || 'Spence Construction'),
+    short_name: 'Spence',
+    description: 'Construction project management',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    background_color: '#F4F5F7',
+    theme_color: '#1A1A2E',
+    orientation: 'portrait-primary',
+    icons: icons.length ? icons : [
+      {src:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231A1A2E" rx="22"/><text y=".9em" font-size="68" x="16">%F0%9F%8F%97</text></svg>',
+       sizes:'any', type:'image/svg+xml'}
+    ]
+  };
+  try{
+    var blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    var url = URL.createObjectURL(blob);
+    var link = document.getElementById('pwaManifestLink');
+    if(!link){
+      link = document.createElement('link');
+      link.id = 'pwaManifestLink'; link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    if(link.href && link.href.startsWith('blob:')) URL.revokeObjectURL(link.href);
+    link.href = url;
+  } catch(e){ console.warn('Manifest injection failed:', e); }
+}
+
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  var swCode = [
+    "var CACHE='spence-v70';",
+    "var SKIP=['firestore','firebase','googleapis','anthropic','replit'];",
+    "self.addEventListener('install',function(e){",
+    "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(['./']);}).then(function(){return self.skipWaiting();}));",
+    "});",
+    "self.addEventListener('activate',function(e){",
+    "  e.waitUntil(caches.keys().then(function(keys){",
+    "    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));",
+    "  }).then(function(){return self.clients.claim();}));",
+    "});",
+    "self.addEventListener('fetch',function(e){",
+    "  if(e.request.method!=='GET') return;",
+    "  var url=e.request.url;",
+    "  for(var i=0;i<SKIP.length;i++){if(url.indexOf(SKIP[i])>=0)return;}",
+    "  e.respondWith(fetch(e.request).then(function(r){",
+    "    var rc=r.clone();",
+    "    caches.open(CACHE).then(function(c){c.put(e.request,rc);});",
+    "    return r;",
+    "  }).catch(function(){return caches.match(e.request);}));",
+    "});"
+  ].join('\n');
+  try{
+    var blob = new Blob([swCode], {type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob), {scope:'./'}).then(function(){
+      console.log('[PWA] Service worker registered');
+    }).catch(function(err){
+      console.warn('[PWA] SW skipped:', err.message);
+    });
+  } catch(e){ console.warn('[PWA] SW error:', e); }
+}
+
+function handleLogoUpload(event){
+  var file = event.target.files[0];
+  if(!file) return;
+  var statusEl = document.getElementById('logoUploadStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#2B3990';
+  statusEl.textContent = 'Processing\u2026';
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var data = e.target.result;
+    if(file.type === 'image/svg+xml'){ applyLogo(data, statusEl); return; }
+    var img = new Image();
+    img.onload = function(){
+      var MAX = 512, scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      applyLogo(c.toDataURL('image/png', 0.88), statusEl);
+    };
+    img.onerror = function(){ applyLogo(data, statusEl); };
+    img.src = data;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function applyLogo(dataUrl, statusEl){
+  LOGO_SRC = dataUrl;
+  var tl = document.getElementById('topbarLogo');
+  if(tl) tl.src = dataUrl;
+  var wrap = document.getElementById('logoPreviewWrap');
+  var img = document.getElementById('logoPreviewImg');
+  if(wrap && img){ img.src = dataUrl; wrap.style.display = 'block'; }
+  DD.logoData = dataUrl;
+  sCol.doc('dropdowns').set(DD).then(function(){
+    if(statusEl){ statusEl.style.color = '#2EAA72'; statusEl.textContent = '\u2713 Logo saved!'; }
+    injectPWAManifest(dataUrl);
+    T('Logo updated!');
+  }).catch(function(err){
+    if(statusEl){ statusEl.style.color = '#E83A6C'; statusEl.textContent = 'Error: ' + err.message; }
+  });
+}
+
+function removeLogo(){
+  if(!confirm('Remove your company logo?')) return;
+  delete DD.logoData;
+  LOGO_SRC = '';
+  var tl = document.getElementById('topbarLogo'); if(tl) tl.src = '';
+  var wrap = document.getElementById('logoPreviewWrap'); if(wrap) wrap.style.display = 'none';
+  sCol.doc('dropdowns').set(DD).then(function(){ injectPWAManifest(null); T('Logo removed.'); });
+}
+
+var _origOpenSettings = openSettings;
+openSettings = function(){
+  _origOpenSettings();
+  setTimeout(function(){
+    if(DD.logoData){
+      var wrap = document.getElementById('logoPreviewWrap');
+      var img = document.getElementById('logoPreviewImg');
+      if(wrap && img){ img.src = DD.logoData; wrap.style.display = 'block'; }
+    }
+  }, 250);
+};
+
+function initPWA(){
+  registerServiceWorker();
+  injectPWAManifest(DD.logoData || (LOGO_SRC && LOGO_SRC.length > 200 ? LOGO_SRC : null));
+}
+// ═══════════════════════════════════════════════════════════════
+// END PWA PHASE 2
+// ═══════════════════════════════════════════════════════════════
 
 </script>
 </body>
