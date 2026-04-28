@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v74</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v75</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3216,46 +3216,88 @@ function migrateMyData(){
   }
 
   var uid = currentUser.uid;
-  var batch = db.batch();
-  var projectCount = 0;
-  var estimateCount = 0;
-  var settingsFound = false;
+  var projectCount = 0, estimateCount = 0, settingsFound = false;
 
-  // Migrate projects
+  function fixProject(d){
+    // Convert old phases array to scopeItems if needed
+    if((!d.scopeItems||!d.scopeItems.length) && d.phases && d.phases.length){
+      d.scopeItems = d.phases.map(function(ph){
+        return {
+          desc: ph.name||ph.desc||'Untitled',
+          start: ph.start||ph.startDate||'',
+          end: ph.end||ph.endDate||'',
+          budget: parseFloat(ph.phaseBudget||ph.budget)||0,
+          actual: parseFloat(ph.phaseActual||ph.actual)||0,
+          complete: ph.complete||ph.status||'Not Started',
+          assignTo: ph.assignTo||ph.subcontractor||'',
+          assignPhone: ph.assignPhone||ph.phone||'',
+          assignEmail: ph.assignEmail||ph.email||'',
+          category: ph.category||ph.type||''
+        };
+      });
+    }
+    // Ensure all required arrays exist
+    d.scopeItems  = d.scopeItems  || [];
+    d.choices     = d.choices     || [];
+    d.costs       = d.costs       || [];
+    d.punchList   = d.punchList   || [];
+    d.changeOrders= d.changeOrders|| [];
+    d.dailyLogs   = d.dailyLogs   || [];
+    d.notesLog    = d.notesLog    || [];
+    return d;
+  }
+
+  // Read old projects collection directly
   db.collection('projects').get().then(function(snap){
+    var batch = db.batch();
+    var writes = 0;
     snap.forEach(function(doc){
-      // Skip seed data
       var d = doc.data();
+      // Skip seed samples
       if(d.id==='s1'||d.id==='s2'||d.id==='s3') return;
+      d = fixProject(d);
       var newRef = db.collection('users/'+uid+'/projects').doc(doc.id);
       batch.set(newRef, d);
+      writes++;
       projectCount++;
     });
+    statusEl.textContent = 'Found '+projectCount+' projects. Migrating...';
+    if(writes === 0) return Promise.resolve('noprojects');
+    return batch.commit();
+  }).then(function(result){
+    // Migrate estimates
     return db.collection('estimates').get();
   }).then(function(snap){
+    var batch = db.batch();
     snap.forEach(function(doc){
       var d = doc.data();
+      d.lineItems        = d.lineItems        || [];
+      d.paymentMilestones= d.paymentMilestones|| [];
+      d.exclusions       = d.exclusions       || [];
       var newRef = db.collection('users/'+uid+'/estimates').doc(doc.id);
       batch.set(newRef, d);
       estimateCount++;
     });
+    if(estimateCount === 0) return Promise.resolve();
+    return batch.commit();
+  }).then(function(){
+    // Migrate settings
     return db.collection('settings').doc('dropdowns').get();
   }).then(function(doc){
     if(doc.exists){
       var newRef = db.collection('users/'+uid+'/settings').doc('dropdowns');
-      batch.set(newRef, doc.data());
       settingsFound = true;
+      return newRef.set(doc.data());
     }
-    return batch.commit();
   }).then(function(){
     statusEl.style.color = '#2EAA72';
-    statusEl.textContent = '\u2713 Done! Moved ' + projectCount + ' projects, ' + estimateCount + ' estimates' + (settingsFound ? ', and your settings' : '') + '. Refresh the app now.';
-    T('Migration complete! Pull to refresh.');
-    // Reload after 2 seconds
-    setTimeout(function(){ window.location.reload(); }, 2500);
+    statusEl.textContent = '\u2713 Done! Moved '+projectCount+' projects, '+estimateCount+' estimates'+(settingsFound?', and your settings':'')+'. Reloading...';
+    T('Migration complete!');
+    setTimeout(function(){ window.location.reload(); }, 2000);
   }).catch(function(err){
     statusEl.style.color = '#E83A6C';
     statusEl.textContent = 'Error: ' + err.message;
+    console.error('Migration error:', err);
   });
 }
 // ═══════════════════════════════════════════════════════════════
