@@ -217,7 +217,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v71</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v72</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -426,6 +426,12 @@ body.client-mode .phead { display:none !important; }
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
+    <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
+        <div style="font-size:14px;font-weight:700;color:#1A7A4E;margin-bottom:6px">&#128190; Backup All Data</div>
+        <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Download a full backup of all your projects, estimates, and settings. Do this before any major update.</div>
+        <button class="btn-green" onclick="backupAllData()">&#8659; Download Backup</button>
+        <div id="backupStatus" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
     <div class="wcard" style="border:1.5px solid #2B3990">
         <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#129302; Test AI Connection</div>
         <div style="font-size:12px;color:#888;margin-bottom:10px">Check if your Replit server and Anthropic API are working.</div>
@@ -2847,6 +2853,43 @@ function initPWA(){
 // ═══════════════════════════════════════════════════════════════
 // END PWA PHASE 2
 // ═══════════════════════════════════════════════════════════════
+
+
+function backupAllData(){
+  var statusEl = document.getElementById('backupStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#2B3990';
+  statusEl.textContent = 'Gathering your data...';
+  var backup = {
+    exportedAt: new Date().toISOString(),
+    appVersion: 'v72',
+    settings: DD,
+    projects: [],
+    estimates: []
+  };
+  col.get().then(function(snap){
+    snap.forEach(function(d){ backup.projects.push(d.data()); });
+    return eCol.get();
+  }).then(function(snap){
+    snap.forEach(function(d){ backup.estimates.push(d.data()); });
+    var json = JSON.stringify(backup, null, 2);
+    var blob = new Blob([json], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'spence-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    statusEl.style.color = '#2EAA72';
+    statusEl.textContent = '\u2713 Done! ' + backup.projects.length + ' projects + ' + backup.estimates.length + ' estimates saved.';
+    T('Backup downloaded!');
+  }).catch(function(err){
+    statusEl.style.color = '#E83A6C';
+    statusEl.textContent = 'Error: ' + err.message;
+  });
+}
 
 </script>
 </body>
