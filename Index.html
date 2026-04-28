@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v76</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v77</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -519,7 +519,7 @@ body.client-mode .phead { display:none !important; }
         <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
         <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
         <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateMyData()">&#128260; Move My Data Into My Account</button>
-        <button class="btn-dark" style="background:#2B3990;margin-top:8px" onclick="diagProject()">&#128269; Diagnose — What's In My Data?</button>
+        <button class="btn-dark" style="background:#2B3990;margin-top:8px" onclick="diagProject()">&#128269; Diagnose My Data</button>
         <div id="migrateMyStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
       </div>
       <div class="wcard" style="border:1.5px solid #2B3990">
@@ -3307,44 +3307,28 @@ function migrateMyData(){
 function diagProject(){
   if(!currentUser){ alert('Not logged in'); return; }
   var uid = currentUser.uid;
-  var msg = 'DIAGNOSTIC REPORT\n\n';
-
-  // Check what collections exist and what data is in them
-  var checks = [
-    {path: 'projects', label: 'OLD shared projects'},
-    {path: 'users/'+uid+'/projects', label: 'YOUR user projects'}
-  ];
-
-  var results = [];
+  var paths = ['projects','users/'+uid+'/projects',uid+'/projects','contractors/'+uid+'/projects'];
+  var output = 'SEARCHING ALL PATHS\n\n';
   var done = 0;
-
-  checks.forEach(function(check){
-    db.collection(check.path).limit(3).get().then(function(snap){
-      var r = check.label + ' (' + snap.size + ' docs):\n';
-      snap.forEach(function(doc){
-        var d = doc.data();
-        var fields = Object.keys(d);
-        var arrays = fields.filter(function(f){ return Array.isArray(d[f]); });
-        var arraySizes = arrays.map(function(f){ return f+'('+d[f].length+')'; });
-        r += '  · ' + (d.client||doc.id) + '\n';
-        r += '    fields: ' + fields.join(', ') + '\n';
-        r += '    arrays: ' + (arraySizes.join(', ')||'none') + '\n';
-      });
-      results[checks.indexOf(check)] = r;
+  paths.forEach(function(path){
+    db.collection(path).limit(5).get().then(function(snap){
+      if(snap.size > 0){
+        output += 'FOUND: ' + path + ' (' + snap.size + ' docs)\n';
+        snap.forEach(function(doc){
+          var d = doc.data();
+          var hasData = Object.keys(d).filter(function(k){ return Array.isArray(d[k]) && d[k].length > 0; });
+          output += '  ' + (d.client||doc.id) + (hasData.length?' DATA:'+hasData.map(function(k){return k+'('+d[k].length+')';}).join(','):'') + '\n';
+        });
+      } else { output += 'empty: ' + path + '\n'; }
       done++;
-      if(done === checks.length){
-        alert(results.join('\n---\n'));
-      }
+      if(done===paths.length) alert(output);
     }).catch(function(err){
-      results[checks.indexOf(check)] = check.label + ': ERROR - ' + err.message;
+      output += 'error: ' + path + '\n';
       done++;
-      if(done === checks.length){
-        alert(results.join('\n---\n'));
-      }
+      if(done===paths.length) alert(output);
     });
   });
 }
-
 </script>
 </body>
 </html>
