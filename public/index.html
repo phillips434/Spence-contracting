@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v73</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v74</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -515,7 +515,13 @@ body.client-mode .phead { display:none !important; }
         <button class="btn-green" onclick="backupAllData()">&#8659; Download Backup</button>
         <div id="backupStatus" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
-    <div class="wcard" style="border:1.5px solid #2B3990">
+    <div class="wcard" style="border:2px solid #E8B43A;background:#FFFBF0">
+        <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
+        <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
+        <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateMyData()">&#128260; Move My Data Into My Account</button>
+        <div id="migrateMyStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
+      </div>
+      <div class="wcard" style="border:1.5px solid #2B3990">
         <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#129302; Test AI Connection</div>
         <div style="font-size:12px;color:#888;margin-bottom:10px">Check if your Replit server and Anthropic API are working.</div>
         <button class="btn-navy" onclick="testAIConnection()">Test Connection</button>
@@ -3191,6 +3197,67 @@ if(_origRenderSettings){
 
 // ═══════════════════════════════════════════════════════════════
 // END PHASE 3
+// ═══════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════
+// DATA MIGRATION — Move old shared data to user account
+// ═══════════════════════════════════════════════════════════════
+function migrateMyData(){
+  var statusEl = document.getElementById('migrateMyStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#2B3990';
+  statusEl.textContent = 'Reading your existing data...';
+
+  if(!currentUser){
+    statusEl.style.color='#E83A6C';
+    statusEl.textContent='Not logged in.';
+    return;
+  }
+
+  var uid = currentUser.uid;
+  var batch = db.batch();
+  var projectCount = 0;
+  var estimateCount = 0;
+  var settingsFound = false;
+
+  // Migrate projects
+  db.collection('projects').get().then(function(snap){
+    snap.forEach(function(doc){
+      // Skip seed data
+      var d = doc.data();
+      if(d.id==='s1'||d.id==='s2'||d.id==='s3') return;
+      var newRef = db.collection('users/'+uid+'/projects').doc(doc.id);
+      batch.set(newRef, d);
+      projectCount++;
+    });
+    return db.collection('estimates').get();
+  }).then(function(snap){
+    snap.forEach(function(doc){
+      var d = doc.data();
+      var newRef = db.collection('users/'+uid+'/estimates').doc(doc.id);
+      batch.set(newRef, d);
+      estimateCount++;
+    });
+    return db.collection('settings').doc('dropdowns').get();
+  }).then(function(doc){
+    if(doc.exists){
+      var newRef = db.collection('users/'+uid+'/settings').doc('dropdowns');
+      batch.set(newRef, doc.data());
+      settingsFound = true;
+    }
+    return batch.commit();
+  }).then(function(){
+    statusEl.style.color = '#2EAA72';
+    statusEl.textContent = '\u2713 Done! Moved ' + projectCount + ' projects, ' + estimateCount + ' estimates' + (settingsFound ? ', and your settings' : '') + '. Refresh the app now.';
+    T('Migration complete! Pull to refresh.');
+    // Reload after 2 seconds
+    setTimeout(function(){ window.location.reload(); }, 2500);
+  }).catch(function(err){
+    statusEl.style.color = '#E83A6C';
+    statusEl.textContent = 'Error: ' + err.message;
+  });
+}
 // ═══════════════════════════════════════════════════════════════
 
 </script>
