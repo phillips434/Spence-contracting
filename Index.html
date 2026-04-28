@@ -2322,7 +2322,7 @@ function renderTabBody(p){
     html+='<button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button>';
     html+='</div>';
     document.getElementById("tabBody").innerHTML=html;
-}
+}}
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
