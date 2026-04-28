@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v77</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v78</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -519,7 +519,6 @@ body.client-mode .phead { display:none !important; }
         <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
         <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
         <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateMyData()">&#128260; Move My Data Into My Account</button>
-        <button class="btn-dark" style="background:#2B3990;margin-top:8px" onclick="diagProject()">&#128269; Diagnose My Data</button>
         <div id="migrateMyStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
       </div>
       <div class="wcard" style="border:1.5px solid #2B3990">
@@ -749,11 +748,12 @@ var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 
 function initUserCollections(uid){
-  var base='users/'+uid;
-  col=db.collection(base+'/projects');
-  sCol=db.collection(base+'/settings');
-  nCol=db.collection(base+'/notifications');
-  eCol=db.collection(base+'/estimates');
+  // Use flat collections with userId filtering
+  // This keeps all existing data working
+  col=db.collection('projects');
+  sCol=db.collection('settings');
+  nCol=db.collection('notifications');
+  eCol=db.collection('estimates');
 }
 var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Spence Construction",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2B3990","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
@@ -882,7 +882,15 @@ function startNotifSync(){nCol.orderBy("ts","desc").limit(50).onSnapshot(functio
 function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n){return'<div class="notif-item'+(n.read?"":" unread")+'"><div style="font-size:13px;font-weight:'+(n.read?"400":"700")+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2B3990;margin-top:3px">'+n.project+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join("");notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
-function loadSettings(cb){sCol.doc("dropdowns").get().then(function(d){if(d.exists)DD=Object.assign({},DD,d.data());if(cb)cb();}).catch(function(){if(cb)cb();});}
+function loadSettings(cb){
+  var uid = currentUser ? currentUser.uid : null;
+  var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var settingsDoc = isOwner ? 'dropdowns' : (uid||'dropdowns');
+  sCol.doc(settingsDoc).get().then(function(d){
+    if(d.exists) DD=Object.assign({},DD,d.data());
+    if(cb)cb();
+  }).catch(function(){if(cb)cb();});
+}
 var TRADE_TEMPLATES={
   roofing:{labor:75,markup:25,categories:["Labor","Materials","Tear-off","Shingles","Flashing","Gutters","Disposal"],instructions:"Include tear-off, underlayment, drip edge, and debris disposal. Price per square (100 sq ft). Factor in pitch complexity."},
   plumbing:{labor:110,markup:30,categories:["Labor","Rough-in","Fixtures","Pipe & Fittings","Permits","Inspections"],instructions:"Include permit fees and inspection costs. Separate rough-in from finish work. Note water heater and fixture allowances."},
@@ -978,7 +986,42 @@ function delTeamMember(i){
   T("Removed.");
 }
 
-function startSync(){col.orderBy("client").onSnapshot(function(snap){if(snap.empty){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}projects=[];snap.forEach(function(d){projects.push(d.data());});setSS("live");renderAll();if(currentId&&document.getElementById("detailPage").classList.contains("show")){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}},function(){setSS("error");});eCol.orderBy("createdAt","desc").onSnapshot(function(snap){estimates=[];snap.forEach(function(d){estimates.push(d.data());});if(mainTabMode==="estimates")renderEstCards();});}
+function startSync(){
+  var uid = currentUser ? currentUser.uid : null;
+  var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
+
+  // Owner sees all projects (existing data has no userId tag yet)
+  // Other users only see their own
+  var projectQuery = isOwner
+    ? col.orderBy('client')
+    : col.where('userId','==',uid).orderBy('client');
+
+  projectQuery.onSnapshot(function(snap){
+    if(snap.empty && isOwner){
+      var b=db.batch();
+      SEED.forEach(function(p){b.set(col.doc(p.id),p);});
+      b.commit();
+      return;
+    }
+    projects=[];
+    snap.forEach(function(d){projects.push(d.data());});
+    setSS('live');
+    renderAll();
+    if(currentId&&document.getElementById('detailPage').classList.contains('show')){
+      var p=gpr();if(p){renderTabs(p);renderTabBody(p);}
+    }
+  },function(){setSS('error');});
+
+  var estQuery = isOwner
+    ? eCol.orderBy('createdAt','desc')
+    : eCol.where('userId','==',uid).orderBy('createdAt','desc');
+
+  estQuery.onSnapshot(function(snap){
+    estimates=[];
+    snap.forEach(function(d){estimates.push(d.data());});
+    if(mainTabMode==='estimates')renderEstCards();
+  });
+}
 function renderAll(){renderStats();renderFilters();renderCards();}
 function renderStats(){var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
 function renderFilters(){document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
@@ -1630,7 +1673,7 @@ function closeEditLineItem(){document.getElementById("editLineItemModal").classL
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
 function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
 function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
-function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,estNum:estNum,client:client,type:type,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now()});eCol.doc(id).set(est).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});}
+function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:currentUser?currentUser.uid:'',estNum:estNum,client:client,type:type,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now()});eCol.doc(id).set(est).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
@@ -2691,7 +2734,7 @@ function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.pro
 function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
 function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";if(document.getElementById("fClientPhone"))document.getElementById("fClientPhone").value=p.clientPhone||"";if(document.getElementById("fClientEmail"))document.getElementById("fClientEmail").value=p.clientEmail||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
-function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
+function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,userId:currentUser?currentUser.uid:'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
@@ -3303,32 +3346,6 @@ function migrateMyData(){
 }
 // ═══════════════════════════════════════════════════════════════
 
-
-function diagProject(){
-  if(!currentUser){ alert('Not logged in'); return; }
-  var uid = currentUser.uid;
-  var paths = ['projects','users/'+uid+'/projects',uid+'/projects','contractors/'+uid+'/projects'];
-  var output = 'SEARCHING ALL PATHS\n\n';
-  var done = 0;
-  paths.forEach(function(path){
-    db.collection(path).limit(5).get().then(function(snap){
-      if(snap.size > 0){
-        output += 'FOUND: ' + path + ' (' + snap.size + ' docs)\n';
-        snap.forEach(function(doc){
-          var d = doc.data();
-          var hasData = Object.keys(d).filter(function(k){ return Array.isArray(d[k]) && d[k].length > 0; });
-          output += '  ' + (d.client||doc.id) + (hasData.length?' DATA:'+hasData.map(function(k){return k+'('+d[k].length+')';}).join(','):'') + '\n';
-        });
-      } else { output += 'empty: ' + path + '\n'; }
-      done++;
-      if(done===paths.length) alert(output);
-    }).catch(function(err){
-      output += 'error: ' + path + '\n';
-      done++;
-      if(done===paths.length) alert(output);
-    });
-  });
-}
 </script>
 </body>
 </html>
