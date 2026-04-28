@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v80</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v81</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -585,7 +585,19 @@ body.client-mode .phead { display:none !important; }
       </label>
       <div id="logoUploadStatus" style="font-size:12px;margin-top:8px;display:none"></div>
     </div>
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
+    
+    <div class="wcard" style="border:2px solid #9B6BE8;background:#F8F4FF">
+      <div style="font-size:14px;font-weight:700;color:#6A3DB8;margin-bottom:6px">&#128101; Team Access</div>
+      <div style="font-size:12px;color:#6A3DB8;margin-bottom:12px;line-height:1.5">Invite teammates to your account. They sign up with their own email and see all your projects.</div>
+      <div id="teamAccessList" style="margin-bottom:12px"></div>
+      <label class="fl" style="margin-bottom:6px">Invite by Email</label>
+      <div style="display:flex;gap:8px">
+        <input class="fi" id="inviteEmail" type="email" placeholder="super@email.com" style="flex:1"/>
+        <button class="btn-orange" style="flex-shrink:0;padding:10px 16px" onclick="inviteTeammate()">Invite</button>
+      </div>
+      <div id="inviteStatus" style="font-size:12px;margin-top:8px;display:none"></div>
+    </div>
+<div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
 
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:0">
@@ -986,14 +998,28 @@ function delTeamMember(i){
 function startSync(){
   var uid=currentUser?currentUser.uid:null;
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var pq=isOwner?col.orderBy('client'):col.where('userId','==',uid).orderBy('client');
+
+  // Check if user is a team member — if so, load their owner's data
+  db.collection('userProfiles').doc(uid).get().then(function(doc){
+    var ownerUid=isOwner?uid:(doc.exists&&doc.data().ownerUid?doc.data().ownerUid:uid);
+    var isTeamMember=!isOwner&&ownerUid!==uid;
+    _startSyncWithOwner(ownerUid, isOwner||isTeamMember);
+  }).catch(function(){
+    _startSyncWithOwner(uid, isOwner);
+  });
+}
+
+function _startSyncWithOwner(ownerUid, seeAll){
+  var uid=currentUser?currentUser.uid:null;
+  var isOwner=ownerUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var pq=seeAll?col.orderBy('client'):col.where('userId','==',uid).orderBy('client');
   pq.onSnapshot(function(snap){
     if(snap.empty&&isOwner){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}
     projects=[];snap.forEach(function(d){projects.push(d.data());});
     setSS('live');renderAll();
     if(currentId&&document.getElementById('detailPage').classList.contains('show')){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
   },function(err){console.error('Sync error:',err);setSS('error');});
-  var eq=isOwner?eCol.orderBy('createdAt','desc'):eCol.where('userId','==',uid).orderBy('createdAt','desc');
+  var eq=seeAll?eCol.orderBy('createdAt','desc'):eCol.where('userId','==',uid).orderBy('createdAt','desc');
   eq.onSnapshot(function(snap){
     estimates=[];snap.forEach(function(d){estimates.push(d.data());});
     if(mainTabMode==='estimates')renderEstCards();
@@ -3145,6 +3171,21 @@ function signUp(){
       createdAt: Date.now(),
       plan: 'trial'
     });
+  }).then(function(docRef){
+    // Check if there's a pending invite for this email
+    return db.collection('teamInvites').doc(email.toLowerCase()).get();
+  }).then(function(inviteDoc){
+    if(inviteDoc.exists && inviteDoc.data().ownerUid){
+      var ownerUid = inviteDoc.data().ownerUid;
+      var uid = auth.currentUser.uid;
+      // Link this user to the owner's account
+      return db.collection('userProfiles').doc(uid).update({
+        ownerUid: ownerUid,
+        plan: 'team'
+      }).then(function(){
+        return inviteDoc.ref.update({status:'accepted'});
+      });
+    }
   }).then(function(){
     setAuthLoading(false);
   }).catch(function(err){
@@ -3346,6 +3387,77 @@ function migrateMyData(){
     console.error('Migration error:', err);
   });
 }
+// ═══════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM ACCESS — Invite & manage teammates
+// ═══════════════════════════════════════════════════════════════
+function loadTeamAccess(){
+  if(!currentUser) return;
+  var el = document.getElementById('teamAccessList');
+  if(!el) return;
+  db.collection('userProfiles')
+    .where('ownerUid','==',currentUser.uid)
+    .get().then(function(snap){
+      if(snap.empty){
+        el.innerHTML='<div style="color:#aaa;font-size:13px">No teammates yet.</div>';
+        return;
+      }
+      el.innerHTML = snap.docs.map(function(doc){
+        var d = doc.data();
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEE">'
+          +'<div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+(d.name||'Teammate')+'</div>'
+          +'<div style="font-size:11px;color:#888">'+d.email+'</div></div>'
+          +'<button onclick="removeTeammate(\''+doc.id+'\')" style="background:none;border:none;color:#E83A6C;font-size:13px;font-weight:700;cursor:pointer">Remove</button>'
+          +'</div>';
+      }).join('');
+    }).catch(function(){ el.innerHTML=''; });
+}
+
+function inviteTeammate(){
+  var email = document.getElementById('inviteEmail').value.trim().toLowerCase();
+  var statusEl = document.getElementById('inviteStatus');
+  if(!email){ alert('Enter an email address.'); return; }
+  if(!currentUser){ alert('Not logged in.'); return; }
+  statusEl.style.display='block';
+  statusEl.style.color='#2B3990';
+  statusEl.textContent='Sending invite...';
+
+  // Store invite in Firebase — when they sign up we link them
+  db.collection('teamInvites').doc(email).set({
+    ownerUid: currentUser.uid,
+    ownerEmail: currentUser.email,
+    invitedAt: Date.now(),
+    email: email,
+    status: 'pending'
+  }).then(function(){
+    statusEl.style.color='#2EAA72';
+    statusEl.textContent='\u2713 Invite saved! Send them this link: '+window.location.href.split('?')[0];
+    document.getElementById('inviteEmail').value='';
+    T('Invite saved!');
+  }).catch(function(err){
+    statusEl.style.color='#E83A6C';
+    statusEl.textContent='Error: '+err.message;
+  });
+}
+
+function removeTeammate(uid){
+  if(!confirm('Remove this teammate?')) return;
+  db.collection('userProfiles').doc(uid).update({ownerUid: null}).then(function(){
+    T('Removed.');
+    loadTeamAccess();
+  });
+}
+
+// Hook into openSettings to load team access list
+var _origOpenSettingsTeam = openSettings;
+openSettings = function(){
+  _origOpenSettingsTeam();
+  setTimeout(loadTeamAccess, 300);
+};
+// ═══════════════════════════════════════════════════════════════
+// END TEAM ACCESS
 // ═══════════════════════════════════════════════════════════════
 
 </script>
