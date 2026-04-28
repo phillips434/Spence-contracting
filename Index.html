@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v78</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v79</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -883,8 +883,7 @@ function clearBellBadge(){document.getElementById("bellBadge").style.display="no
 function loadSettings(cb){
   var uid=currentUser?currentUser.uid:null;
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var doc=isOwner?'dropdowns':(uid||'dropdowns');
-  sCol.doc(doc).get().then(function(d){
+  sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).get().then(function(d){
     if(d.exists)DD=Object.assign({},DD,d.data());
     if(cb)cb();
   }).catch(function(){if(cb)cb();});
@@ -993,7 +992,7 @@ function startSync(){
     projects=[];snap.forEach(function(d){projects.push(d.data());});
     setSS('live');renderAll();
     if(currentId&&document.getElementById('detailPage').classList.contains('show')){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
-  },function(){setSS('error');});
+  },function(err){console.error('Sync error:',err);setSS('error');});
   var eq=isOwner?eCol.orderBy('createdAt','desc'):eCol.where('userId','==',uid).orderBy('createdAt','desc');
   eq.onSnapshot(function(snap){
     estimates=[];snap.forEach(function(d){estimates.push(d.data());});
@@ -2116,7 +2115,31 @@ function changeProjectStatus(){
   if(b){b.textContent=match;b.style.background=s2.bg;b.style.color=s2.text;}
   T("Status: "+match);
 }
-function openDetail(id){currentId=id;currentTab="scope";var p=gpr();if(!p)return;var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};document.getElementById("dName").textContent=p.client;document.getElementById("dJobNum").textContent=p.jobNum||"";var b=document.getElementById("dBadge");b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;b.style.cursor="pointer";b.onclick=changeProjectStatus;renderTabs(p);renderTabBody(p);var dp=document.getElementById("detailPage");dp.classList.add("show");dp.scrollTop=0;}
+function openDetail(id){
+  currentId=id;currentTab="scope";
+  // Show page immediately
+  var dp=document.getElementById("detailPage");
+  dp.classList.add("show");dp.scrollTop=0;
+  document.getElementById("dName").textContent="Loading...";
+  // Read directly from Firestore to get full data
+  col.doc(id).get().then(function(doc){
+    if(!doc.exists){document.getElementById("dName").textContent="Not found";return;}
+    var p=doc.data();
+    // Update in-memory array too
+    var idx=projects.findIndex(function(x){return x.id===id;});
+    if(idx>=0)projects[idx]=p; else projects.push(p);
+    var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};
+    document.getElementById("dName").textContent=p.client;
+    document.getElementById("dJobNum").textContent=p.jobNum||"";
+    var b=document.getElementById("dBadge");
+    b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
+    b.style.cursor="pointer";b.onclick=changeProjectStatus;
+    renderTabs(p);renderTabBody(p);
+  }).catch(function(err){
+    document.getElementById("dName").textContent="Error loading";
+    console.error("openDetail error:",err);
+  });
+}
 function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","punch-list","change-orders","comms","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
 function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';var minD=null,maxD=null;items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+label+'">'+label+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+label+'</div></div></div>';});html+='</div></div>';return html;}
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
