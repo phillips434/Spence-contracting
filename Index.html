@@ -748,8 +748,6 @@ var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 
 function initUserCollections(uid){
-  // Use flat collections with userId filtering
-  // This keeps all existing data working
   col=db.collection('projects');
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
@@ -883,11 +881,11 @@ function openNotifications(){var el=document.getElementById("notifsList");if(!no
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){
-  var uid = currentUser ? currentUser.uid : null;
-  var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var settingsDoc = isOwner ? 'dropdowns' : (uid||'dropdowns');
-  sCol.doc(settingsDoc).get().then(function(d){
-    if(d.exists) DD=Object.assign({},DD,d.data());
+  var uid=currentUser?currentUser.uid:null;
+  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var doc=isOwner?'dropdowns':(uid||'dropdowns');
+  sCol.doc(doc).get().then(function(d){
+    if(d.exists)DD=Object.assign({},DD,d.data());
     if(cb)cb();
   }).catch(function(){if(cb)cb();});
 }
@@ -987,38 +985,18 @@ function delTeamMember(i){
 }
 
 function startSync(){
-  var uid = currentUser ? currentUser.uid : null;
-  var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
-
-  // Owner sees all projects (existing data has no userId tag yet)
-  // Other users only see their own
-  var projectQuery = isOwner
-    ? col.orderBy('client')
-    : col.where('userId','==',uid).orderBy('client');
-
-  projectQuery.onSnapshot(function(snap){
-    if(snap.empty && isOwner){
-      var b=db.batch();
-      SEED.forEach(function(p){b.set(col.doc(p.id),p);});
-      b.commit();
-      return;
-    }
-    projects=[];
-    snap.forEach(function(d){projects.push(d.data());});
-    setSS('live');
-    renderAll();
-    if(currentId&&document.getElementById('detailPage').classList.contains('show')){
-      var p=gpr();if(p){renderTabs(p);renderTabBody(p);}
-    }
+  var uid=currentUser?currentUser.uid:null;
+  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var pq=isOwner?col.orderBy('client'):col.where('userId','==',uid).orderBy('client');
+  pq.onSnapshot(function(snap){
+    if(snap.empty&&isOwner){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}
+    projects=[];snap.forEach(function(d){projects.push(d.data());});
+    setSS('live');renderAll();
+    if(currentId&&document.getElementById('detailPage').classList.contains('show')){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
   },function(){setSS('error');});
-
-  var estQuery = isOwner
-    ? eCol.orderBy('createdAt','desc')
-    : eCol.where('userId','==',uid).orderBy('createdAt','desc');
-
-  estQuery.onSnapshot(function(snap){
-    estimates=[];
-    snap.forEach(function(d){estimates.push(d.data());});
+  var eq=isOwner?eCol.orderBy('createdAt','desc'):eCol.where('userId','==',uid).orderBy('createdAt','desc');
+  eq.onSnapshot(function(snap){
+    estimates=[];snap.forEach(function(d){estimates.push(d.data());});
     if(mainTabMode==='estimates')renderEstCards();
   });
 }
