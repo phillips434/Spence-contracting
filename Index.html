@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v82</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v83</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2104,9 +2104,20 @@ function renderClientView(e,wrapper){
 }
 
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
-function submitSignature(estId){var name=document.getElementById("sigName").value.trim();if(!name){alert("Please enter your full name.");return;}var canvas=document.getElementById("sigCanvas");var sigData=canvas.toDataURL("image/png");var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;if(sigData===blank.toDataURL("image/png")){alert("Please sign above.");return;}eCol.doc(estId).update({signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"}).then(function(){
+function submitSignature(estId){
+  var name=document.getElementById("sigName").value.trim();
+  if(!name){alert("Please enter your full name.");return;}
+  var canvas=document.getElementById("sigCanvas");
+  var sigData=canvas.toDataURL("image/png");
+  var blank=document.createElement("canvas");
+  blank.width=canvas.width;blank.height=canvas.height;
+  if(sigData===blank.toDataURL("image/png")){alert("Please sign above.");return;}
+  // Sign in anonymously so Firestore write is allowed
+  var doUpdate = function(){
+    db.collection('estimates').doc(estId).update({
+      signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"
+    }).then(function(){
     pushNotification("Estimate signed by "+name);
-    // Show success screen
     var wrapper=document.getElementById("clientWrapper");
     if(wrapper){
       wrapper.innerHTML='<div style="text-align:center;padding:60px 24px;font-family:sans-serif">'
@@ -2119,7 +2130,20 @@ function submitSignature(estId){var name=document.getElementById("sigName").valu
         +'<div style="font-size:13px;color:#444;line-height:1.7">Your contractor has been notified. They will be in touch to schedule the work and confirm next steps.</div>'
         +'</div></div>';
     }
+  }).catch(function(err){
+    alert('Could not save signature. Please try again.');
+    console.error('Signature error:',err);
   });
+  };
+  // Sign in anonymously if needed so Firestore write is allowed
+  if(auth.currentUser){
+    doUpdate();
+  } else {
+    auth.signInAnonymously().then(doUpdate).catch(function(err){
+      // If anonymous auth fails, try direct write anyway
+      doUpdate();
+    });
+  }
 }
 
 function changeProjectStatus(){
