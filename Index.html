@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v84</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v85</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -597,7 +597,13 @@ body.client-mode .phead { display:none !important; }
       </div>
       <div id="inviteStatus" style="font-size:12px;margin-top:8px;display:none"></div>
     </div>
-<div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
+<div class="wcard" style="border:2px solid #2B3990;background:#EEF2FF">
+        <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#128274; Tag My Projects</div>
+        <div style="font-size:12px;color:#2B3990;margin-bottom:12px;line-height:1.5">One-time step: stamp your account ID onto all your existing projects and estimates so only you can see them. Run this once.</div>
+        <button class="btn-dark" style="background:#2B3990" onclick="tagMyProjects()">&#128274; Tag All My Projects</button>
+        <div id="tagStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
+      </div>
+      <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
 
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:0">
@@ -1022,9 +1028,9 @@ function _startSyncWithOwner(ownerUid, seeAll){
     projects=[];
     snap.forEach(function(d){
       var p=d.data();
-      // Owner and team members see all
-      // New contractors only see their own projects
-      if(seeAll || !p.userId || p.userId===uid){
+      // Owner and team members (seeAll) see everything
+      // Everyone else only sees projects tagged with their own userId
+      if(seeAll || p.userId===uid){
         projects.push(p);
       }
     });
@@ -1044,7 +1050,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
     estimates=[];
     snap.forEach(function(d){
       var e=d.data();
-      if(seeAll || !e.userId || e.userId===uid){
+      if(seeAll || e.userId===uid){
         estimates.push(e);
       }
     });
@@ -1058,7 +1064,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
 function renderAll(){renderStats();renderFilters();renderCards();}
 function renderStats(){var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
 function renderFilters(){document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
-function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){el.innerHTML='<div class="empty">No projects found.<br>Tap <b>+ New</b> to add one.</div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990",dot:"#2B3990"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+p.id+'">'+(p.jobNum?'<div class="card-num">'+p.jobNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' &middot; '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"--")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
+function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){el.innerHTML='<div class="empty" style="padding:40px 20px"><div style="font-size:48px;margin-bottom:16px">&#127959;</div><div style="font-size:18px;font-weight:700;color:#1A1A2E;margin-bottom:8px">Welcome to Contractor Desk</div><div style="font-size:14px;color:#888;margin-bottom:24px;line-height:1.6">You're all set. Add your first project to get started.</div><button class="btn-dark" style="max-width:200px;margin:0 auto;display:block" onclick="openAdd()">+ Add First Project</button></div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990",dot:"#2B3990"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+p.id+'">'+(p.jobNum?'<div class="card-num">'+p.jobNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' &middot; '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"--")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
 
 function renderDashboard(){
   var el=document.getElementById("dashContent");
@@ -3516,6 +3522,51 @@ openSettings = function(){
 // ═══════════════════════════════════════════════════════════════
 // END TEAM ACCESS
 // ═══════════════════════════════════════════════════════════════
+
+
+function tagMyProjects(){
+  if(!currentUser){ alert('Not logged in.'); return; }
+  var uid = currentUser.uid;
+  var statusEl = document.getElementById('tagStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#2B3990';
+  statusEl.textContent = 'Tagging your projects...';
+
+  var projectCount = 0, estCount = 0;
+
+  // Tag all projects that don't have a userId yet
+  col.get().then(function(snap){
+    var batch = db.batch();
+    snap.forEach(function(doc){
+      var d = doc.data();
+      if(!d.userId){
+        batch.update(col.doc(doc.id), {userId: uid});
+        projectCount++;
+      }
+    });
+    return batch.commit();
+  }).then(function(){
+    // Tag all estimates
+    return eCol.get();
+  }).then(function(snap){
+    var batch = db.batch();
+    snap.forEach(function(doc){
+      var d = doc.data();
+      if(!d.userId){
+        batch.update(eCol.doc(doc.id), {userId: uid});
+        estCount++;
+      }
+    });
+    return batch.commit();
+  }).then(function(){
+    statusEl.style.color = '#2EAA72';
+    statusEl.textContent = '\u2713 Done! Tagged ' + projectCount + ' projects and ' + estCount + ' estimates. Your data is now private.';
+    T('All projects tagged!');
+  }).catch(function(err){
+    statusEl.style.color = '#E83A6C';
+    statusEl.textContent = 'Error: ' + err.message;
+  });
+}
 
 </script>
 </body>
