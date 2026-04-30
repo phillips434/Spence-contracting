@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v87</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v88</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -902,7 +902,13 @@ function loadSettings(cb){
   var uid=currentUser?currentUser.uid:null;
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
   sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).get().then(function(d){
-    if(d.exists)DD=Object.assign({},DD,d.data());
+    if(d.exists) DD=Object.assign({},DD,d.data());
+    // Only apply logo for the account that owns it — clear for others
+    if(!isOwner) {
+      delete DD.logoData;
+      var tl=document.getElementById('topbarLogo');
+      if(tl) tl.src='';
+    }
     if(cb)cb();
   }).catch(function(){if(cb)cb();});
 }
@@ -2929,6 +2935,11 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('authScreen').style.display='none';
     document.getElementById('trialExpiredScreen').style.display='none';
     document.getElementById('mainView').style.display='block';
+    // Clear logo immediately for non-owner accounts
+    if(user.uid !== 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){
+      var tl=document.getElementById('topbarLogo');
+      if(tl) tl.src='';
+    }
     loadSettings(function(){
       if(DD.logoData && DD.logoData.length > 10){
         LOGO_SRC = DD.logoData;
