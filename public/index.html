@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v83</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v84</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1012,16 +1012,46 @@ function startSync(){
 function _startSyncWithOwner(ownerUid, seeAll){
   var uid=currentUser?currentUser.uid:null;
   var isOwner=ownerUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var pq=seeAll?col.orderBy('client'):col.where('userId','==',uid).orderBy('client');
-  pq.onSnapshot(function(snap){
-    if(snap.empty&&isOwner){var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;}
-    projects=[];snap.forEach(function(d){projects.push(d.data());});
+
+  // Always read all projects (rules allow it) then filter client-side
+  // This avoids needing a Firestore composite index
+  col.orderBy('client').onSnapshot(function(snap){
+    if(snap.empty&&isOwner){
+      var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;
+    }
+    projects=[];
+    snap.forEach(function(d){
+      var p=d.data();
+      // Owner and team members see all
+      // New contractors only see their own projects
+      if(seeAll || !p.userId || p.userId===uid){
+        projects.push(p);
+      }
+    });
     setSS('live');renderAll();
-    if(currentId&&document.getElementById('detailPage').classList.contains('show')){var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
-  },function(err){console.error('Sync error:',err);setSS('error');});
-  var eq=seeAll?eCol.orderBy('createdAt','desc'):eCol.where('userId','==',uid).orderBy('createdAt','desc');
-  eq.onSnapshot(function(snap){
-    estimates=[];snap.forEach(function(d){estimates.push(d.data());});
+    if(currentId&&document.getElementById('detailPage').classList.contains('show')){
+      var p=gpr();if(p){renderTabs(p);renderTabBody(p);}
+    }
+  },function(err){
+    console.error('Sync error:',err);
+    setSS('error');
+    // On error show empty state instead of loading forever
+    projects=[];renderAll();
+  });
+
+  // Same for estimates
+  eCol.orderBy('createdAt','desc').onSnapshot(function(snap){
+    estimates=[];
+    snap.forEach(function(d){
+      var e=d.data();
+      if(seeAll || !e.userId || e.userId===uid){
+        estimates.push(e);
+      }
+    });
+    if(mainTabMode==='estimates')renderEstCards();
+  },function(err){
+    console.error('Estimates sync error:',err);
+    estimates=[];
     if(mainTabMode==='estimates')renderEstCards();
   });
 }
