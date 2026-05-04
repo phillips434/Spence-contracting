@@ -285,7 +285,7 @@ body.client-mode .phead { display:none !important; }
       </div>
     </div>
     <button onclick="contactForSubscription()" style="width:100%;background:#2B3990;border:none;border-radius:12px;color:#fff;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Subscribe Now — $79/month</button>
-    <button onclick="signOutUser()" style="width:100%;background:none;border:none;color:#888;font-size:13px;cursor:pointer;padding:8px">Sign out</button>
+    <button onclick="signOutUser()" title="Sign Out" style="width:100%;background:none;border:none;color:#888;font-size:13px;cursor:pointer;padding:8px">Sign out</button>
   </div>
 </div>
 
@@ -293,14 +293,14 @@ body.client-mode .phead { display:none !important; }
   <div class="topbar">
     <img id="topbarLogo" class="topbar-logo" src="" alt="" style="display:none"/>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="bell-btn" onclick="openNotifications()">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
-      <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()">&#9881;</button>
+      <button class="bell-btn" onclick="openNotifications()" title="Notifications">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
+      <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()" title="Settings">&#9881;</button>
       <button onclick="signOutUser()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer">Out</button>
       <button id="pwaInstallBtn" onclick="showInstallPrompt()" title="Install App" style="display:none;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center">&#8681;</button>
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v93</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v94</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -376,8 +376,8 @@ body.client-mode .phead { display:none !important; }
         <div><label class="fl">End Date</label><input class="fi" id="fEnd" type="date"/></div>
       </div>
       <div class="fr2">
-        <div><label class="fl">Budget ($)</label><input class="fi" id="fBudget" type="number" placeholder="0"/></div>
-        <div><label class="fl">Spent ($)</label><input class="fi" id="fSpent" type="number" placeholder="0"/></div>
+        <div><label class="fl">Budget ($)</label><input class="fi" id="fBudget" type="text" inputmode="numeric" placeholder="0"/></div>
+        <div><label class="fl">Spent ($)</label><input class="fi" id="fSpent" type="text" inputmode="numeric" placeholder="0"/></div>
       </div>
       <div><label class="fl">Status</label><select class="fi" id="fStatus"></select></div>
       <div><label class="fl">Notes</label><textarea class="fi" id="fNotes" rows="3"></textarea></div>
@@ -793,7 +793,11 @@ function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,ove
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
 function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent();return "JOB-"+String(n).padStart(4,"0");}
 function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent();return "EST-"+String(n).padStart(4,"0");}
-function saveSettingsSilent(){sCol.doc("dropdowns").set(DD);}
+function saveSettingsSilent(){
+  var uid=currentUser?currentUser.uid:null;
+  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).set(DD);
+}
 function migratePhases(p){if((p.scopeItems&&p.scopeItems.length>0)||!p.phases||!p.phases.length)return false;p.scopeItems=p.phases.map(function(ph){return{desc:ph.name||ph.desc||"Untitled Phase",start:ph.start||ph.startDate||"",end:ph.end||ph.endDate||"",budget:parseFloat(ph.phaseBudget||ph.budget)||0,actual:parseFloat(ph.phaseActual||ph.actual)||0,complete:ph.complete||ph.status||"Not Started",assignTo:ph.assignTo||ph.subcontractor||"",assignPhone:ph.assignPhone||ph.phone||"",assignEmail:ph.assignEmail||ph.email||"",category:ph.category||ph.type||""};});return true;}
 function forceLoadTeam(){
   var statusEl=document.getElementById("teamLoadStatus");
@@ -895,7 +899,7 @@ function pushNotification(text,proj){nCol.add({text:text,project:proj||"",ts:Dat
 function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
 function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
 function startNotifSync(){nCol.orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
-function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n){return'<div class="notif-item'+(n.read?"":" unread")+'"><div style="font-size:13px;font-weight:'+(n.read?"400":"700")+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2B3990;margin-top:3px">'+n.project+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join("");notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
+function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n,i){return'<div class="notif-item'+(n.read?'':' unread')+'" onclick="notifTap('+i+')" style="cursor:pointer"><div style="font-size:13px;font-weight:'+(n.read?'400':'700')+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2B3990;margin-top:3px">'+n.project+'</div>':'')+(n.detail?'<div style="font-size:12px;color:#555;margin-top:3px;line-height:1.4">'+n.detail+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join('');notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){
@@ -938,7 +942,12 @@ function applyTradeTemplate(trade){
   DD.activeTrade=trade;
   T("Trade template applied: "+trade);
 }
-function saveSettings(){sCol.doc("dropdowns").set(DD).then(function(){T("Saved!");});}
+function saveSettings(){
+  var uid=currentUser?currentUser.uid:null;
+  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var doc=isOwner?'dropdowns':(uid||'dropdowns');
+  sCol.doc(doc).set(DD).then(function(){T('Saved!');});
+}
 function testAIConnection(){
   var el=document.getElementById('aiTestResult');
   el.style.display='block';
@@ -2981,7 +2990,7 @@ function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.pro
 function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
 function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";if(document.getElementById("fClientPhone"))document.getElementById("fClientPhone").value=p.clientPhone||"";if(document.getElementById("fClientEmail"))document.getElementById("fClientEmail").value=p.clientEmail||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
-function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,userId:currentUser?currentUser.uid:'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value)||0,spent:parseFloat(document.getElementById("fSpent").value)||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
+function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=existing.jobNum||nextJobNumber();var p=Object.assign({},existing,{id:id,userId:currentUser?currentUser.uid:'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
@@ -3261,7 +3270,10 @@ function applyLogo(dataUrl, statusEl){
   var img = document.getElementById('logoPreviewImg');
   if(wrap && img){ img.src = dataUrl; wrap.style.display = 'block'; }
   DD.logoData = dataUrl;
-  sCol.doc('dropdowns').set(DD).then(function(){
+  var uid = currentUser ? currentUser.uid : null;
+  var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
+  var settingsDoc = isOwner ? 'dropdowns' : (uid || 'dropdowns');
+  sCol.doc(settingsDoc).set(DD).then(function(){
     if(statusEl){ statusEl.style.color = '#2EAA72'; statusEl.textContent = '\u2713 Logo saved!'; }
     injectPWAManifest(dataUrl);
     T('Logo updated!');
@@ -3428,7 +3440,7 @@ function signUp(){
 }
 
 function signOutUser(){
-  if(!confirm('Sign out?')) return;
+  if(!confirm('Sign out of Contractor Desk?')) return;
   auth.signOut().then(function(){
     // Reset app state
     projects=[];estimates=[];currentId=null;currentEstId=null;
@@ -4016,6 +4028,15 @@ function submitSubLog(pid,sidx){
       r.readAsDataURL(f);
     });
   } else save();
+}
+
+
+function notifTap(i){
+  var n=notifications[i];if(!n)return;
+  if(n.projectId){
+    document.getElementById('notifsPage').classList.remove('show');
+    openDetail(n.projectId);
+  }
 }
 
 </script>
