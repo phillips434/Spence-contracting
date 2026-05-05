@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v95</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v96</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3918,9 +3918,10 @@ function sendSubPortalLink(scopeIdx){
   var phone=(it.assignPhone||'').replace(/[^0-9]/g,'');
   var email=it.assignEmail||'';
   if(phone){
-    window.open('sms:+1'+phone+'?body='+encodeURIComponent(msg),'_self');
+    var smsNum=phone.length===11&&phone[0]==='1'?phone:'1'+phone;
+    window.location.href='sms:+'+smsNum+'&body='+encodeURIComponent(msg);
   } else if(email){
-    window.open('mailto:'+email+'?subject=Project+Assignment: '+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg),'_self');
+    window.location.href='mailto:'+email+'?subject=Project+Assignment+-+'+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg);
   } else {
     var dummy=document.createElement('textarea');
     dummy.value=link;
