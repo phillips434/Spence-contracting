@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v94</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v95</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3898,15 +3898,38 @@ function syncMilestonesFromEstimate(){
 function sendSubPortalLink(scopeIdx){
   var p=gpr();if(!p)return;
   var it=(p.scopeItems||[])[scopeIdx];if(!it)return;
-  var baseUrl=window.location.href.split('?')[0];
+  var co=DD.companyName||'Contractor Desk';
+  var baseUrl=window.location.origin+window.location.pathname;
   var link=baseUrl+'?sub='+p.id+'&scope='+scopeIdx;
-  var co=DD.companyName||'Spence Construction';
-  var msg='Hi '+it.assignTo+',\n\nHere is your project portal for: '+it.desc+'\n\nUse this link to view your scope, add daily logs, upload photos, and update your status.\n\n'+link+'\n\nThank you,\n'+co;
-  var phone=it.assignPhone||'';
+  var name=it.assignTo||'Team';
+  var dates='';
+  if(it.start&&it.end)dates='Start: '+fmt(it.start)+' | End: '+fmt(it.end)+'\n';
+  else if(it.start)dates='Start: '+fmt(it.start)+'\n';
+  else if(it.end)dates='End: '+fmt(it.end)+'\n';
+  var amt=it.budget?'Contract Amount: $'+(parseFloat(it.budget)||0).toLocaleString()+'\n':'';
+  var msg='Hi '+name+',\n\n'
+    +'You have been assigned the following scope on '+p.client+':\n\n'
+    +'Scope: '+it.desc+'\n'
+    +dates
+    +amt
+    +'\nUse this link to view your scope, submit daily logs, upload photos, and update your progress:\n\n'
+    +link
+    +'\n\nQuestions? Contact us directly.\n\nThank you,\n'+co;
+  var phone=(it.assignPhone||'').replace(/[^0-9]/g,'');
   var email=it.assignEmail||'';
-  if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
-  else if(email){window.location.href='mailto:'+email+'?subject=Project Portal: '+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg);}
-  else{try{navigator.clipboard.writeText(link).then(function(){T('Portal link copied!');});}catch(e){alert('Portal link:\n'+link);}}
+  if(phone){
+    window.open('sms:+1'+phone+'?body='+encodeURIComponent(msg),'_self');
+  } else if(email){
+    window.open('mailto:'+email+'?subject=Project+Assignment: '+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg),'_self');
+  } else {
+    var dummy=document.createElement('textarea');
+    dummy.value=link;
+    document.body.appendChild(dummy);
+    dummy.select();
+    try{document.execCommand('copy');T('Portal link copied! Paste it to send manually.');}
+    catch(e){alert('Send this link manually:\n\n'+link);}
+    document.body.removeChild(dummy);
+  }
 }
 
 function checkSubView(){
