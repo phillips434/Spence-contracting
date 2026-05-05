@@ -2472,9 +2472,9 @@ function renderTabBody(p){
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
       if(it.assignTo){
         var _safeAssign=it.assignTo.replace(/'/g,"\\'");
-        html+='<button class="btn-notify" onclick="notifyPerson(\''+_safeAssign+'\','+i+')">Notify '+it.assignTo+'</button>';
+        html+='<button class="btn-notify" style="background:#9B6BE8" onclick="sendSubPortalLink('+i+')">&#128279; Send Portal</button>';
       } else {
-        html+='<button class="btn-notify" onclick="notifyPerson(\'\','+i+')">Notify</button>';
+        html+='<button class="btn-notify" style="background:#9B6BE8" onclick="sendSubPortalLink('+i+')">&#128279; Send Portal</button>';
       }
       html+='<button class="del-btn" onclick="delScopeItem('+i+')">&#215;</button>';
       html+='</div></div>';
@@ -3918,10 +3918,9 @@ function sendSubPortalLink(scopeIdx){
   var phone=(it.assignPhone||'').replace(/[^0-9]/g,'');
   var email=it.assignEmail||'';
   if(phone){
-    var smsNum=phone.length===11&&phone[0]==='1'?phone:'1'+phone;
-    window.location.href='sms:+'+smsNum+'&body='+encodeURIComponent(msg);
+    window.open('sms:+1'+phone+'?body='+encodeURIComponent(msg),'_self');
   } else if(email){
-    window.location.href='mailto:'+email+'?subject=Project+Assignment+-+'+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg);
+    window.open('mailto:'+email+'?subject=Project+Assignment: '+encodeURIComponent(it.desc)+'&body='+encodeURIComponent(msg),'_self');
   } else {
     var dummy=document.createElement('textarea');
     dummy.value=link;
