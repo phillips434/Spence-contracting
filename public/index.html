@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v102</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v103</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -608,7 +608,19 @@ body.client-mode .phead { display:none !important; }
         <button class="btn-dark" style="background:#2B3990" onclick="tagMyProjects()">&#128274; Tag All My Projects</button>
         <div id="tagStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
       </div>
-      <div class="wcard"><label class="fl" style="margin-bottom:8px">Company Name</label><input class="fi" id="companyName"/><button class="btn-green" style="margin-top:8px" onclick="saveCompanyName()">Save</button></div>
+      <div class="wcard">
+          <label class="fl" style="margin-bottom:8px">Company Name</label>
+          <input class="fi" id="companyName" style="margin-bottom:8px"/>
+          <label class="fl" style="margin-bottom:6px">Company Phone</label>
+          <input class="fi" id="companyPhone" placeholder="e.g. (434) 555-1234" style="margin-bottom:8px"/>
+          <label class="fl" style="margin-bottom:6px">Company Email</label>
+          <input class="fi" id="companyEmail" placeholder="e.g. info@yourcompany.com" style="margin-bottom:8px"/>
+          <label class="fl" style="margin-bottom:6px">Company Address</label>
+          <input class="fi" id="companyAddress" placeholder="e.g. 123 Main St, Bedford VA 24523" style="margin-bottom:8px"/>
+          <label class="fl" style="margin-bottom:6px">Payment Instructions</label>
+          <textarea class="fi" id="companyPaymentInstructions" rows="3" placeholder="e.g. Make checks payable to Spence Construction. Zelle: 434-555-1234" style="margin-bottom:8px"></textarea>
+          <button class="btn-green" style="margin-top:4px" onclick="saveCompanyInfo()">Save Company Info</button>
+        </div>
 
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:0">
@@ -977,6 +989,20 @@ function testAIConnection(){
   });
 }
 function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Spence Construction";saveSettings();}
+function saveCompanyInfo(){
+  var name=document.getElementById('companyName').value.trim();
+  var phone=document.getElementById('companyPhone')?document.getElementById('companyPhone').value.trim():'';
+  var email=document.getElementById('companyEmail')?document.getElementById('companyEmail').value.trim():'';
+  var address=document.getElementById('companyAddress')?document.getElementById('companyAddress').value.trim():'';
+  var payInstr=document.getElementById('companyPaymentInstructions')?document.getElementById('companyPaymentInstructions').value.trim():'';
+  if(name) DD.companyName=name;
+  DD.companyPhone=phone;
+  DD.companyEmail=email;
+  DD.companyAddress=address;
+  DD.companyPaymentInstructions=payInstr;
+  saveSettings();
+  T('Company info saved!');
+}
 function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocation").value.trim(),markup:parseFloat(document.getElementById("aiMarkup").value)||20,laborRate:parseFloat(document.getElementById("aiLaborRate").value)||85,instructions:document.getElementById("aiInstructions").value.trim()};saveSettings();T("AI profile saved!");}
 function saveP(p,notifText){
   setSS("saving");
@@ -3066,6 +3092,10 @@ function openSettings(){
 function renderSettingsForm(){
   renderTeamList();
   document.getElementById("companyName").value=DD.companyName||"Spence Construction";
+  if(document.getElementById("companyPhone")) document.getElementById("companyPhone").value=DD.companyPhone||"";
+  if(document.getElementById("companyEmail")) document.getElementById("companyEmail").value=DD.companyEmail||"";
+  if(document.getElementById("companyAddress")) document.getElementById("companyAddress").value=DD.companyAddress||"";
+  if(document.getElementById("companyPaymentInstructions")) document.getElementById("companyPaymentInstructions").value=DD.companyPaymentInstructions||"";
   var profile=DD.aiProfile||{};
   document.getElementById("aiLocation").value=profile.location||"";
   document.getElementById("aiMarkup").value=profile.markup||20;
@@ -4218,12 +4248,19 @@ function checkInvoiceView(){
       // Payment instructions
       +(!paid?'<div style="background:#FFF8E7;border:1.5px solid #E8B43A;border-radius:10px;padding:16px;margin-bottom:24px">'
       +'<div style="font-size:13px;font-weight:700;color:#8A6000;margin-bottom:6px">Payment Instructions</div>'
-      +'<div style="font-size:13px;color:#8A6000;line-height:1.6">Please contact us to arrange payment. Check, ACH, or wire transfer accepted.</div>'
+      +'<div style="font-size:13px;color:#8A6000;line-height:1.6">'+(DD.companyPaymentInstructions||'Please contact us to arrange payment. Check, ACH, or wire transfer accepted.')+'</div>'
       +'</div>':'')
 
       // Footer
       +'<div style="text-align:center;padding-top:20px;border-top:1px solid #F0F0F0;color:#aaa;font-size:12px">'
-      +'Thank you for your business. Questions? Contact '+co+'.'
+      +'<div style="margin-bottom:8px">Thank you for your business.</div>'
+      +(DD.companyPhone||DD.companyEmail||DD.companyAddress?
+        '<div style="font-size:12px;color:#888;line-height:1.8">'
+        +(DD.companyPhone?'&#128222; '+DD.companyPhone+'<br>':'')
+        +(DD.companyEmail?'&#9993; '+DD.companyEmail+'<br>':'')
+        +(DD.companyAddress?'&#128205; '+DD.companyAddress:'')
+        +'</div>'
+      :'Questions? Contact '+co+'.')
       +'</div>'
 
       +'</div>' // end invoice card
