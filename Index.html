@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v99</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v101</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2582,7 +2582,7 @@ function renderTabBody(p){
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">';
       html+='<div style="flex:1"><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+m.name+'</div>';
       if(m.pct) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+m.pct+'% of contract</div>';
-      if(m.dueDate) html+='<div style="font-size:11px;color:#888;margin-top:2px">Due: '+fmt(m.dueDate)+'</div>';
+      if(m.dueDate) html+='<div style="font-size:11px;color:'+(m.dueImmediately&&!m.paid?'#E83A6C;font-weight:700':'#888')+';margin-top:2px">'+(m.dueImmediately&&!m.paid?'⚡ Due Immediately':'Due: '+fmt(m.dueDate))+'</div>';
       html+='</div>';
       html+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:'+(paid?'#2EAA72':'#2B3990')+'">$'+parseFloat(m.amount).toLocaleString()+'</div>';
       html+='<div style="font-size:11px;font-weight:700;color:'+(paid?'#2EAA72':'#E8B43A')+'">'+(paid?'&#10003; PAID':'OUTSTANDING')+'</div></div>';
@@ -2928,15 +2928,17 @@ function approveCOContractor(i){
   p.budget=(parseFloat(p.budget)||0)+budgetImpact;
   p.clientTotal=(parseFloat(p.clientTotal)||parseFloat(p.estimateTotal)||0)+clientAmt;
 
-  // Create new payment milestone for the CO
+  // Create new payment milestone for the CO — due immediately
   p.paymentMilestones=p.paymentMilestones||[];
+  var today=new Date().toISOString().split('T')[0];
   p.paymentMilestones.push({
     name:'Change Order: '+co.title,
     amount:clientAmt,
     pct:null,
     paid:false,
-    dueDate:'',
-    isCO:true
+    dueDate:today,
+    isCO:true,
+    dueImmediately:true
   });
 
   saveP(p,'Change order approved: '+co.title);
@@ -3113,7 +3115,8 @@ document.getElementById("searchInput").oninput=renderCards;
 var _params = new URLSearchParams(window.location.search);
 var _isClientView = _params.get('est') || _params.get('portal');
 var _isSubView = _params.get('sub');
-if(_isClientView || _isSubView){
+var _isInvoiceView = _params.get('invoice');
+if(_isClientView || _isSubView || _isInvoiceView){
   col=db.collection('projects');
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
@@ -3122,13 +3125,14 @@ if(_isClientView || _isSubView){
   if(_as) _as.style.display='none';
   if(_isClientView) checkClientView();
   if(_isSubView) checkSubView();
+  if(_isInvoiceView) checkInvoiceView();
 }
 
 // Auth state drives everything (skipped for client views)
 auth.onAuthStateChanged(function(user){
   var params = new URLSearchParams(window.location.search);
   var isClientView = params.get('est') || params.get('portal');
-  if(isClientView||params.get('sub')){ return; } // Already handled above
+  if(isClientView||params.get('sub')||params.get('invoice')){ return; } // Already handled above
 
   if(!user){
     // Not logged in — show auth screen
@@ -3846,23 +3850,21 @@ function renderOnboarding(){
 function sendProjectInvoice(i){
   var p=gpr();if(!p)return;
   var m=(p.paymentMilestones||[])[i];if(!m)return;
-  var co=DD.companyName||'Spence Construction';
+  var co=DD.companyName||'Contractor Desk';
+  var baseUrl=window.location.origin+window.location.pathname;
+  var invoiceLink=baseUrl+'?invoice='+p.id+'&ms='+i;
   var msg='Hi '+p.client+',\n\n'
-    +'Invoice from '+co+':\n\n'
-    +m.name+'\n'
+    +'Please find your invoice from '+co+' at the link below.\n\n'
+    +invoiceLink+'\n\n'
+    +'Invoice: '+m.name+'\n'
     +'Amount Due: $'+parseFloat(m.amount).toLocaleString()+'\n'
     +(m.dueDate?'Due Date: '+fmt(m.dueDate)+'\n':'')
-    +'\nProject: '+p.type+(p.address?' at '+p.address:'')+'\n'
-    +(p.jobNum?'Job #: '+p.jobNum+'\n':'')
-    +(p.poNum?'PO #: '+p.poNum+'\n':'')
-    +'\nPlease remit payment at your earliest convenience.\n\n'
-    +'Thank you,\n'+co;
+    +'\nThank you,\n'+co;
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
-  else if(email){window.location.href='mailto:'+email+'?subject=Invoice: '+encodeURIComponent(m.name)+'&body='+encodeURIComponent(msg);}
+  else if(email){window.location.href='mailto:'+email+'?subject=Invoice from '+encodeURIComponent(co)+': '+encodeURIComponent(m.name)+'&body='+encodeURIComponent(msg);}
   else{alert('No client contact info. Add phone or email to this project first.');}
-  // Mark as sent
   p.paymentMilestones[i].sentAt=Date.now();
   saveP(p);
 }
@@ -4117,6 +4119,122 @@ function notifTap(i){
     document.getElementById('notifsPage').classList.remove('show');
     openDetail(n.projectId);
   }
+}
+
+
+function checkInvoiceView(){
+  var params=new URLSearchParams(window.location.search);
+  var pid=params.get('invoice');
+  var msIdx=parseInt(params.get('ms'))||0;
+  if(!pid) return false;
+
+  document.getElementById('mainView').style.display='none';
+  document.body.style.background='#F4F5F7';
+
+  var wrap=document.createElement('div');
+  wrap.id='invoiceWrapper';
+  wrap.style.cssText='max-width:600px;margin:0 auto;padding:16px;font-family:sans-serif';
+  document.body.appendChild(wrap);
+  wrap.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading invoice...</div>';
+
+  col.doc(pid).get().then(function(doc){
+    if(!doc.exists){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Invoice not found.</div>';return;}
+    var p=doc.data();
+    var m=(p.paymentMilestones||[])[msIdx];
+    if(!m){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Milestone not found.</div>';return;}
+
+    var co=DD.companyName||p.companyName||'Contractor';
+    var logo=DD.logoData||LOGO_SRC||'';
+    var today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    var invNum='INV-'+(p.jobNum||p.id.slice(-6).toUpperCase())+'-'+(msIdx+1);
+    var paid=m.paid;
+
+    wrap.innerHTML=
+      // Print button
+      '<div style="text-align:right;margin-bottom:12px">'
+      +'<button onclick="window.print()" style="padding:8px 16px;background:#1A1A2E;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">&#128424; Print / Save PDF</button>'
+      +'</div>'
+
+      // Invoice card
+      +'<div id="invoicePrintArea" style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 20px rgba(0,0,0,0.08)">'
+
+      // Header
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #F0F0F0">'
+      +'<div>'
+      +(logo&&logo.length>10?'<img src="'+logo+'" style="max-height:60px;object-fit:contain;margin-bottom:8px;display:block"/>':'')
+      +'<div style="font-size:20px;font-weight:800;color:#1A1A2E">'+co+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:24px;font-weight:900;color:#1A1A2E">INVOICE</div>'
+      +'<div style="font-size:14px;color:#888;margin-top:4px"># '+invNum+'</div>'
+      +'<div style="font-size:13px;color:#888;margin-top:2px">'+today+'</div>'
+      +'</div>'
+      +'</div>'
+
+      // Bill to + Project info
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">'
+      +'<div>'
+      +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Bill To</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div>'
+      +(p.address?'<div style="font-size:13px;color:#666;margin-top:4px">'+p.address+'</div>':'')
+      +(p.clientEmail?'<div style="font-size:13px;color:#666;margin-top:2px">'+p.clientEmail+'</div>':'')
+      +'</div>'
+      +'<div>'
+      +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Project Details</div>'
+      +'<div style="font-size:13px;color:#555;line-height:1.8">'
+      +'<div><span style="color:#888">Project:</span> '+p.type+'</div>'
+      +(p.jobNum?'<div><span style="color:#888">Job #:</span> '+p.jobNum+'</div>':'')
+      +(p.poNum?'<div><span style="color:#888">PO #:</span> '+p.poNum+'</div>':'')
+      +(p.startDate?'<div><span style="color:#888">Start:</span> '+fmt(p.startDate)+'</div>':'')
+      +'</div>'
+      +'</div>'
+      +'</div>'
+
+      // Invoice line item
+      +'<div style="background:#F8F9FB;border-radius:10px;padding:0;margin-bottom:24px;overflow:hidden">'
+      +'<div style="display:grid;grid-template-columns:1fr auto;padding:12px 16px;background:#1A1A2E;color:#fff">'
+      +'<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Description</div>'
+      +'<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Amount</div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr auto;padding:16px;align-items:center">'
+      +'<div>'
+      +'<div style="font-size:15px;font-weight:700;color:#1A1A2E">'+m.name+'</div>'
+      +(m.pct?'<div style="font-size:12px;color:#888;margin-top:2px">'+m.pct+'% of contract</div>':'')
+      +(m.dueDate?'<div style="font-size:12px;color:#E83A6C;margin-top:2px;font-weight:600">Due: '+fmt(m.dueDate)+'</div>':'')
+      +'</div>'
+      +'<div style="font-size:22px;font-weight:900;color:#1A1A2E">$'+parseFloat(m.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'
+      +'</div>'
+      +'</div>'
+
+      // Total
+      +'<div style="display:flex;justify-content:flex-end;margin-bottom:24px">'
+      +'<div style="background:'+(paid?'#EDFAF4':'#EEF2FF')+';border-radius:10px;padding:16px 24px;text-align:right;min-width:200px">'
+      +'<div style="font-size:12px;color:#888;margin-bottom:4px">Amount Due</div>'
+      +'<div style="font-size:28px;font-weight:900;color:'+(paid?'#2EAA72':'#2B3990')+'">$'+parseFloat(m.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'
+      +(paid?'<div style="font-size:12px;color:#2EAA72;font-weight:700;margin-top:4px">&#10003; PAID</div>':'')
+      +'</div>'
+      +'</div>'
+
+      // Payment instructions
+      +(!paid?'<div style="background:#FFF8E7;border:1.5px solid #E8B43A;border-radius:10px;padding:16px;margin-bottom:24px">'
+      +'<div style="font-size:13px;font-weight:700;color:#8A6000;margin-bottom:6px">Payment Instructions</div>'
+      +'<div style="font-size:13px;color:#8A6000;line-height:1.6">Please contact us to arrange payment. Check, ACH, or wire transfer accepted.</div>'
+      +'</div>':'')
+
+      // Footer
+      +'<div style="text-align:center;padding-top:20px;border-top:1px solid #F0F0F0;color:#aaa;font-size:12px">'
+      +'Thank you for your business. Questions? Contact '+co+'.'
+      +'</div>'
+
+      +'</div>' // end invoice card
+
+      // Print styles
+      +'<style>@media print{body{background:#fff}#invoiceWrapper>div:first-child{display:none}.btn-dark{display:none}}</style>';
+
+  }).catch(function(err){
+    wrap.innerHTML='<div style="padding:40px;color:#E83A6C">Error: '+err.message+'</div>';
+  });
+  return true;
 }
 
 </script>
