@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#1A1A2E"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Spence"/>
+<meta name="apple-mobile-web-app-title" content="Contractor Desk"/>
 <link rel="apple-touch-icon" id="pwaAppleIcon" href=""/>
 <link id="pwaManifestLink" rel="manifest" href=""/>
-<title>Spence Construction</title>
+<title>Contractor Desk</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -214,7 +214,7 @@ body.client-mode .phead { display:none !important; }
   <div style="max-width:420px;margin:0 auto;padding:40px 24px 60px">
     <div style="text-align:center;margin-bottom:32px">
       <img id="authLogo" src="" style="max-height:70px;object-fit:contain;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto"/>
-      <div style="font-size:26px;font-weight:900;color:#1A1A2E">Spence Construction</div>
+      <div style="font-size:26px;font-weight:900;color:#1A1A2E">Contractor Desk</div>
       <div style="font-size:14px;color:#888;margin-top:6px">Project Management for Contractors</div>
     </div>
 
@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v104</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v105</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -618,7 +618,7 @@ body.client-mode .phead { display:none !important; }
           <label class="fl" style="margin-bottom:6px">Company Address</label>
           <input class="fi" id="companyAddress" placeholder="e.g. 123 Main St, Bedford VA 24523" style="margin-bottom:8px"/>
           <label class="fl" style="margin-bottom:6px">Payment Instructions</label>
-          <textarea class="fi" id="companyPaymentInstructions" rows="3" placeholder="e.g. Make checks payable to Spence Construction. Zelle: 434-555-1234" style="margin-bottom:8px"></textarea>
+          <textarea class="fi" id="companyPaymentInstructions" rows="3" placeholder="e.g. Make checks payable to [Your Company]. Zelle: your-number" style="margin-bottom:8px"></textarea>
           <button class="btn-green" style="margin-top:4px" onclick="saveCompanyInfo()">Save Company Info</button>
         </div>
 
@@ -788,7 +788,7 @@ function initUserCollections(uid){
   nCol=db.collection('notifications');
   eCol=db.collection('estimates');
 }
-var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Spence Construction",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
+var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2B3990","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#2B3990","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
 var EST_SC={Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
@@ -988,7 +988,7 @@ function testAIConnection(){
     el.textContent='\u2717 Connection failed: '+err.message+'\n\nMake sure your Replit server is running.';
   });
 }
-function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Spence Construction";saveSettings();}
+function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Contractor Desk";saveSettings();}
 function saveCompanyInfo(){
   var name=document.getElementById('companyName').value.trim();
   var phone=document.getElementById('companyPhone')?document.getElementById('companyPhone').value.trim():'';
@@ -1438,7 +1438,7 @@ function renderEstDetailBody(e){
   } else {
     html+='<div style="font-size:13px;color:#555;margin-bottom:10px">Sign below as the contractor before sending to your client.</div>';
     html+='<label class="fl" style="margin-bottom:6px">Your Name</label>';
-    html+='<input class="fi" id="contractorName" placeholder="Your full name" value="'+(DD.companyName||"Spence Construction")+'" style="margin-bottom:10px"/>';
+    html+='<input class="fi" id="contractorName" placeholder="Your full name" value="'+(DD.companyName||"Contractor Desk")+'" style="margin-bottom:10px"/>';
     html+='<label class="fl" style="margin-bottom:6px">Signature</label>';
     html+='<div style="position:relative">';
     html+='<canvas id="contractorSigCanvas" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:150px;cursor:crosshair;touch-action:none;-ms-touch-action:none;pointer-events:all;display:block;background:#FAFAFA"></canvas>';
@@ -1531,7 +1531,7 @@ function calcMsAmt(pctVal){
 function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document.getElementById('msPct').value:0); }
 
 
-function generateContractText(e,calc){var co=DD.companyName||"Spence Construction";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
+function generateContractText(e,calc){var co=DD.companyName||"Contractor Desk";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
   if(!name||!name.value.trim()){alert("Enter your name.");return;}
@@ -1574,7 +1574,7 @@ function resetContract(){
 function printInvoice(){
   var e=ger();if(!e)return;
   var calc=calcEstimate(e);
-  var co=DD.companyName||'Spence Construction';
+  var co=DD.companyName||'Contractor Desk';
   var inv=e.invoice||{};
   var rows=(e.lineItems||[]).map(function(li){
     var ca=calcLineItemTotal(li);
@@ -1621,7 +1621,7 @@ function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
   var calc=calcEstimate(e);var html="";
-  html+='<div class="portal-header"><img src="'+LOGO_SRC+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Spence Construction")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
+  html+='<div class="portal-header"><img src="'+LOGO_SRC+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
   html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2B3990">'+(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+e.status+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1A1A2E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
   if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2B3990"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+it.desc+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+it.complete+'</div></div>';}).join("")+'</div></div>';}
@@ -1795,7 +1795,7 @@ function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed
 function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(liTabMode==="detailed"){var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});}else{var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});}eCol.doc(e.id).set(e).then(function(){T("Added!");closeAddLineItem();renderEstDetailBody(e);});}
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
 function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){alert("Share:\n"+url);});}
-function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Spence Construction")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail)alert("No client contact info found.");if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
+function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail)alert("No client contact info found.");if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
 function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
@@ -1859,7 +1859,7 @@ function renderProjectPortal(p, est, wrapper){
   var done=scopeItems.filter(function(s){return s.complete==='Complete';}).length;
   var pct=scopeItems.length?Math.round(done/scopeItems.length*100):0;
   var milestones=(est&&est.paymentMilestones)||[];
-  var co=DD.companyName||'Spence Construction';
+  var co=DD.companyName||'Contractor Desk';
 
   var html='<div style="max-width:600px;margin:0 auto;padding:16px 16px 60px">';
 
@@ -2018,7 +2018,7 @@ function renderProjectPortal(p, est, wrapper){
   }
 
   // Footer
-  html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:12px">'+co+' &middot; Powered by Spence Construction</div>';
+  html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:12px">'+co+' &middot; Powered by Contractor Desk</div>';
   html+='</div>';
   wrapper.innerHTML=html;
 
@@ -2382,7 +2382,7 @@ function notifyPerson(assignTo, idx){
     for(var j=0;j<scopeItems.length;j++){
       if(scopeItems[j].assignTo===assignTo||scopeItems[j].name===assignTo){label=scopeItems[j].desc||scopeItems[j].name||"";break;}
     }
-    var msg=["Hi "+assignTo+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"","Please reply to confirm.","","Thank you,",DD.companyName||"Spence Construction"].join("\n");
+    var msg=["Hi "+assignTo+" --","","You have been assigned to the following task:","","Project: "+p.client,"Address: "+(p.address||""),"Task: "+label,"","Please reply to confirm.","","Thank you,",DD.companyName||"Contractor Desk"].join("\n");
     if(phone){window.location.href="sms:"+phone+"?body="+encodeURIComponent(msg);}
     else{window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Task Assignment: "+label)+"&body="+encodeURIComponent(msg);}
   } catch(e){
@@ -2762,7 +2762,7 @@ function sendCommSummary(i){
   var c=(p.commsLog||[])[i];if(!c)return;
   var typeIcon=c.type==='Call'?'call':c.type==='Text'?'text message':c.type==='Email'?'email':c.type==='Meeting'?'meeting':'conversation';
   var date=c.date?new Date(c.date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'today';
-  var msg='Hi '+p.client+',\n\nFollowing up on our '+typeIcon+' on '+date+'. Here is a summary of what we discussed:\n\n'+c.notes+(c.followUp?'\n\nNext step: '+c.followUp:'')+'\n\nPlease reply if anything looks incorrect or if you have questions.\n\nThank you,\n'+(DD.companyName||'Spence Construction');
+  var msg='Hi '+p.client+',\n\nFollowing up on our '+typeIcon+' on '+date+'. Here is a summary of what we discussed:\n\n'+c.notes+(c.followUp?'\n\nNext step: '+c.followUp:'')+'\n\nPlease reply if anything looks incorrect or if you have questions.\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
@@ -2785,7 +2785,7 @@ function sendCOToClient(i){
     (co.description?'Details: '+co.description+'\n':'')+
     'Cost Impact: +$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'\n\n'+
     'Please review and sign here:\n'+url+
-    '\n\nThank you,\n'+(DD.companyName||'Spence Construction');
+    '\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
@@ -3115,7 +3115,7 @@ function openSettings(){
 
 function renderSettingsForm(){
   renderTeamList();
-  document.getElementById("companyName").value=DD.companyName||"Spence Construction";
+  document.getElementById("companyName").value=DD.companyName||"Contractor Desk";
   if(document.getElementById("companyPhone")) document.getElementById("companyPhone").value=DD.companyPhone||"";
   if(document.getElementById("companyEmail")) document.getElementById("companyEmail").value=DD.companyEmail||"";
   if(document.getElementById("companyAddress")) document.getElementById("companyAddress").value=DD.companyAddress||"";
@@ -3225,7 +3225,7 @@ auth.onAuthStateChanged(function(user){
         if(tl) tl.src = DD.logoData;
       }
       // Update company name from user profile if first time
-      if(!DD.companyName || DD.companyName==='Spence Construction'){
+      if(!DD.companyName || DD.companyName==='Contractor Desk'){
         var meta = getUserMeta(user.uid);
       }
       startSync();
@@ -3252,7 +3252,7 @@ window.addEventListener('appinstalled', function(){
   _deferredInstallPrompt = null;
   var btn = document.getElementById('pwaInstallBtn');
   if(btn) btn.style.display = 'none';
-  T('App installed! Open Spence from your home screen.');
+  T('App installed! Open Contractor Desk from your home screen.');
 });
 
 function showInstallPrompt(){
@@ -3262,7 +3262,7 @@ function showInstallPrompt(){
   }
   _deferredInstallPrompt.prompt();
   _deferredInstallPrompt.userChoice.then(function(r){
-    if(r.outcome === 'accepted') T('Installing Spence Construction\u2026');
+    if(r.outcome === 'accepted') T('Installing Contractor Desk\u2026');
     _deferredInstallPrompt = null;
     var btn = document.getElementById('pwaInstallBtn');
     if(btn) btn.style.display = 'none';
@@ -3280,9 +3280,9 @@ function injectPWAManifest(logoDataUrl){
     if(appleLink) appleLink.href = logoDataUrl;
   }
   var manifest = {
-    name: (DD.companyName || 'Spence Construction'),
-    short_name: 'Spence',
-    description: 'Construction project management',
+    name: (DD.companyName || 'Contractor Desk'),
+    short_name: 'ContractorDesk',
+    description: 'Project management for contractors',
     start_url: './',
     scope: './',
     display: 'standalone',
@@ -3311,7 +3311,7 @@ function injectPWAManifest(logoDataUrl){
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;
   var swCode = [
-    "var CACHE='spence-v70';",
+    "var CACHE='contractordesk-v1';",
     "var SKIP=['firestore','firebase','googleapis','anthropic','replit'];",
     "self.addEventListener('install',function(e){",
     "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(['./']);}).then(function(){return self.skipWaiting();}));",
@@ -3441,7 +3441,7 @@ function backupAllData(){
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'spence-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    a.download = 'contractordesk-backup-' + new Date().toISOString().split('T')[0] + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -3577,7 +3577,7 @@ function checkTrialStatus(user, cb){
       // Existing user (Phillip) — give full access, create profile
       db.collection('userProfiles').doc(user.uid).set({
         name: user.displayName || 'Phillip',
-        company: 'Spence Construction',
+        company: 'Contractor Desk',
         email: user.email || '',
         trialEnd: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year for owner
         createdAt: Date.now(),
@@ -3597,14 +3597,14 @@ function checkTrialStatus(user, cb){
 }
 
 function contactForSubscription(){
-  window.location.href='mailto:phillip@spencecontracting.com?subject=Subscription - Spence Construction App&body=Hi, I would like to subscribe to the Spence Construction app at $79/month. My account email is: ';
+  window.location.href='mailto:phillip@spencecontracting.com?subject=Subscription - Contractor Desk&body=Hi, I would like to subscribe to Contractor Desk at $79/month. My account email is: ';
 }
 
 function getUserMeta(uid){
   db.collection('userProfiles').doc(uid).get().then(function(doc){
     if(doc.exists){
       var data=doc.data();
-      if(data.company && (!DD.companyName||DD.companyName==='Spence Construction')){
+      if(data.company && (!DD.companyName||DD.companyName==='Contractor Desk')){
         DD.companyName=data.company;
         var cn=document.getElementById('companyName');
         if(cn) cn.value=data.company;
@@ -3856,7 +3856,7 @@ function tagMyProjects(){
 
 function renderOnboarding(){
   var hasLogo = DD.logoData && DD.logoData.length > 10;
-  var hasCompany = DD.companyName && DD.companyName !== 'Spence Construction' && DD.companyName.trim() !== '';
+  var hasCompany = DD.companyName && DD.companyName !== 'Contractor Desk' && DD.companyName.trim() !== '';
   var hasTeam = DD.team && DD.team.length > 0;
   var dismissed = localStorage.getItem('onboardingDismissed');
 
