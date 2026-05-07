@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v109</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v110</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1497,7 +1497,7 @@ function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
   var calc=calcEstimate(e);var html="";
-  html+='<div class="portal-header"><img src="'+LOGO_SRC+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
+  html+='<div class="portal-header"><img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
   html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2B3990">'+(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+e.status+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1A1A2E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
   if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2B3990"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+it.desc+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+it.complete+'</div></div>';}).join("")+'</div></div>';}
@@ -1548,7 +1548,9 @@ function generateAIEstimate(){
     ' Current items ('+( e.lineItems||[]).length+' total): '+existingItems+
     ' Markup default: '+dm+'%. Labor rate: $'+lr+'/hr.'+
     (profile.location?' Location: '+profile.location+'.':'')+
+    (window._histCtx?' HISTORICAL ACCURACY - adjust your costs: '+window._histCtx+'.':'')+
     ' Rules: lineItems=items to ADD, deleteIndexes=indexes to DELETE, updateItems=items to UPDATE, exclusions=strings to add as exclusions.';
+    window._histCtx=null;
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
@@ -1741,7 +1743,7 @@ function renderProjectPortal(p, est, wrapper){
 
   // Header
   html+='<div class="client-header">';
-  html+='<img src="'+LOGO_SRC+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px">Client Project Portal</div>';
   html+='<div style="font-size:20px;font-weight:800;color:#fff">'+p.client+'</div>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">'+p.type+(p.address?' &middot; '+p.address:'')+'</div>';
@@ -1997,7 +1999,7 @@ function renderClientView(e,wrapper){
 
   // Header with logo
   html+='<div class="client-header">';
-  html+='<img src="'+LOGO_SRC+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Project Estimate</div>';
   html+='</div>';
 
@@ -2681,7 +2683,16 @@ function generateCOWithAI(btnEl){
   var btn=btnEl||document.querySelector('.co-ai-btn');if(btn){btn.disabled=true;btn.textContent='Drafting...';}
   var profile=DD.aiProfile||{};
   var markup=parseFloat(profile.markup)||20;
-  var sp='You are a construction change order estimator. Return ONLY valid JSON, no markdown, no extra text. IMPORTANT: Bake all overhead and profit ('+markup+'% markup) directly into each line item unit cost - do NOT show overhead/profit as separate line items. Format: {"title":"brief title","description":"2-3 sentence scope description","lineItems":[{"desc":"item","qty":1,"unit":"hrs","unitCost":95,"total":95}],"budgetImpact":0}. budgetImpact = sum of all line item totals. Location: '+(profile.location||'US')+'. Project type: '+p.type+'.';
+  var lr=parseFloat(profile.laborRate)||85;
+  var histCtx2=buildHistoricalContext();
+  var origEst=estimates.find(function(e){return e.projectId===p.id||e.id===p.estimateId;});
+  var origItems=origEst?(origEst.lineItems||[]).slice(0,6).map(function(li){return (li.category||'')+': '+li.desc+' @$'+li.unitCost+'/'+li.unit;}).join('; '):'';
+  var sp='You are a construction change order estimator. Return ONLY valid JSON, no markdown, no extra text.'
+    +' IMPORTANT: Bake markup ('+markup+'%) into unit costs. Use same categories as original estimate.'
+    +' Format: {"title":"title","description":"2-3 sentences","lineItems":[{"category":"Labor","desc":"desc","qty":1,"unit":"hrs","unitCost":95,"total":95}],"budgetImpact":0}'
+    +' budgetImpact=sum of totals. Labor rate $'+lr+'/hr. Location: '+(profile.location||'US')+'. Project: '+p.type+'.'
+    +(origItems?' Original estimate items: '+origItems+'.':'')
+    +(histCtx2?' Historical accuracy: '+histCtx2+'.':'')+' Adjust costs accordingly.';
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -4079,7 +4090,7 @@ function checkInvoiceView(){
     var coEmail=p.companyEmail||DD.companyEmail||'';
     var coAddress=p.companyAddress||DD.companyAddress||'';
     var coPayInstr=p.companyPaymentInstructions||DD.companyPaymentInstructions||'Please contact us to arrange payment. Check, ACH, or wire transfer accepted.';
-    var logo=p.logoData||DD.logoData||'';
+    var logo=p.logoData||(typeof DD!=='undefined'?DD.logoData:'')||LOGO_SRC||'';
     var today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
     var invNum='INV-'+(p.jobNum||p.id.slice(-6).toUpperCase())+'-'+(msIdx+1);
     var paid=m.paid;
@@ -4179,6 +4190,48 @@ function checkInvoiceView(){
   });
   return true;
 }
+
+
+function buildHistoricalContext(){
+  if(!projects||projects.length<2) return '';
+  var cats={};
+  projects.forEach(function(p){
+    (p.scopeItems||[]).forEach(function(it){
+      var est=parseFloat(it.budget)||0,act=parseFloat(it.actual)||0;
+      if(est<=0||act<=0) return;
+      var raw=(it.category||it.desc||'General').toLowerCase();
+      var k='General';
+      if(/paint|finish|drywall/.test(raw))k='Paint & Finishes';
+      else if(/electric|panel|wiring|light/.test(raw))k='Electrical';
+      else if(/plumb|pipe|drain/.test(raw))k='Plumbing';
+      else if(/floor|tile|carpet|lvp/.test(raw))k='Flooring';
+      else if(/hvac|heat|cool|duct/.test(raw))k='HVAC';
+      else if(/demo|remov|tear/.test(raw))k='Demo';
+      else if(/frame|struct|lumber/.test(raw))k='Framing';
+      else if(/roof/.test(raw))k='Roofing';
+      else if(/cabinet|millwork|trim/.test(raw))k='Cabinets & Millwork';
+      else if(/concret|mason|brick/.test(raw))k='Masonry';
+      else if(/labor/.test(raw))k='Labor';
+      if(!cats[k])cats[k]={e:0,a:0,n:0};
+      cats[k].e+=est;cats[k].a+=act;cats[k].n++;
+    });
+  });
+  var out=[];
+  Object.keys(cats).forEach(function(k){
+    var d=cats[k];
+    if(d.n<1)return;
+    var v=Math.round((d.a/d.e-1)*100);
+    if(Math.abs(v)<5)return;
+    out.push(k+' runs '+Math.abs(v)+'% '+(v>0?'over':'under')+' ('+d.n+' jobs)');
+  });
+  return out.join('; ');
+}
+
+var _origAI=generateAIEstimate;
+generateAIEstimate=function(){
+  window._histCtx=buildHistoricalContext();
+  _origAI();
+};
 
 </script>
 </body>
