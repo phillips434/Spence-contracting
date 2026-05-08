@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v125</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v127</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1621,9 +1621,10 @@ function generateAIEstimate(){
     return;
   }
 
-  var sp='You are a construction estimator. Respond ONLY with a JSON object, no other text.'+
+  var sp='IMPORTANT: Your entire response must be a single raw JSON object. No markdown, no code fences, no backticks, no explanation. Start your response with { and end with }.'+
+    ' You are a construction estimator.'+
     ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}'+
-    ' IMPORTANT: total = qty * unitCost. markup is percentage for client price.'+
+    ' IMPORTANT: total = qty * unitCost. markup = percentage for client price.'+
     ' Current items ('+(e.lineItems||[]).length+' total): '+existingItems+
     ' Markup: '+dm+'%. Labor: $'+lr+'/hr.'+
     (profile.location?' Location: '+profile.location+'.':'')+
@@ -1687,22 +1688,35 @@ function generateAIEstimate(){
       console.error('[AI] Empty. Response:',JSON.stringify(data).slice(0,300));
       return;
     }
-    if(text.trim().charAt(0)!=='{'){
+    // Robust JSON extractor — handles all AI response formats:
+    // raw JSON, ```json fenced, ``` fenced, text before/after, whitespace
+    text=text.trim();
+    // Strip markdown fences if present
+    if(text.indexOf('```')!==-1){
+      text=text.replace(/^```(?:json)?\s*/,'').replace(/\s*```\s*$/,'').trim();
+    }
+    // Extract first complete JSON object regardless of surrounding text
+    var jsonMatch=text.match(/\{[\s\S]*\}/);
+    if(!jsonMatch){
       _aiDone();
-      T('AI returned plain text not JSON — check Replit server.js passes system prompt');
-      console.error('[AI] Non-JSON. Preview:',text.slice(0,200));
+      T('AI response did not contain JSON — try again');
+      console.error('[AI] No JSON found. Length:',text.length,'First 50:',text.slice(0,50));
       return;
     }
-    var jsonMatch=text.match(/\{[\s\S]*\}/);
-    var clean=jsonMatch?jsonMatch[0]:'';
     var parsed;
     try{
-      parsed=JSON.parse(clean);
+      parsed=JSON.parse(jsonMatch[0]);
     }catch(pe){
-      _aiDone();
-      T('JSON parse error: '+pe.message+' — preview: '+text.slice(0,60));
-      console.error('[AI] Parse failed:',pe.message,'text:',text.slice(0,300));
-      return;
+      // Try trimming to last } in case of trailing garbage
+      var trimmed=jsonMatch[0].slice(0,jsonMatch[0].lastIndexOf('}')+1);
+      try{
+        parsed=JSON.parse(trimmed);
+      }catch(pe2){
+        _aiDone();
+        T('AI response could not be parsed — try again');
+        console.error('[AI] Parse failed:',pe.message);
+        return;
+      }
     }
     var e2=ger();if(!e2){_aiDone();return;}
     e2.lineItems=e2.lineItems||[];
