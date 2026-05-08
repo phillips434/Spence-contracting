@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v120</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v122</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1554,46 +1554,69 @@ function saveEstimate(e, msg){
 }
 function generateAIEstimate(){
   var prompt,e,profile,dm,lr,existingItems,existingExcls;
+
+  // ── On-screen debug status (visible in app) ──
+  function _aiStatus(msg, color){
+    var el=document.getElementById('aiLoading');
+    if(el){el.style.display='block';el.style.color=color||'rgba(255,255,255,0.8)';el.textContent=msg;}
+    console.info('[AI] '+msg);
+  }
+  function _aiDone(){
+    var el=document.getElementById('aiLoading');
+    if(el)el.style.display='none';
+    document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=false;});
+  }
+
   try {
     prompt=document.getElementById('aiPrompt').value.trim();
-    if(!prompt){alert('Please enter a command or job description.');return;}
-    e=ger();if(!e){alert('No estimate loaded.');return;}
-    var _loadEl=document.getElementById('aiLoading');
-    if(_loadEl){_loadEl.style.display='block';_loadEl.textContent='Generating estimate...';}
+    if(!prompt){T('Enter a command or job description first.');return;}
+    e=ger();if(!e){T('No estimate loaded.');return;}
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
-    // Show slow-server warning after 8s
-    var _slowWarn=setTimeout(function(){
-      if(_loadEl&&_loadEl.style.display!=='none'){
-        _loadEl.textContent='Still working... (Replit server may be waking up, please wait)';
-      }
-    },8000);
+    _aiStatus('⏳ Button clicked — preparing request...');
     profile=DD.aiProfile||{};
     dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
     lr=parseFloat(profile.laborRate)||85;
-    existingItems=JSON.stringify((e.lineItems||[]).map(function(li,idx2){return{index:idx2,desc:li.desc,category:li.category,total:li.total,markup:li.markup};}));
-    existingExcls=JSON.stringify(e.exclusions||[]);
+    existingItems=JSON.stringify((e.lineItems||[]).slice(0,20).map(function(li,i){
+      return{index:i,desc:li.desc,category:li.category,total:li.total};
+    }));
+    existingExcls=JSON.stringify((e.exclusions||[]).slice(0,10));
   } catch(setupErr){
-    alert('Setup error: '+setupErr.message);
+    _aiDone();
+    T('Setup error: '+setupErr.message);
     return;
   }
+
   var sp='You are a construction estimator. Respond ONLY with a JSON object, no other text.'+
     ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}'+
-    ' IMPORTANT: total = qty * unitCost (pre-markup cost). markup is percentage added on top for client price.'+
-    ' Current items ('+( e.lineItems||[]).length+' total): '+existingItems+
-    ' Markup default: '+dm+'%. Labor rate: $'+lr+'/hr.'+
+    ' IMPORTANT: total = qty * unitCost. markup is percentage for client price.'+
+    ' Current items ('+(e.lineItems||[]).length+' total): '+existingItems+
+    ' Markup: '+dm+'%. Labor: $'+lr+'/hr.'+
     (profile.location?' Location: '+profile.location+'.':'')+
-    (window._histCtx?' HISTORICAL ACCURACY - adjust your costs: '+window._histCtx+'.':'')+
-    ' Rules: lineItems=items to ADD, deleteIndexes=indexes to DELETE, updateItems=items to UPDATE, exclusions=strings to add as exclusions.';
-    window._histCtx=null;
+    (window._histCtx?' HISTORICAL: '+window._histCtx+'.':'')+
+    ' Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE, exclusions=add strings.';
+  window._histCtx=null;
 
   var _aiController=new AbortController();
   var _aiStart=Date.now();
-  console.info('[AI] Request starting at',new Date().toISOString());
-  console.info('[AI] Model: claude-haiku-4-5-20251001 | max_tokens: 2000');
+  var _hardAbortFired=false;
+
+  // Hard 30s abort
   var _aiTimeout=setTimeout(function(){
-    console.warn('[AI] Hard timeout after 30s — aborting fetch');
+    _hardAbortFired=true;
+    _aiStatus('⏱ 30s timeout — aborting...','#E8B43A');
     _aiController.abort();
   },30000);
+
+  // Slow-server warning at 10s
+  var _slowWarn=setTimeout(function(){
+    var el=document.getElementById('aiLoading');
+    if(el&&el.style.display!=='none'){
+      _aiStatus('⏳ Still working... Replit server warming up (up to 30s)');
+    }
+  },10000);
+
+  _aiStatus('📡 Connecting to AI server...');
+
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -1601,37 +1624,46 @@ function generateAIEstimate(){
     signal:_aiController.signal
   }).then(function(r){
     clearTimeout(_aiTimeout);
-    console.info('[AI] Response received in '+(Date.now()-_aiStart)+'ms, status:'+r.status);
+    _aiStatus('📥 Response received ('+Math.round((Date.now()-_aiStart)/1000)+'s) — parsing...');
+    if(!r.ok){
+      return r.text().then(function(t){
+        throw new Error('Server error '+r.status+': '+t.slice(0,100));
+      });
+    }
     return r.json();
   })
   .then(function(data){
-    console.info('[AI] JSON parsed in '+(Date.now()-_aiStart)+'ms');
-    // AI response received
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    // Extract JSON object from response - ignore any explanation text around it
+    if(!text){
+      _aiDone();
+      T('AI returned empty response — try a more specific command');
+      return;
+    }
     var jsonMatch=text.match(/\{[\s\S]*\}/);
     var clean=jsonMatch?jsonMatch[0]:'';
     var parsed;
-    try{parsed=JSON.parse(clean);}catch(pe){
-      alert('Parse failed.\nRaw text length: '+text.length+'\nData keys: '+Object.keys(data).join(',')+'\nContent blocks: '+(data.content?data.content.length:0)+'\nFirst block type: '+(data.content&&data.content[0]?data.content[0].type:'none')+'\nText preview: '+text.slice(0,300));
+    try{
+      parsed=JSON.parse(clean);
+    }catch(pe){
+      // FIXED: was calling return without cleaning up loading state
+      _aiDone();
+      T('AI response format error — try again');
+      console.error('[AI] Parse failed. Preview:',text.slice(0,200));
       return;
     }
-    var e2=ger();if(!e2)return;
+    var e2=ger();if(!e2){_aiDone();return;}
     e2.lineItems=e2.lineItems||[];
     e2.exclusions=e2.exclusions||[];
     var changes=[];
-    // Add new items
     if(parsed.lineItems&&parsed.lineItems.length){
       e2.lineItems=e2.lineItems.concat(parsed.lineItems);
       changes.push('Added '+parsed.lineItems.length+' item(s)');
     }
-    // Delete items (process in reverse to preserve indexes)
     if(parsed.deleteIndexes&&parsed.deleteIndexes.length){
       var toDelete=parsed.deleteIndexes.slice().sort(function(a,b){return b-a;});
-      toDelete.forEach(function(idx){if(idx>=0&&idx<e2.lineItems.length)e2.lineItems.splice(idx,1);});
+      toDelete.forEach(function(i){if(i>=0&&i<e2.lineItems.length)e2.lineItems.splice(i,1);});
       changes.push('Removed '+parsed.deleteIndexes.length+' item(s)');
     }
-    // Update items
     if(parsed.updateItems&&parsed.updateItems.length){
       parsed.updateItems.forEach(function(u){
         if(u.index>=0&&u.index<e2.lineItems.length){
@@ -1641,7 +1673,6 @@ function generateAIEstimate(){
       });
       changes.push('Updated '+parsed.updateItems.length+' item(s)');
     }
-    // Exclusions
     if(parsed.exclusions&&parsed.exclusions.length){
       e2.exclusions=e2.exclusions.concat(parsed.exclusions);
       changes.push('Added '+parsed.exclusions.length+' exclusion(s)');
@@ -1650,35 +1681,56 @@ function generateAIEstimate(){
       T(parsed.message||changes.join(', ')||'Done!');
       document.getElementById('aiPrompt').value='';
       renderEstDetailBody(e2);
+    }).catch(function(saveErr){
+      T('AI completed but save failed: '+saveErr.message);
     });
   })
   .catch(function(err){
-    var elapsed=Date.now()-_aiStart;
-    console.error('[AI] Failed after '+elapsed+'ms — '+err.name+': '+err.message);
+    clearTimeout(_aiTimeout);
+    var elapsed=Math.round((Date.now()-_aiStart)/1000);
     var msg;
     if(err.name==='AbortError'){
-      msg='AI request timed out ('+Math.round(elapsed/1000)+'s). The Replit server may be asleep — open Replit, wait 30 seconds, then try again.';
-    } else if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
-      msg='Could not reach AI server. Check your connection and try again.';
+      msg='⏱ AI timed out after '+elapsed+'s. Replit server may be asleep — wait 30s and try again.';
+    } else if(err.message&&(err.message.indexOf('Load failed')!==-1||err.message.indexOf('Failed to fetch')!==-1||err.message.indexOf('NetworkError')!==-1)){
+      msg='📵 Cannot reach AI server. Check connection and try again.';
     } else {
-      msg='AI Error: '+err.message;
+      msg='AI error ('+elapsed+'s): '+err.message;
     }
     T(msg);
-    console.error('[AI] Error detail:',err.message,'elapsed:',elapsed+'ms');
+    console.error('[AI]',err.name,err.message,'after',elapsed+'s');
   })
   .finally(function(){
     clearTimeout(_slowWarn);
-    var _loadEl2=document.getElementById('aiLoading');
-    if(_loadEl2) _loadEl2.style.display='none';
-    document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=false;});
+    clearTimeout(_aiTimeout);
+    _aiDone();
   });
 }
 
-function generateAILog(){var p=gpr();if(!p)return;var logBtn=document.getElementById("aiLogBtn");if(logBtn)logBtn.disabled=true;var items=(p.scopeItems||[]).filter(function(s){return s.complete==="In Progress";}).map(function(s){return s.desc;}).join(", ");var sp="You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: "+(items||"General construction");fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:200,system:"You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.",messages:[{role:"user",content:"Project: "+p.client+" - "+p.type+". Active items: "+(items||"general work")}]})
-  }).then(function(r){return r.json();}).then(function(data){var text=(data.content&&data.content[0]&&data.content[0].text)||"";document.getElementById("logWork").value=text.trim();T("AI log generated!");}).catch(function(err){alert("Error: "+err.message);}).finally(function(){if(logBtn)logBtn.disabled=false;});}
+function generateAILog(){
+  var p=gpr();if(!p)return;
+  var logBtn=document.getElementById('aiLogBtn');
+  if(logBtn)logBtn.disabled=true;
+  var items=(p.scopeItems||[]).filter(function(s){return s.complete==='In Progress';}).map(function(s){return s.desc;}).join(', ');
+  var sp='You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: '+(items||'General construction');
+  var _logCtrl=new AbortController();
+  var _logTimeout=setTimeout(function(){_logCtrl.abort();},15000);
+  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,
+      system:'You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.',
+      messages:[{role:'user',content:'Project: '+p.client+' - '+p.type+'. Active items: '+(items||'general work')}]}),
+    signal:_logCtrl.signal
+  }).then(function(r){clearTimeout(_logTimeout);return r.json();
+  }).then(function(data){
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    document.getElementById('logWork').value=text.trim();
+    T('AI log generated!');
+  }).catch(function(err){
+    clearTimeout(_logTimeout);
+    T(err.name==='AbortError'?'AI log timed out — try again':'AI log error: '+err.message);
+  }).finally(function(){if(logBtn)logBtn.disabled=false;});
+}
 function openEditLineItem(i){
   editLineItemIdx=i;
   var e=ger();if(!e)return;
@@ -2797,7 +2849,7 @@ function generateCOWithAI(btnEl){
     detailDesc+='\n\nContract Total: $'+Math.round(parsed.budgetImpact||0).toLocaleString();
     if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
     T('Change order drafted with line items!');
-  }).catch(function(err){alert('AI error: '+err.message);})
+  }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
   .finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
 }
 
@@ -2880,12 +2932,15 @@ function generatePunchListAI(btnEl){
   if(btn){btn.disabled=true;btn.textContent='Generating...';}
   var scope=(p.scopeItems||[]).map(function(s){return s.desc;}).join(', ')||p.type||'construction';
   var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, no markdown, no code fences, no explanation. Example: ["Touch up paint","Verify all outlets work","Clean all surfaces","Remove debris"]';
+  var _plCtrl=new AbortController();
+  var _plTimeout=setTimeout(function(){_plCtrl.abort();},20000);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sp,
-      messages:[{role:'user',content:'Project type: '+p.type+'. Scope: '+scope}]})
-  }).then(function(r){return r.json();})
+      messages:[{role:'user',content:'Project type: '+p.type+'. Scope: '+scope}]}),
+    signal:_plCtrl.signal
+  }).then(function(r){clearTimeout(_plTimeout);return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'[]';
     var stripped=text.replace(/```json/gi,'').replace(/```/g,'').trim();
@@ -2900,7 +2955,7 @@ function generatePunchListAI(btnEl){
     saveP(p,'AI punch list generated for '+p.client);
     T('Added '+items.length+' punch list items!');
   }).catch(function(err){
-    alert('Error: '+err.message);
+    T(err.name==='AbortError'?'AI timed out \u2014 try again':'AI error: '+err.message);
   }).finally(function(){
     if(btn){btn.disabled=false;btn.textContent='&#10024; AI Generate';}
   });
