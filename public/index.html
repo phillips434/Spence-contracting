@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v118</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v119</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -852,7 +852,7 @@ function testAIConnection(){
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-opus-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
   }).then(function(r){
     if(!r.ok){el.style.color='#E83A6C';el.textContent='Server responded but with error: HTTP '+r.status;return null;}
     return r.json();
@@ -1587,16 +1587,25 @@ function generateAIEstimate(){
     window._histCtx=null;
 
   var _aiController=new AbortController();
+  var _aiStart=Date.now();
+  console.info('[AI] Request starting at',new Date().toISOString());
+  console.info('[AI] Model: claude-haiku-4-5-20251001 | max_tokens: 2000');
   var _aiTimeout=setTimeout(function(){
+    console.warn('[AI] Hard timeout after 30s — aborting fetch');
     _aiController.abort();
   },30000);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-opus-4-5-20251101',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]}),
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
     signal:_aiController.signal
-  }).then(function(r){clearTimeout(_aiTimeout);return r.json();})
+  }).then(function(r){
+    clearTimeout(_aiTimeout);
+    console.info('[AI] Response received in '+(Date.now()-_aiStart)+'ms, status:'+r.status);
+    return r.json();
+  })
   .then(function(data){
+    console.info('[AI] JSON parsed in '+(Date.now()-_aiStart)+'ms');
     // AI response received
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     // Extract JSON object from response - ignore any explanation text around it
@@ -1644,16 +1653,18 @@ function generateAIEstimate(){
     });
   })
   .catch(function(err){
+    var elapsed=Date.now()-_aiStart;
+    console.error('[AI] Failed after '+elapsed+'ms — '+err.name+': '+err.message);
     var msg;
     if(err.name==='AbortError'){
-      msg='AI request timed out after 30 seconds.\n\nThe Replit server may be asleep. Open Replit and wake the server, then try again.';
+      msg='AI request timed out ('+Math.round(elapsed/1000)+'s). The Replit server may be asleep — open Replit, wait 30 seconds, then try again.';
     } else if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
-      msg='Could not reach the AI server.\n\n1. Check your internet connection\n2. The Replit server may be asleep — open Replit to wake it\n3. Try again in 30 seconds';
+      msg='Could not reach AI server. Check your connection and try again.';
     } else {
       msg='AI Error: '+err.message;
     }
-    T(msg.split('\n')[0]);
-    console.error('AI fetch error:',err.message);
+    T(msg);
+    console.error('[AI] Error detail:',err.message,'elapsed:',elapsed+'ms');
   })
   .finally(function(){
     clearTimeout(_slowWarn);
