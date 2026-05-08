@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v124</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v125</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1650,7 +1650,9 @@ function generateAIEstimate(){
     }
   },10000);
 
-  _aiStatus('📡 Connecting to AI server...');
+  var _payloadSize=JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}).length;
+  _aiStatus('📡 Sending request ('+Math.round(_payloadSize/1024*10)/10+'KB)...');
+  console.info('[AI] Payload size:',_payloadSize,'bytes, system prompt:',sp.length,'chars, prompt:',prompt.length,'chars');
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
@@ -1668,10 +1670,27 @@ function generateAIEstimate(){
     return r.json();
   })
   .then(function(data){
+    // DIAGNOSTICS: surface exact failure point
+    if(data.type==='error'||data.error){
+      _aiDone();
+      var em=data.error?data.error.message:JSON.stringify(data).slice(0,120);
+      T('Anthropic error: '+em);
+      console.error('[AI] Anthropic error:',JSON.stringify(data).slice(0,300));
+      return;
+    }
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    var blockType=(data.content&&data.content[0]?data.content[0].type:'none');
+    _aiStatus('📥 Response '+text.length+'chars ('+blockType+') — parsing...');
     if(!text){
       _aiDone();
-      T('AI returned empty response — try a more specific command');
+      T('AI empty response ('+blockType+') — check Replit logs');
+      console.error('[AI] Empty. Response:',JSON.stringify(data).slice(0,300));
+      return;
+    }
+    if(text.trim().charAt(0)!=='{'){
+      _aiDone();
+      T('AI returned plain text not JSON — check Replit server.js passes system prompt');
+      console.error('[AI] Non-JSON. Preview:',text.slice(0,200));
       return;
     }
     var jsonMatch=text.match(/\{[\s\S]*\}/);
@@ -1680,10 +1699,9 @@ function generateAIEstimate(){
     try{
       parsed=JSON.parse(clean);
     }catch(pe){
-      // FIXED: was calling return without cleaning up loading state
       _aiDone();
-      T('AI response format error — try again');
-      console.error('[AI] Parse failed. Preview:',text.slice(0,200));
+      T('JSON parse error: '+pe.message+' — preview: '+text.slice(0,60));
+      console.error('[AI] Parse failed:',pe.message,'text:',text.slice(0,300));
       return;
     }
     var e2=ger();if(!e2){_aiDone();return;}
