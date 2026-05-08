@@ -1,65 +1,67 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
+
+const corsOptions = {
+  origin: [
+    'https://spence-contracting--phillip95.replit.app',
+    /\.replit\.app$/,
+    /\.replit\.dev$/,
+    'http://localhost:5000'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false
+};
+
+// Handle preflight OPTIONS for all routes (must come before other middleware)
+app.options(/.*/, cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// CORS
-app.use(function(req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-app.get('/', function(req, res) {
-  res.json({ status: 'ok', message: 'Contractor Desk AI server running' });
-});
-
-app.post('/api/estimate', async function(req, res) {
-  console.log('[API] Request received:', new Date().toISOString());
+app.post('/api/estimate', async (req, res) => {
+  console.log('[/api/estimate] REQUEST RECEIVED', new Date().toISOString());
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) {
+    console.error('[/api/estimate] ERROR: ANTHROPIC_KEY is not set');
+    return res.status(500).json({ error: 'ANTHROPIC_KEY secret is not configured.' });
+  }
+  console.log('[/api/estimate] Request received:', JSON.stringify(req.body, null, 2));
   try {
-    const { model, max_tokens, system, messages } = req.body;
-
-    if (!messages || !messages.length) {
-      return res.status(400).json({ error: { message: 'messages field is required' } });
-    }
-
-    const params = {
-      model: model || 'claude-haiku-4-5-20251001',
-      max_tokens: max_tokens || 1000,
-      messages: messages,
-    };
-
-    if (system) params.system = system;
-
-    console.log('[API] model:', params.model, '| system:', !!system, '| max_tokens:', params.max_tokens);
-
-    const response = await anthropic.messages.create(params);
-
-    console.log('[API] Response received | stop_reason:', response.stop_reason);
-    res.json(response);
-
-  } catch (err) {
-    console.error('[API] Error:', err.message);
-    res.status(err.status || 500).json({
-      type: 'error',
-      error: {
-        type: err.error?.type || 'server_error',
-        message: err.message || 'Unknown server error',
-      }
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(req.body)
     });
+    console.log('[/api/estimate] Anthropic response status:', response.status);
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('[/api/estimate] Anthropic error body:', JSON.stringify(data, null, 2));
+    } else {
+      console.log('[/api/estimate] Success — tokens used:', data.usage);
+      const bodyPreview = JSON.stringify(data).slice(0, 500);
+      console.log('[/api/estimate] Response body (first 500 chars):', bodyPreview);
+    }
+    res.status(response.status).json(data);
+  } catch (err) {
+    console.error('[/api/estimate] Fetch/network error:', err.message);
+    res.status(500).json({ error: 'Failed to reach Anthropic API.' });
   }
 });
 
-app.listen(PORT, function() {
-  console.log('Contractor Desk AI server running on port', PORT);
-  console.log('API key present:', !!process.env.ANTHROPIC_API_KEY);
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
