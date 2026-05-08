@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v116</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v118</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1268,7 +1268,7 @@ function renderEstDetailBody(e){
   html+='<div class="sec-label" style="margin-top:20px">Payment Schedule</div>';
   html+='<div class="wcard">';
   var milestones=e.paymentMilestones||[];
-  var totalPaid=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);
+  var totalPaid=milestones.filter(function(m){return m.paid===true||m.isPaid===true||m.status==='paid'||m.status==='complete'||m.status==='completed';}).reduce(function(a,m){return a+(parseFloat(m.amount)||0);},0);
   if(milestones.length){
     var paidPct=calc.grandTotal>0?Math.round(totalPaid/calc.grandTotal*100):0;
     html+='<div style="margin-bottom:14px">';
@@ -1778,7 +1778,14 @@ function renderProjectPortal(p, est, wrapper){
   var scopeItems=p.scopeItems||[];
   var done=scopeItems.filter(function(s){return s.complete==='Complete';}).length;
   var pct=scopeItems.length?Math.round(done/scopeItems.length*100):0;
-  var milestones=(est&&est.paymentMilestones)||[];
+  // Read milestones from PROJECT (has live paid status) not estimate
+  // Fall back to estimate milestones if project has none (legacy)
+  var milestones=[];
+  if(p.paymentMilestones && p.paymentMilestones.length){
+    milestones=p.paymentMilestones;
+  } else if(est && est.paymentMilestones && est.paymentMilestones.length){
+    milestones=est.paymentMilestones;
+  }
   var co=DD.companyName||'Contractor Desk';
 
   var html='<div style="max-width:600px;margin:0 auto;padding:16px 16px 60px">';
@@ -1855,57 +1862,19 @@ function renderProjectPortal(p, est, wrapper){
       html+='<div style="background:#EEE;border-radius:6px;height:8px;margin-bottom:14px"><div style="height:100%;width:'+ppct+'%;background:#2EAA72;border-radius:6px"></div></div>';
     }
     milestones.forEach(function(m){
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F5F5F5">';
+      m.paid=m.paid===true||m.isPaid===true||m.status==='paid'||m.status==='complete'||m.status==='completed';
+      m._pd=m.paidAt?(' &middot; '+new Date(m.paidAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})):'';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="display:flex;align-items:center;gap:10px">';
-      html+='<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(m.paid?'#2EAA72':'#CCC')+';background:'+(m.paid?'#2EAA72':'transparent')+';display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0">'+(m.paid?'&#10003;':'')+'</div>';
+      html+='<div style="width:24px;height:24px;border-radius:6px;border:2px solid '+(m.paid?'#2EAA72':'#DDD')+';background:'+(m.paid?'#2EAA72':'transparent')+';display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0">'+(m.paid?'&#10003;':'')+' </div>';
       html+='<div><div style="font-size:14px;font-weight:600;color:#1A1A2E">'+m.name+'</div>';
-      if(m.pct) html+='<div style="font-size:11px;color:#aaa">'+m.pct+'% of total</div>';
+      if(m.paid&&m._pd) html+='<div style="font-size:11px;color:#2EAA72">Paid'+m._pd+'</div>';
+      else if(m.dueDate) html+='<div style="font-size:11px;color:#aaa">Due: '+fmt(m.dueDate)+'</div>';
+      if(m.pct) html+='<div style="font-size:11px;color:#aaa">'+m.pct+'% of contract</div>';
       html+='</div></div>';
       html+='<div style="text-align:right">';
-      html+='<div style="font-size:14px;font-weight:700;color:#2B3990">$'+m.amount.toLocaleString()+'</div>';
-      html+='<div style="font-size:11px;font-weight:700;color:'+(m.paid?'#2EAA72':'#aaa')+'">'+(m.paid?'&#10003; Paid':'Pending')+'</div>';
-      html+='</div></div>';
-    });
-    html+='</div>';
-  }
-
-  // Daily log (work completed only — no internal issues shown)
-  var logs=(p.dailyLogs||[]).slice().reverse().slice(0,8);
-  if(logs.length){
-    html+='<div class="portal-section">';
-    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128221; Recent Updates</div>';
-    logs.forEach(function(log){
-      html+='<div style="padding:10px 0;border-bottom:1px solid #F5F5F5">';
-      html+='<div style="font-size:11px;color:#aaa;margin-bottom:4px">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div>';
-      html+='<div style="font-size:13px;color:#444;line-height:1.5">'+log.work+'</div>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }
-
-  // Change orders needing client signature
-  var allCOs=p.changeOrders||[];
-  var pendingCOs=allCOs.filter(function(c){return c.status==='Pending'||c.status==='Sent to Client'||c.status==='Sent';});
-
-  if(pendingCOs.length){
-    html+='<div class="portal-section" style="border:2px solid #E8B43A">';
-    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:4px">&#9888; Change Orders Pending Approval</div>';
-    html+='<div style="font-size:12px;color:#888;margin-bottom:14px">Please review and sign each item below.</div>';
-    pendingCOs.forEach(function(co){
-      var realIdx=allCOs.indexOf(co);
-      html+='<div style="background:#FFFBF0;border:1px solid #E8B43A;border-radius:12px;padding:14px;margin-bottom:12px">';
-      html+='<div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+co.title+'</div>';
-      if(co.description) html+='<div style="font-size:13px;color:#333;margin-bottom:10px;line-height:1.5">'+co.description+'</div>';
-      html+='<div style="display:flex;justify-content:space-between;background:#fff;border-radius:8px;padding:10px;margin-bottom:12px">';
-      html+='<span style="font-size:13px;color:#666">Cost Impact</span>';
-      html+='<span style="font-size:15px;font-weight:700;color:#E8B43A">+$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'</span></div>';
-      html+='<label style="font-size:12px;color:#666;display:block;margin-bottom:6px">Your Full Name</label>';
-      html+='<input id="coSigName'+realIdx+'" class="fi" placeholder="Type your full name" style="margin-bottom:10px"/>';
-      html+='<label style="font-size:12px;color:#666;display:block;margin-bottom:6px">Signature</label>';
-      html+='<canvas id="coSigCanvas'+realIdx+'" style="border:2px dashed #CCC;border-radius:10px;width:100%;height:120px;touch-action:none;background:#FAFAFA;display:block;margin-bottom:10px"></canvas>';
-      html+='<div style="display:flex;gap:8px">';
-      html+='<button ontouchend="event.preventDefault();clearCOCanvas('+realIdx+');" onclick="clearCOCanvas('+realIdx+');" style="flex:1;padding:10px;border:1.5px solid #DDD;border-radius:8px;background:#fff;font-size:13px;cursor:pointer">Clear</button>';
-      html+='<button data-projid="'+p.id+'" data-coidx="'+realIdx+'" ontouchend="event.preventDefault();signCOBtn(this);" onclick="signCOBtn(this);" style="flex:2;padding:10px;border:none;border-radius:8px;background:#E8B43A;color:#fff;font-size:13px;font-weight:700;cursor:pointer">&#10003; Approve &amp; Sign</button>';
+      html+='<div style="font-size:15px;font-weight:700;color:'+(m.paid?'#2EAA72':'#2B3990')+'">'+'$'+parseFloat(m.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+      html+='<div style="font-size:11px;font-weight:700;color:'+(m.paid?'#2EAA72':'#E8B43A')+'">'+(m.paid?'&#10003; PAID':'OUTSTANDING')+'</div>';
       html+='</div></div>';
     });
     html+='</div>';
@@ -1979,15 +1948,36 @@ function checkClientView(){
     col.doc(portalId).onSnapshot(function(doc){
       if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
       var p=doc.data();
+
+      // Load owner's settings to get company logo (settings are public-readable for branding)
+      function renderWithLogo(est){
+        // Use p.logoData first (snapshotted on project), then fetch from settings
+        if(p.logoData && p.logoData.length > 10){
+          renderProjectPortal(p, est, wrapper);
+        } else {
+          // Try to fetch from owner's settings doc using their UID
+          var ownerUid = p.userId || 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
+          var settingsDocId = ownerUid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1' ? 'dropdowns' : ownerUid;
+          db.collection('settings').doc(settingsDocId).get().then(function(sdoc){
+            if(sdoc.exists && sdoc.data().logoData){
+              p.logoData = sdoc.data().logoData;
+              if(sdoc.data().companyName) p.companyName = p.companyName || sdoc.data().companyName;
+            }
+            renderProjectPortal(p, est, wrapper);
+          }).catch(function(){
+            renderProjectPortal(p, est, wrapper);
+          });
+        }
+      }
+
       if(p.estimateId){
         eCol.doc(p.estimateId).get().then(function(edoc){
-          renderProjectPortal(p, edoc.exists?edoc.data():null, wrapper);
+          renderWithLogo(edoc.exists?edoc.data():null);
         });
       } else {
-        renderProjectPortal(p, null, wrapper);
+        renderWithLogo(null);
       }
     }, function(err){
-      // Fallback to one-time get if snapshot fails
       col.doc(portalId).get().then(function(doc){
         if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
         var p=doc.data();
@@ -2271,6 +2261,11 @@ function openDetail(id){
 }
 
 function _renderDetail(p){
+  // Silently snapshot logo onto project if missing (fixes old projects)
+  if(DD.logoData && DD.logoData.length > 10 && (!p.logoData || p.logoData.length < 10)){
+    p.logoData = DD.logoData;
+    col.doc(p.id).update({logoData: DD.logoData}).catch(function(){});
+  }
   var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};
   document.getElementById("dName").textContent=p.client;
   document.getElementById("dJobNum").textContent=p.jobNum||"";
