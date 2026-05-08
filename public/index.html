@@ -300,7 +300,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v110</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v112</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -906,8 +906,20 @@ function saveP(p,notifText){
     if(notifText){pushNotification(notifText,p.client);showBanner(notifText);}
     setSS("live");
   }).catch(function(err){
-    T("Error saving: "+err.message);
-    setSS("error");
+    // Retry once after 2s on network errors — set() is idempotent, no duplicates
+    if(err.code==='unavailable'||err.message.indexOf('network')!==-1||err.message.indexOf('Network')!==-1){
+      setSS('error');
+      setTimeout(function(){
+        col.doc(p.id).set(p).then(function(){
+          T('Saved.');setSS('live');
+        }).catch(function(){
+          T('Save failed — check your connection.');setSS('error');
+        });
+      },2000);
+    } else {
+      T('Error saving: '+err.message);
+      setSS('error');
+    }
   });
 }
 function addTeamMember(){var type=document.getElementById("tmType").value,trade=document.getElementById("tmTrade").value.trim(),name=document.getElementById("tmName").value.trim(),company=document.getElementById("tmCompany").value.trim(),phone=document.getElementById("tmPhone").value.trim(),email=document.getElementById("tmEmail").value.trim();if(!name){alert("Please enter a name.");return;}DD.team=DD.team||[];DD.team.push({type:type,trade:trade,name:name,company:company,phone:phone,email:email});["tmTrade","tmName","tmCompany","tmPhone","tmEmail"].forEach(function(id){document.getElementById(id).value="";});renderTeamList();saveSettings();}
@@ -1167,8 +1179,7 @@ function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();i
 
 function renderEstDetailBody(e){
   var calc=calcEstimate(e);
-  console.log('CALC:',JSON.stringify({sub:calc.subtotal,client:calc.clientTotal,grand:calc.grandTotal,profit:calc.profit,margin:calc.margin,items:(e.lineItems||[]).length}));
-  var html='';
+    var html='';
   // AI panel - only for contractor, never in client view
   var isClientMode=document.body.classList.contains('client-mode')||window.location.search.indexOf('est=')>=0;
   if(!isClientMode){
@@ -1525,14 +1536,34 @@ function delExclusion(i){
   e.exclusions.splice(i,1);
   eCol.doc(e.id).set(e).then(function(){T('Deleted!');renderEstDetailBody(e);});
 }
+
+function saveEstimate(e, msg){
+  if(!e||!e.id) return Promise.reject(new Error('No estimate to save'));
+  setSS('saving');
+  return eCol.doc(e.id).set(e).then(function(){
+    setSS('live');
+    if(msg) T(msg);
+  }).catch(function(err){
+    setSS('error');
+    T('Save failed: '+err.message);
+    throw err;
+  });
+}
 function generateAIEstimate(){
   var prompt,e,profile,dm,lr,existingItems,existingExcls;
   try {
     prompt=document.getElementById('aiPrompt').value.trim();
     if(!prompt){alert('Please enter a command or job description.');return;}
     e=ger();if(!e){alert('No estimate loaded.');return;}
-    document.getElementById('aiLoading').style.display='block';
+    var _loadEl=document.getElementById('aiLoading');
+    if(_loadEl){_loadEl.style.display='block';_loadEl.textContent='Generating estimate...';}
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
+    // Show slow-server warning after 8s
+    var _slowWarn=setTimeout(function(){
+      if(_loadEl&&_loadEl.style.display!=='none'){
+        _loadEl.textContent='Still working... (Replit server may be waking up, please wait)';
+      }
+    },8000);
     profile=DD.aiProfile||{};
     dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
     lr=parseFloat(profile.laborRate)||85;
@@ -1552,14 +1583,18 @@ function generateAIEstimate(){
     ' Rules: lineItems=items to ADD, deleteIndexes=indexes to DELETE, updateItems=items to UPDATE, exclusions=strings to add as exclusions.';
     window._histCtx=null;
 
+  var _aiController=new AbortController();
+  var _aiTimeout=setTimeout(function(){
+    _aiController.abort();
+  },30000);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-opus-4-5-20251101',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]})
-  }).then(function(r){return r.json();})
+    body:JSON.stringify({model:'claude-opus-4-5-20251101',max_tokens:4000,system:sp,messages:[{role:'user',content:prompt}]}),
+    signal:_aiController.signal
+  }).then(function(r){clearTimeout(_aiTimeout);return r.json();})
   .then(function(data){
-    // Debug: log full response
-    console.log('AIRAW:'+JSON.stringify(data).slice(0,500));
+    // AI response received
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     // Extract JSON object from response - ignore any explanation text around it
     var jsonMatch=text.match(/\{[\s\S]*\}/);
@@ -1606,17 +1641,21 @@ function generateAIEstimate(){
     });
   })
   .catch(function(err){
-    var msg='Error: '+err.message+'\n\n';
-    if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
-      msg+='Network error - possible causes:\n';
-      msg+='1. Replit server is asleep - open Replit and check the server is running\n';
-      msg+='2. Try refreshing the page and testing again\n';
-      msg+='3. Check your internet connection';
+    var msg;
+    if(err.name==='AbortError'){
+      msg='AI request timed out after 30 seconds.\n\nThe Replit server may be asleep. Open Replit and wake the server, then try again.';
+    } else if(err.message==='Load failed'||err.message==='Failed to fetch'||err.message==='NetworkError'){
+      msg='Could not reach the AI server.\n\n1. Check your internet connection\n2. The Replit server may be asleep — open Replit to wake it\n3. Try again in 30 seconds';
+    } else {
+      msg='AI Error: '+err.message;
     }
-    alert(msg);
+    T(msg.split('\n')[0]);
+    console.error('AI fetch error:',err.message);
   })
   .finally(function(){
-    document.getElementById('aiLoading').style.display='none';
+    clearTimeout(_slowWarn);
+    var _loadEl2=document.getElementById('aiLoading');
+    if(_loadEl2) _loadEl2.style.display='none';
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=false;});
   });
 }
@@ -2196,31 +2235,40 @@ function changeProjectStatus(){
 }
 function openDetail(id){
   currentId=id;currentTab="scope";
-  // Show page immediately
   var dp=document.getElementById("detailPage");
   dp.classList.add("show");dp.scrollTop=0;
+
+  // Use cached in-memory data first for instant navigation
+  var cached=projects.find(function(x){return x.id===id;});
+  if(cached&&(cached.scopeItems||cached.punchList)){
+    _renderDetail(cached);
+    return;
+  }
+  // Fetch from Firestore only if not cached
   document.getElementById("dName").textContent="Loading...";
-  // Read directly from Firestore to get full data
   col.doc(id).get().then(function(doc){
     if(!doc.exists){document.getElementById("dName").textContent="Not found";return;}
     var p=doc.data();
-    // Update in-memory array too
-    var idx=projects.findIndex(function(x){return x.id===id;});
-    if(idx>=0)projects[idx]=p; else projects.push(p);
-    var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};
-    document.getElementById("dName").textContent=p.client;
-    document.getElementById("dJobNum").textContent=p.jobNum||"";
-    var dpo=document.getElementById("dPONum");
-    if(dpo)dpo.textContent=p.poNum?"PO: "+p.poNum:"";
-    var b=document.getElementById("dBadge");
-    b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
-    b.style.cursor="pointer";b.onclick=changeProjectStatus;
-    renderTabs(p);renderTabBody(p);
-  }).catch(function(err){
+    var i=projects.findIndex(function(x){return x.id===id;});
+    if(i>=0)projects[i]=p; else projects.push(p);
+    _renderDetail(p);
+  }).catch(function(){
     document.getElementById("dName").textContent="Error loading";
-    console.error("openDetail error:",err);
   });
 }
+
+function _renderDetail(p){
+  var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990"};
+  document.getElementById("dName").textContent=p.client;
+  document.getElementById("dJobNum").textContent=p.jobNum||"";
+  var dpo=document.getElementById("dPONum");
+  if(dpo)dpo.textContent=p.poNum?"PO: "+p.poNum:"";
+  var b=document.getElementById("dBadge");
+  b.textContent=p.status;b.style.background=s.bg;b.style.color=s.text;
+  b.style.cursor="pointer";b.onclick=changeProjectStatus;
+  renderTabs(p);renderTabBody(p);
+}
+
 function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Payments","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","payments","punch-list","change-orders","comms","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2B3990")+";color:#1A1A2E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
 function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';var minD=null,maxD=null;items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+label+'">'+label+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+label+'</div></div></div>';});html+='</div></div>';return html;}
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1A1A2E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2B3990":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
@@ -2693,12 +2741,15 @@ function generateCOWithAI(btnEl){
     +' budgetImpact=sum of totals. Labor rate $'+lr+'/hr. Location: '+(profile.location||'US')+'. Project: '+p.type+'.'
     +(origItems?' Original estimate items: '+origItems+'.':'')
     +(histCtx2?' Historical accuracy: '+histCtx2+'.':'')+' Adjust costs accordingly.';
+  var _coCtrl=new AbortController();
+  var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sp,
-      messages:[{role:'user',content:combined}]})
-  }).then(function(r){return r.json();})
+      messages:[{role:'user',content:combined}]}),
+    signal:_coCtrl.signal
+  }).then(function(r){clearTimeout(_coTimeout);return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     // Strip markdown fences first, then extract the JSON object
@@ -3223,8 +3274,7 @@ function registerServiceWorker(){
   try{
     var blob = new Blob([swCode], {type:'application/javascript'});
     navigator.serviceWorker.register(URL.createObjectURL(blob), {scope:'./'}).then(function(){
-      console.log('[PWA] Service worker registered');
-    }).catch(function(err){
+      }).catch(function(err){
       console.warn('[PWA] SW skipped:', err.message);
     });
   } catch(e){ console.warn('[PWA] SW error:', e); }
@@ -4193,7 +4243,13 @@ function checkInvoiceView(){
 
 
 function buildHistoricalContext(){
-  if(!projects||projects.length<2) return '';
+  // Only build context if enough data exists to be meaningful
+  var completed=projects.filter(function(p){
+    return p.scopeItems && p.scopeItems.some(function(it){
+      return (parseFloat(it.actual)||0) > 0;
+    });
+  });
+  if(completed.length < 2) return '';
   var cats={};
   projects.forEach(function(p){
     (p.scopeItems||[]).forEach(function(it){
