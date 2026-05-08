@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v122</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v124</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -848,23 +848,58 @@ function testAIConnection(){
   var el=document.getElementById('aiTestResult');
   el.style.display='block';
   el.style.color='#2B3990';
-  el.textContent='Testing...';
+  var t0=Date.now();
+  el.textContent='Testing... (connecting to Replit server)';
+
+  // Step 1: Try a simple HEAD/GET to see if server is alive at all
+  var pingCtrl=new AbortController();
+  var pingTimeout=setTimeout(function(){pingCtrl.abort();},8000);
+
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]}),
+    signal:pingCtrl.signal
   }).then(function(r){
-    if(!r.ok){el.style.color='#E83A6C';el.textContent='Server responded but with error: HTTP '+r.status;return null;}
+    clearTimeout(pingTimeout);
+    var elapsed=Date.now()-t0;
+    if(!r.ok){
+      el.style.color='#E83A6C';
+      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check Replit console for errors.';
+      return null;
+    }
+    el.textContent='Connected ('+elapsed+'ms) — parsing AI response...';
     return r.json();
   }).then(function(data){
     if(!data)return;
+    var elapsed=Date.now()-t0;
     var text=data.content&&data.content[0]&&data.content[0].text;
-    if(text){el.style.color='#2EAA72';el.textContent='\u2713 Connected! AI responded: '+text;}
-    else if(data.error){el.style.color='#E83A6C';el.textContent='API error: '+JSON.stringify(data.error);}
-    else{el.style.color='#E8B43A';el.textContent='Unexpected response: '+JSON.stringify(data).slice(0,100);}
+    if(text){
+      el.style.color='#2EAA72';
+      el.textContent='✓ AI working! Response in '+elapsed+'ms: "'+text.slice(0,50)+'"';
+    } else if(data.error){
+      el.style.color='#E83A6C';
+      el.textContent='Anthropic API error: '+(data.error.message||JSON.stringify(data.error)).slice(0,100);
+    } else if(data.type==='error'){
+      el.style.color='#E83A6C';
+      el.textContent='API error type: '+JSON.stringify(data).slice(0,120);
+    } else {
+      el.style.color='#E8B43A';
+      el.textContent='Unexpected response shape: '+JSON.stringify(data).slice(0,100);
+    }
   }).catch(function(err){
+    clearTimeout(pingTimeout);
+    var elapsed=Date.now()-t0;
     el.style.color='#E83A6C';
-    el.textContent='\u2717 Connection failed: '+err.message+'\n\nMake sure your Replit server is running.';
+    var diagnosis='';
+    if(err.name==='AbortError'){
+      diagnosis='Server did not respond in 8 seconds — server is likely SLEEPING on Replit free tier.';
+    } else if(err.message==='Load failed'||err.message==='Failed to fetch'){
+      diagnosis='Cannot reach server — Replit server is asleep or crashed. Open Replit and start the server.';
+    } else {
+      diagnosis='Error: '+err.message;
+    }
+    el.textContent='✗ '+diagnosis+' ('+elapsed+'ms)';
   });
 }
 function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Contractor Desk";saveSettings();}
@@ -1688,15 +1723,57 @@ function generateAIEstimate(){
   .catch(function(err){
     clearTimeout(_aiTimeout);
     var elapsed=Math.round((Date.now()-_aiStart)/1000);
-    var msg;
-    if(err.name==='AbortError'){
-      msg='⏱ AI timed out after '+elapsed+'s. Replit server may be asleep — wait 30s and try again.';
-    } else if(err.message&&(err.message.indexOf('Load failed')!==-1||err.message.indexOf('Failed to fetch')!==-1||err.message.indexOf('NetworkError')!==-1)){
-      msg='📵 Cannot reach AI server. Check connection and try again.';
+    var isNetworkErr=err.message&&(err.message.indexOf('Load failed')!==-1||err.message.indexOf('Failed to fetch')!==-1||err.message.indexOf('NetworkError')!==-1);
+
+    if(isNetworkErr && elapsed < 35){
+      // Server is sleeping — retry once after 8s wake-up window
+      _aiStatus('⏳ Server waking up... retrying in 8 seconds');
+      var _retryCtrl=new AbortController();
+      var _retryTimeout=setTimeout(function(){_retryCtrl.abort();},30000);
+      setTimeout(function(){
+        _aiStatus('📡 Retrying...');
+        fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
+          signal:_retryCtrl.signal
+        }).then(function(r){
+          clearTimeout(_retryTimeout);
+          _aiStatus('📥 Retry response received — parsing...');
+          if(!r.ok) return r.text().then(function(t){throw new Error('Server error '+r.status+': '+t.slice(0,100));});
+          return r.json();
+        }).then(function(data){
+          var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+          if(!text){_aiDone();T('AI returned empty response');return;}
+          var jsonMatch=text.match(/\{[\s\S]*\}/);
+          var parsed;
+          try{parsed=JSON.parse(jsonMatch?jsonMatch[0]:'');}catch(pe){_aiDone();T('AI format error — try again');return;}
+          var e2=ger();if(!e2){_aiDone();return;}
+          e2.lineItems=e2.lineItems||[];e2.exclusions=e2.exclusions||[];
+          var changes=[];
+          if(parsed.lineItems&&parsed.lineItems.length){e2.lineItems=e2.lineItems.concat(parsed.lineItems);changes.push('Added '+parsed.lineItems.length+' item(s)');}
+          if(parsed.deleteIndexes&&parsed.deleteIndexes.length){var td=parsed.deleteIndexes.slice().sort(function(a,b){return b-a;});td.forEach(function(i){if(i>=0&&i<e2.lineItems.length)e2.lineItems.splice(i,1);});changes.push('Removed '+parsed.deleteIndexes.length+' item(s)');}
+          if(parsed.updateItems&&parsed.updateItems.length){parsed.updateItems.forEach(function(u){if(u.index>=0&&u.index<e2.lineItems.length){e2.lineItems[u.index]=Object.assign({},e2.lineItems[u.index],u);delete e2.lineItems[u.index].index;}});changes.push('Updated '+parsed.updateItems.length+' item(s)');}
+          if(parsed.exclusions&&parsed.exclusions.length){e2.exclusions=e2.exclusions.concat(parsed.exclusions);changes.push('Added '+parsed.exclusions.length+' exclusion(s)');}
+          eCol.doc(e2.id).set(e2).then(function(){T(parsed.message||changes.join(', ')||'Done!');document.getElementById('aiPrompt').value='';renderEstDetailBody(e2);}).catch(function(se){T('AI done but save failed: '+se.message);});
+        }).catch(function(retryErr){
+          clearTimeout(_retryTimeout);
+          var msg;
+          if(retryErr.name==='AbortError') msg='⏱ AI timed out. Try the Test Connection button in Settings.';
+          else msg='❌ AI unreachable. Check Settings → Test Connection to diagnose.';
+          T(msg);
+          console.error('[AI] Retry failed:',retryErr.message);
+        }).finally(function(){
+          clearTimeout(_retryTimeout);
+          _aiDone();
+        });
+      }, 8000);
+      return; // don't call _aiDone yet — retry is in progress
+    } else if(err.name==='AbortError'){
+      T('⏱ AI timed out after '+elapsed+'s. Open Replit to wake the server, then try again.');
     } else {
-      msg='AI error ('+elapsed+'s): '+err.message;
+      T('❌ AI error: '+err.message+' — check Settings → Test Connection');
     }
-    T(msg);
     console.error('[AI]',err.name,err.message,'after',elapsed+'s');
   })
   .finally(function(){
@@ -3242,6 +3319,14 @@ auth.onAuthStateChanged(function(user){
       if(DD.logoData && DD.logoData.length > 10){
         LOGO_SRC = DD.logoData;
       }
+      // Wake Replit server in background on login (prevents cold start on first AI use)
+      setTimeout(function(){
+        fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
+        }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
+      }, 3000); // 3s after login, silently
       // Topbar, favicon and apple icon always show Contractor Desk brand
       var tl = document.getElementById('topbarLogo');
       if(tl){ tl.src = CD_LOGO; tl.style.display='block'; }
