@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v115</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v116</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -670,7 +670,7 @@ function initUserCollections(uid){
   nCol=db.collection('notifications');
   eCol=db.collection('estimates');
 }
-var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
+var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2B3990","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#2B3990","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
 var EST_SC={Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
@@ -1511,7 +1511,7 @@ function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
   var calc=calcEstimate(e);var html="";
-  html+='<div class="portal-header"><img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
+  html+='<div class="portal-header"><img src="'+(p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
   html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2B3990">'+(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+e.status+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1A1A2E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
   if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2B3990"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+it.desc+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+it.complete+'</div></div>';}).join("")+'</div></div>';}
@@ -1785,8 +1785,11 @@ function renderProjectPortal(p, est, wrapper){
 
   // Header
   html+='<div class="client-header">';
-  html+='<img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
-  html+='<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px">Client Project Portal</div>';
+  html+='<img src="'+(p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+  html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Client Project Portal</div>';
+  html+='<button onclick="window.location.reload()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:rgba(255,255,255,0.8);font-size:11px;padding:4px 10px;cursor:pointer">&#8635; Refresh</button>';
+  html+='</div>';
   html+='<div style="font-size:20px;font-weight:800;color:#fff">'+p.client+'</div>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">'+p.type+(p.address?' &middot; '+p.address:'')+'</div>';
   html+='</div>';
@@ -1829,7 +1832,7 @@ function renderProjectPortal(p, est, wrapper){
     html+='<div class="portal-section">';
     html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#127912; Your Selections</div>';
     choices.forEach(function(ch){
-      var sc=['Confirmed','Installed','Delivered'].indexOf(ch.status)>=0?'#2EAA72':ch.status==='Ordered'?'#E8B43A':'#aaa';
+      var sc=['Confirmed','Installed','Delivered','Received','In Stock'].indexOf(ch.status)>=0?'#2EAA72':ch.status==='Ordered'||ch.status==='Quoted'?'#E8B43A':'#aaa';
       html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div><div style="font-size:14px;font-weight:600;color:#1A1A2E">'+ch.category+'</div>';
       html+='<div style="font-size:12px;color:#888;margin-top:2px">'+ch.item+(ch.vendor?' &middot; '+ch.vendor:'')+'</div></div>';
@@ -1882,7 +1885,7 @@ function renderProjectPortal(p, est, wrapper){
 
   // Change orders needing client signature
   var allCOs=p.changeOrders||[];
-  var pendingCOs=allCOs.filter(function(c){return c.status==='Pending';});
+  var pendingCOs=allCOs.filter(function(c){return c.status==='Pending'||c.status==='Sent to Client'||c.status==='Sent';});
 
   if(pendingCOs.length){
     html+='<div class="portal-section" style="border:2px solid #E8B43A">';
@@ -1971,11 +1974,11 @@ function checkClientView(){
     var wrapper=document.createElement('div');
     wrapper.id='clientWrapper';
     document.body.appendChild(wrapper);
-    // Load project + linked estimate
-    col.doc(portalId).get().then(function(doc){
+    wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading...</div>';
+    // Real-time listener — portal updates automatically when contractor changes data
+    col.doc(portalId).onSnapshot(function(doc){
       if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
       var p=doc.data();
-      // Also try to load linked estimate for payment milestones
       if(p.estimateId){
         eCol.doc(p.estimateId).get().then(function(edoc){
           renderProjectPortal(p, edoc.exists?edoc.data():null, wrapper);
@@ -1983,6 +1986,13 @@ function checkClientView(){
       } else {
         renderProjectPortal(p, null, wrapper);
       }
+    }, function(err){
+      // Fallback to one-time get if snapshot fails
+      col.doc(portalId).get().then(function(doc){
+        if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
+        var p=doc.data();
+        renderProjectPortal(p, null, wrapper);
+      });
     });
     return;
   }
@@ -2041,7 +2051,7 @@ function renderClientView(e,wrapper){
 
   // Header with logo
   html+='<div class="client-header">';
-  html+='<img src="'+(DD.logoData&&DD.logoData.length>10?DD.logoData:LOGO_SRC)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<img src="'+(p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Project Estimate</div>';
   html+='</div>';
 
