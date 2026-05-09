@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v131</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v132</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2239,7 +2239,7 @@ function renderClientView(e,wrapper){
 
   // Header with logo
   html+='<div class="client-header">';
-  html+='<img src="'+(p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<img src="'+(e.logoData&&e.logoData.length>10?e.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Project Estimate</div>';
   html+='</div>';
 
@@ -2366,7 +2366,7 @@ function renderClientView(e,wrapper){
     function initCOCanvases(){
       coAttempts++;
       var allFound=true;
-      (p.changeOrders||[]).forEach(function(co,i){
+      [].forEach(function(co,i){
         if(co.status==='Pending'){
           var el=document.getElementById('coSigCanvas'+i);
           if(el){initSigCanvas('coSigCanvas'+i);}
