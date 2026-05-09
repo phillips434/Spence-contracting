@@ -2958,6 +2958,9 @@ function generateCOWithAI(btnEl){
   }).then(function(r){clearTimeout(_coTimeout);return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    // TEMP DEBUG — remove after inspection
+    console.info('[CO-AI RAW] length:'+text.length+' | first1000:'+text.slice(0,1000).replace(/\n/g,'\\n'));
+    console.info('[CO-AI FORMAT] hasFence:'+(text.indexOf('```')!==-1)+' | startsWithBrace:'+(text.trim().charAt(0)==='{'));
     // Strip markdown fences, then find first JSON object anywhere in response
     var stripped=text.replace(/```json/gi,'').replace(/```/g,'').trim();
     var jsonMatch=stripped.match(/\{[\s\S]*\}/);
