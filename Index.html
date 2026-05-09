@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v129</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v130</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2958,15 +2958,17 @@ function generateCOWithAI(btnEl){
   }).then(function(r){clearTimeout(_coTimeout);return r.json();})
   .then(function(data){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    // Strip markdown fences first, then extract the JSON object
+    // Strip markdown fences, then find first JSON object anywhere in response
     var stripped=text.replace(/```json/gi,'').replace(/```/g,'').trim();
     var jsonMatch=stripped.match(/\{[\s\S]*\}/);
-    var clean=jsonMatch?jsonMatch[0]:stripped;
+    if(!jsonMatch){
+      T('AI response did not contain valid JSON — try again');
+      return;
+    }
     var parsed;
-    try{parsed=JSON.parse(clean);}
+    try{parsed=JSON.parse(jsonMatch[0]);}
     catch(pe){
-      if(document.getElementById('coDesc')) document.getElementById('coDesc').value='Could not parse AI response. Raw text:\n\n'+text.slice(0,500);
-      T('Parse error - see description field');
+      T('AI response could not be parsed — try again');
       return;
     }
     if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
