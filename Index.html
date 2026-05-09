@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v127</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v128</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2052,7 +2052,8 @@ function renderProjectPortal(p, est, wrapper){
     html+='</div>';
   }
 
-  // Approved change orders
+  // Approved change orders — read from project
+  var allCOs=p.changeOrders||[];
   var approvedCOs=allCOs.filter(function(c){return c.status==='Approved';});
   if(approvedCOs.length){
     html+='<div class="portal-section">';
@@ -2062,7 +2063,7 @@ function renderProjectPortal(p, est, wrapper){
       html+='<div><div style="font-size:13px;font-weight:700;color:#1A1A2E">'+co.title+'</div>';
       if(co.clientSignedBy) html+='<div style="font-size:11px;color:#2EAA72;margin-top:2px">&#10003; Signed by '+co.clientSignedBy+'</div>';
       html+='</div>';
-      html+='<span style="font-size:13px;font-weight:700;color:#2EAA72">+$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'</span>';
+      html+='<span style="font-size:13px;font-weight:700;color:#2EAA72">+$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'</span>';
       html+='</div>';
     });
     html+='</div>';
@@ -2889,7 +2890,7 @@ function sendCOToClient(i){
   var msg='Hi '+p.client+',\n\nA change order on your project requires your approval:\n\n'+
     'Change Order: '+co.title+'\n'+
     (co.description?'Details: '+co.description+'\n':'')+
-    'Cost Impact: +$'+(parseFloat(co.budgetImpact)||0).toLocaleString()+'\n\n'+
+    'Cost Impact: +$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'\n\n'+
     'Please review and sign here:\n'+url+
     '\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
   var phone=p.clientPhone||'';
@@ -3002,10 +3003,9 @@ function signCOBtn(btn){
       work:'Change Order Approved by client ('+name+'): '+co.title+' — +$'+(parseFloat(co.budgetImpact)||0).toLocaleString(),
       ts:Date.now()
     });
-    // Add payment milestone for CO — due immediately
+    // Add payment milestone for CO — budgetImpact IS the client amount (markup already baked in by AI)
     var today=new Date().toISOString().split('T')[0];
-    var markup=parseFloat(co.markup)||20;
-    var clientAmt=Math.round((parseFloat(co.budgetImpact)||0)*(1+markup/100));
+    var clientAmt=parseFloat(co.budgetImpact)||0;
     p.paymentMilestones=p.paymentMilestones||[];
     p.paymentMilestones.push({
       name:'Change Order: '+co.title,
@@ -3076,30 +3076,27 @@ function approveCOContractor(i){
   co.approvedAt=Date.now();
   co.approvedBy='Contractor';
 
-  // Budget impact = your cost (what you pay subs/materials)
-  var budgetImpact=parseFloat(co.budgetImpact)||0;
-  // Client total = budget impact + markup
-  var markup=parseFloat(co.markup)||parseFloat((DD.aiProfile||{}).markup)||20;
-  var clientAmt=Math.round(budgetImpact*(1+markup/100));
+  // budgetImpact IS the client amount — markup already baked in by AI estimator
+  var clientAmt=parseFloat(co.budgetImpact)||0;
   co.clientAmount=clientAmt;
 
-  // Add budget cost to a new scope item
+  // Add scope item using client amount (what client pays)
   p.scopeItems=p.scopeItems||[];
   p.scopeItems.push({
     desc:'[CO] '+co.title,
     start:'',end:'',
-    budget:budgetImpact,  // your cost only
+    budget:clientAmt,
     actual:0,
     complete:'Not Started',
     assignTo:'',assignPhone:'',assignEmail:'',
     category:'Change Order'
   });
 
-  // Add client total to overall project budget
-  p.budget=(parseFloat(p.budget)||0)+budgetImpact;
+  // Add client amount to project totals
+  p.budget=(parseFloat(p.budget)||0)+clientAmt;
   p.clientTotal=(parseFloat(p.clientTotal)||parseFloat(p.estimateTotal)||0)+clientAmt;
 
-  // Create new payment milestone for the CO — due immediately
+  // Create payment milestone — amount matches what client sees
   p.paymentMilestones=p.paymentMilestones||[];
   var today=new Date().toISOString().split('T')[0];
   p.paymentMilestones.push({
