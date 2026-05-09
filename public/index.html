@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v128</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v129</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1892,48 +1892,73 @@ function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
   var calc=calcEstimate(e);
-  // Scope items use YOUR COST (budget) not client price
+
+  // Map estimate line items to scope items
   var scopeItems=(e.lineItems||[]).map(function(li){
-    return{desc:li.desc+(li.qty&&li.unit?" ("+li.qty+" "+li.unit+")":""),
+    return{
+      desc:li.desc+(li.qty&&li.unit?" ("+li.qty+" "+li.unit+")":""),
       start:"",end:"",
-      budget:parseFloat(li.total)||0,  // your cost only
-      actual:0,complete:"Not Started",
-      assignTo:"",assignPhone:"",assignEmail:"",category:li.category};
+      budget:parseFloat(li.total)||0,
+      actual:0,
+      complete:"Not Started",
+      assignTo:"",assignPhone:"",assignEmail:"",
+      category:li.category||""
+    };
   });
-  // Copy payment milestones from estimate to project
+
+  // Copy payment milestones
   var milestones=(e.paymentMilestones||[]).map(function(m){
     return{name:m.name,amount:m.amount,pct:m.pct||null,paid:false,dueDate:m.dueDate||""};
   });
+
   var jobNum=nextJobNumber();
+  var uid=auth.currentUser?auth.currentUser.uid:"";
+
   var np={
     id:"p"+Date.now(),
+    userId:uid,
     client:e.client,
     clientPhone:e.clientPhone||e.phone||"",
     clientEmail:e.clientEmail||e.email||"",
-    type:e.type,address:e.address||"",pm:"",
+    type:e.type||"",
+    address:e.address||"",
+    pm:"",
     startDate:"",endDate:"",
-    budget:Math.round(calc.subtotal),   // your cost = budget
-    clientTotal:Math.round(calc.grandTotal), // what client owes
+    budget:Math.round(calc.subtotal),
+    clientTotal:Math.round(calc.grandTotal),
     spent:0,
-    status:DD.projectStatuses[0]||"Planning",
-    notes:"From estimate "+e.estNum+". "+e.notes,
+    status:DD.projectStatuses&&DD.projectStatuses[0]||"Planning",
+    notes:"From estimate "+e.estNum+(e.notes?". "+e.notes:""),
     color:COLORS[Math.floor(Math.random()*COLORS.length)],
     jobNum:jobNum,
-    poNum:poNum,
+    poNum:e.poNum||"",
     scopeItems:scopeItems,
     paymentMilestones:milestones,
     choices:[],costs:[],punchList:[],
     changeOrders:[],dailyLogs:[],notesLog:[],
     estimateId:e.id,
-    estimateTotal:Math.round(calc.grandTotal)
+    estimateTotal:Math.round(calc.grandTotal),
+    logoData:DD.logoData||"",
+    companyName:DD.companyName||"",
+    companyPhone:DD.companyPhone||"",
+    companyEmail:DD.companyEmail||"",
+    companyAddress:DD.companyAddress||"",
+    companyPaymentInstructions:DD.companyPaymentInstructions||""
   };
+
+  console.info('[Convert] Creating project '+jobNum+' with '+scopeItems.length+' scope items, budget $'+np.budget);
+
   col.doc(np.id).set(np).then(function(){
     e.projectId=np.id;
     eCol.doc(e.id).set(e);
+    projects.push(np);
     T("Project "+jobNum+" created!");
     document.getElementById("estDetailPage").classList.remove("show");
     switchMainTab("projects");
-    setTimeout(function(){openDetail(np.id);},500);
+    setTimeout(function(){openDetail(np.id);},300);
+  }).catch(function(err){
+    T("Error creating project: "+err.message);
+    console.error('[Convert] Failed:',err.message);
   });
 }
 function deleteEstimate(){if(!confirm("Delete?"))return;eCol.doc(currentEstId).delete().then(function(){document.getElementById("estDetailPage").classList.remove("show");T("Deleted");renderEstCards();});}
