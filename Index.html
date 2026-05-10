@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v132</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v133</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2079,7 +2079,11 @@ function renderProjectPortal(p, est, wrapper){
 
   // Approved change orders — read from project
   var allCOs=p.changeOrders||[];
-  var approvedCOs=allCOs.filter(function(c){return c.status==='Approved';});
+  var approvedCOs=allCOs.filter(function(c){
+    return c.status==='Approved'||
+           c.status==='Sent to Client'||
+           c.status==='Sent';
+  });
   if(approvedCOs.length){
     html+='<div class="portal-section">';
     html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128260; Approved Changes</div>';
