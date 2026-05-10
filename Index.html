@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v133</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v134</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2077,13 +2077,47 @@ function renderProjectPortal(p, est, wrapper){
     html+='</div>';
   }
 
-  // Approved change orders — read from project
+  // Change orders — split into pending approval and approved
   var allCOs=p.changeOrders||[];
-  var approvedCOs=allCOs.filter(function(c){
-    return c.status==='Approved'||
-           c.status==='Sent to Client'||
-           c.status==='Sent';
+  var sentCOs=allCOs.filter(function(c){
+    return c.status==='Sent to Client'||c.status==='Sent';
   });
+  var approvedCOs=allCOs.filter(function(c){return c.status==='Approved';});
+
+  // Pending client approval — signature form
+  if(sentCOs.length){
+    html+='<div class="portal-section">';
+    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128221; Change Orders — Action Required</div>';
+    sentCOs.forEach(function(co){
+      var coIdx=(p.changeOrders||[]).indexOf(co);
+      var clientAmt=parseFloat(co.clientAmount||co.budgetImpact)||0;
+      html+='<div style="background:#F8F9FF;border-radius:12px;padding:16px;margin-bottom:12px">';
+      html+='<div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+co.title+'</div>';
+      if(co.description) html+='<div style="font-size:13px;color:#555;margin-bottom:8px">'+co.description+'</div>';
+      if(co.lineItems&&co.lineItems.length){
+        html+='<div style="margin-bottom:8px">';
+        co.lineItems.forEach(function(li){
+          html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#666;padding:2px 0">';
+          html+='<span>'+li.desc+'</span><span>$'+(parseFloat(li.total)||0).toLocaleString()+'</span></div>';
+        });
+        html+='</div>';
+      }
+      html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#2B3990;border-top:1px solid #EEE;padding-top:8px;margin-bottom:12px">';
+      html+='<span>Total Impact</span><span>+$'+clientAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+      html+='<div style="font-size:12px;color:#555;margin-bottom:6px">Your signature below approves this change order and authorizes the additional cost.</div>';
+      html+='<input id="coSigName'+coIdx+'" type="text" placeholder="Your full name" style="width:100%;padding:10px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:8px"/>';
+      html+='<div style="position:relative;margin-bottom:8px"><canvas id="coSigCanvas'+coIdx+'" class="sig-canvas" style="width:100%;height:120px;border-radius:8px"></canvas>';
+      html+='<div id="coSigActivate'+coIdx+'" onclick="initSigCanvas(\'coSigCanvas'+coIdx+'\');this.style.display=\'none\';" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#F5F5F5;color:#aaa;font-size:13px;cursor:pointer">Tap to sign</div></div>';
+      html+='<div style="display:flex;gap:8px">';
+      html+='<button onclick="clearCOCanvas('+coIdx+')" style="flex:0 0 auto;padding:10px 14px;background:#F5F5F5;border:none;border-radius:8px;font-size:13px;cursor:pointer">Clear</button>';
+      html+='<button data-projid="'+p.id+'" data-coidx="'+coIdx+'" ontouchend="event.preventDefault();signCOBtn(this);" onclick="signCOBtn(this);" style="flex:1;padding:10px;background:#2B3990;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">&#10003; Sign &amp; Approve</button>';
+      html+='</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // Approved change orders — read-only summary (unchanged)
   if(approvedCOs.length){
     html+='<div class="portal-section">';
     html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:12px">&#128260; Approved Changes</div>';
@@ -2120,14 +2154,14 @@ function renderProjectPortal(p, est, wrapper){
   setTimeout(function(){
     initSigCanvas('sigCanvas');
     (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending') initSigCanvas('coSigCanvas'+i);
+      if(co.status==='Pending'||co.status==='Sent'||co.status==='Sent to Client') initSigCanvas('coSigCanvas'+i);
     });
   },500);
 
   // Retry CO canvases - they may need more time
   setTimeout(function(){
     (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending'){
+      if(co.status==='Pending'||co.status==='Sent'||co.status==='Sent to Client'){
         var el=document.getElementById('coSigCanvas'+i);
         if(el) initSigCanvas('coSigCanvas'+i);
       }
