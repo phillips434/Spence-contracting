@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v143</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v146</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1624,15 +1624,8 @@ function generateAIEstimate(){
     return;
   }
 
-  var sp='IMPORTANT: Your entire response must be a single raw JSON object. No markdown, no code fences, no backticks, no explanation. Start your response with { and end with }.'+
-    ' You are a construction estimator.'+
-    ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}'+
-    ' IMPORTANT: total = qty * unitCost. markup = percentage for client price.'+
-    ' Current items ('+(e.lineItems||[]).length+' total): '+existingItems+
-    ' Markup: '+dm+'%. Labor: $'+lr+'/hr.'+
-    (profile.location?' Location: '+profile.location+'.':'')+
-    (window._histCtx?' HISTORICAL: '+window._histCtx+'.':'')+
-    ' Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE, exclusions=add strings.';
+  // System prompt built server-side to avoid gateway blocking
+  var _histCtxVal=window._histCtx||'';
   window._histCtx=null;
 
   var _aiController=new AbortController();
@@ -1654,14 +1647,15 @@ function generateAIEstimate(){
     }
   },10000);
 
-  var _payloadSize=JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}).length;
-  _aiStatus('📡 Sending request ('+Math.round(_payloadSize/1024*10)/10+'KB)...');
-  console.info('[AI] Payload size:',_payloadSize,'bytes, system prompt:',sp.length,'chars, prompt:',prompt.length,'chars');
+  _aiStatus('📡 Sending request...');
 
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
+    body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+      prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
+      location:profile.location||'',histCtx:_histCtxVal,
+      messages:[{role:'user',content:prompt}]}),
     signal:_aiController.signal
   }).then(function(r){
     clearTimeout(_aiTimeout);
@@ -1770,7 +1764,10 @@ function generateAIEstimate(){
         fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
+          body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+            prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
+            location:profile.location||'',histCtx:_histCtxVal,
+            messages:[{role:'user',content:prompt}]}),
           signal:_retryCtrl.signal
         }).then(function(r){
           clearTimeout(_retryTimeout);
@@ -2106,7 +2103,7 @@ function renderProjectPortal(p, est, wrapper){
         html+='</div>';
       }
       html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#2B3990;border-top:1px solid #EEE;padding-top:8px;margin-bottom:12px">';
-      html+='<span>Total Impact</span><span>+$'+clientAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+      html+='<span>Change Order Total</span><span>+$'+clientAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
       html+='<div style="font-size:12px;color:#555;margin-bottom:6px">Your signature below approves this change order and authorizes the additional cost.</div>';
       html+='<input id="coSigName'+coIdx+'" type="text" placeholder="Your full name" style="width:100%;padding:10px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:8px"/>';
       html+='<div style="position:relative;margin-bottom:8px"><canvas id="coSigCanvas'+coIdx+'" class="sig-canvas" style="width:100%;height:120px;border-radius:8px"></canvas>';
@@ -2959,7 +2956,7 @@ function sendCOToClient(i){
   var msg='Hi '+p.client+',\n\nA change order on your project requires your approval:\n\n'+
     'Change Order: '+co.title+'\n'+
     (co.description?'Details: '+co.description+'\n':'')+
-    'Cost Impact: +$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'\n\n'+
+    'Change Order Total: +$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'\n\n'+
     'Please review and sign here:\n'+url+
     '\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
   // Save status before opening SMS/email so portal shows approval form
@@ -3031,7 +3028,6 @@ function generateCOWithAI(btnEl){
       // Recalculate budgetImpact from line items
       parsed.budgetImpact=parsed.lineItems.reduce(function(s,li){return s+(li.total||(li.qty*li.unitCost));},0);
     }
-    detailDesc+='\n\nContract Total: $'+Math.round(parsed.budgetImpact||0).toLocaleString();
     if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
     T('Change order drafted with line items!');
   }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
