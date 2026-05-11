@@ -3259,6 +3259,7 @@ function updateCOPreview(){
 var _editCOIdx=null;
 
 function editCO(i){
+  console.info('[CO-EDIT] clicked index',i);
   var p=gpr();if(!p)return;
   var co=p.changeOrders[i];if(!co)return;
   if(co.status==='Approved'||co.clientSignedBy){
