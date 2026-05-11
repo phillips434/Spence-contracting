@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v134</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v135</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2956,11 +2956,15 @@ function sendCOToClient(i){
     'Cost Impact: +$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'\n\n'+
     'Please review and sign here:\n'+url+
     '\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
+  // Save status before opening SMS/email so portal shows approval form
+  co.status='Sent to Client';
+  co.sentAt=Date.now();
+  saveP(p,'Change order sent to client.');
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
   else if(email){window.location.href='mailto:'+email+'?subject=Change Order Requires Your Approval&body='+encodeURIComponent(msg);}
-  else{alert('No client phone or email on file. Add contact info to this project first.');}
+  else{T('No client phone or email on file. Add contact info to this project first.');}
 }
 function clearCOCanvas(idx){
   var c=document.getElementById('coSigCanvas'+idx);
