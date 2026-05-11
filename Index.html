@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v142</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v143</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1658,16 +1658,12 @@ function generateAIEstimate(){
   _aiStatus('📡 Sending request ('+Math.round(_payloadSize/1024*10)/10+'KB)...');
   console.info('[AI] Payload size:',_payloadSize,'bytes, system prompt:',sp.length,'chars, prompt:',prompt.length,'chars');
 
-  var _diagPayload={model:'claude-haiku-4-5-20251001',max_tokens:2000,system:'// TEMP TEST: You are a helpful estimator. Return valid JSON only.',messages:[{role:'user',content:prompt}]};
-  var _diagBody=JSON.stringify(_diagPayload);
-  console.info('[DIAG] Keys:',Object.keys(_diagPayload).join(','),' | BodyLen:',_diagBody.length,' | SystemLen:',(_diagPayload.system||'').length,' | MsgLen:',prompt.length);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:_diagBody,
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
     signal:_aiController.signal
   }).then(function(r){
-    console.info('[DIAG] Response status:',r.status,' ok:',r.ok,' type:',r.type);
     clearTimeout(_aiTimeout);
     _aiStatus('📥 Response received ('+Math.round((Date.now()-_aiStart)/1000)+'s) — parsing...');
     if(!r.ok){
