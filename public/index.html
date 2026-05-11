@@ -3260,11 +3260,14 @@ var _editCOIdx=null;
 
 function editCO(i){
   console.info('[CO-EDIT] clicked index',i);
-  var p=gpr();if(!p)return;
-  var co=p.changeOrders[i];if(!co)return;
+  var p=gpr();if(!p){console.warn('[CO-EDIT] no project');return;}
+  var co=p.changeOrders[i];if(!co){console.warn('[CO-EDIT] no CO at index',i);return;}
+  console.info('[CO-EDIT] status:',co.status,'clientSignedBy:',co.clientSignedBy||'none','lineItems:',co.lineItems?co.lineItems.length:'missing');
   if(co.status==='Approved'||co.clientSignedBy){
+    console.warn('[CO-EDIT] BLOCKED — approved or signed');
     T('Approved or signed change orders cannot be edited.');return;
   }
+  console.info('[CO-EDIT] guard passed — populating form');
   // Populate form fields
   var el;
   el=document.getElementById('coTitle');if(el)el.value=co.title||'';
@@ -3280,7 +3283,9 @@ function editCO(i){
   // Update Add button to show Update
   var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
   if(addBtn)addBtn.textContent='Update';
+  console.info('[CO-EDIT] calling showForm coForm');
   showForm('coForm');
+  console.info('[CO-EDIT] showForm complete');
 }
 
 function addCO(){
