@@ -1658,12 +1658,16 @@ function generateAIEstimate(){
   _aiStatus('📡 Sending request ('+Math.round(_payloadSize/1024*10)/10+'KB)...');
   console.info('[AI] Payload size:',_payloadSize,'bytes, system prompt:',sp.length,'chars, prompt:',prompt.length,'chars');
 
+  var _diagPayload={model:'claude-haiku-4-5-20251001',max_tokens:2000,system:'// TEMP TEST: You are a helpful estimator. Return valid JSON only.',messages:[{role:'user',content:prompt}]};
+  var _diagBody=JSON.stringify(_diagPayload);
+  console.info('[DIAG] Keys:',Object.keys(_diagPayload).join(','),' | BodyLen:',_diagBody.length,' | SystemLen:',(_diagPayload.system||'').length,' | MsgLen:',prompt.length);
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:'// TEMP TEST: You are a helpful estimator. Return valid JSON only.',messages:[{role:'user',content:prompt}]}),
+    body:_diagBody,
     signal:_aiController.signal
   }).then(function(r){
+    console.info('[DIAG] Response status:',r.status,' ok:',r.ok,' type:',r.type);
     clearTimeout(_aiTimeout);
     _aiStatus('📥 Response received ('+Math.round((Date.now()-_aiStart)/1000)+'s) — parsing...');
     if(!r.ok){
