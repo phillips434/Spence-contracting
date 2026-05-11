@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v135</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v136</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1459,13 +1459,13 @@ function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document
 function generateContractText(e,calc){var co=DD.companyName||"Contractor Desk";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
-  if(!name||!name.value.trim()){alert("Enter your name.");return;}
+  if(!name||!name.value.trim()){T("Please enter your name.");return;}
   var canvas=document.getElementById("contractorSigCanvas");
-  if(!canvas){alert("Signature canvas not found.");return;}
+  if(!canvas){T("Signature canvas not found. Please reload and try again.");return;}
   // Re-init canvas in case it wasn't ready earlier
   if(!canvas._initialized){initSigCanvas("contractorSigCanvas");canvas._initialized=true;}
   var blank=document.createElement("canvas");blank.width=canvas.width;blank.height=canvas.height;
-  if(canvas.toDataURL()===blank.toDataURL()){alert("Please sign before saving.");return;}
+  if(canvas.toDataURL()===blank.toDataURL()){T("Please sign above before saving.");return;}
   var e=ger();if(!e)return;
   e.contractorName=name.value.trim();
   e.contractorSignedAt=Date.now();
@@ -2389,6 +2389,9 @@ function renderClientView(e,wrapper){
   }
 
   html+='</div>';
+  html+='<div style="text-align:center;padding:24px 16px 32px;font-size:12px;color:#aaa">';
+  html+='<span style="opacity:0.7">Powered by </span><span style="font-weight:700;color:#2B3990">Contractor Desk</span>';
+  html+='</div>';
   wrapper.innerHTML=html;
 
   // Init contractor signature canvas - delay to ensure DOM ready
@@ -2420,12 +2423,12 @@ function renderClientView(e,wrapper){
 function clearSig(){var c=document.getElementById("sigCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);}
 function submitSignature(estId){
   var name=document.getElementById("sigName").value.trim();
-  if(!name){alert("Please enter your full name.");return;}
+  if(!name){T("Please enter your full name.");return;}
   var canvas=document.getElementById("sigCanvas");
   var sigData=canvas.toDataURL("image/png");
   var blank=document.createElement("canvas");
   blank.width=canvas.width;blank.height=canvas.height;
-  if(sigData===blank.toDataURL("image/png")){alert("Please sign above.");return;}
+  if(sigData===blank.toDataURL("image/png")){T("Please sign above before submitting.");return;}
   // Sign in anonymously so Firestore write is allowed
   var doUpdate = function(){
     db.collection('estimates').doc(estId).update({
@@ -2445,7 +2448,7 @@ function submitSignature(estId){
         +'</div></div>';
     }
   }).catch(function(err){
-    alert('Could not save signature. Please try again.');
+    T('Could not save signature. Please try again.');
     console.error('Signature error:',err);
   });
   };
@@ -3036,11 +3039,11 @@ function signCOBtn(btn){
   var projectId=btn.getAttribute('data-projid');
   var coIdx=parseInt(btn.getAttribute('data-coidx'));
   var nameEl=document.getElementById('coSigName'+coIdx);
-  if(!nameEl||!nameEl.value.trim()){alert('Please enter your full name.');return;}
+  if(!nameEl||!nameEl.value.trim()){T('Please enter your full name.');return;}
   var canvas=document.getElementById('coSigCanvas'+coIdx);
-  if(!canvas){alert('Signature canvas not found.');return;}
+  if(!canvas){T('Signature canvas not found. Please reload and try again.');return;}
   var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
-  if(canvas.toDataURL()===blank.toDataURL()){alert('Please sign before approving.');return;}
+  if(canvas.toDataURL()===blank.toDataURL()){T('Please sign above before approving.');return;}
   var name=nameEl.value.trim();
   col.doc(projectId).get().then(function(doc){
     if(!doc.exists)return;
@@ -3091,7 +3094,7 @@ function signCOBtn(btn){
         var wrapper=document.getElementById('clientWrapper');
         if(wrapper)renderProjectPortal(p,null,wrapper);
       }).catch(function(err){
-        alert('Error saving: '+err.message);
+        T('Error saving approval: '+err.message);
       });
     }
     // Use anonymous auth so unauthenticated clients can write
