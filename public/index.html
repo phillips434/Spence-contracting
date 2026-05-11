@@ -1661,7 +1661,7 @@ function generateAIEstimate(){
   fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sp,messages:[{role:'user',content:prompt}]}),
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:'// TEMP TEST: You are a helpful estimator. Return valid JSON only.',messages:[{role:'user',content:prompt}]}),
     signal:_aiController.signal
   }).then(function(r){
     clearTimeout(_aiTimeout);
