@@ -37,14 +37,15 @@ app.post('/api/estimate', async (req, res) => {
     console.log('[/api/estimate] mode:', mode, '| keys:', keys);
 
     if (body.mode === 'estimate') {
-      const items     = body.items     || '[]';
-      const markup    = body.markup    || 20;
-      const laborRate = body.laborRate || 85;
-      const location  = body.location  || '';
-      const histCtx   = body.histCtx   || '';
-      const prompt    = body.prompt    || '';
-      const model     = body.model     || 'claude-haiku-4-5-20251001';
-      const maxTok    = body.max_tokens || 2000;
+      const items         = body.items      || '[]';
+      const existingExcls = body.excls      || '[]';
+      const markup        = body.markup     || 20;
+      const laborRate     = body.laborRate  || 85;
+      const location      = body.location   || '';
+      const histCtx       = body.histCtx    || '';
+      const prompt        = body.prompt     || '';
+      const model         = body.model      || 'claude-haiku-4-5-20251001';
+      const maxTok        = body.max_tokens || 2000;
 
       const systemPrompt =
         'IMPORTANT: Your entire response must be a single raw JSON object.' +
@@ -54,10 +55,14 @@ app.post('/api/estimate', async (req, res) => {
         ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}' +
         ' IMPORTANT: total = qty * unitCost. markup = percentage for client price.' +
         ' Current items: ' + items +
+        ' Current exclusions: ' + existingExcls +
         ' Markup: ' + markup + '%. Labor: $' + laborRate + '/hr.' +
         (location ? ' Location: ' + location + '.' : '') +
         (histCtx  ? ' HISTORICAL: ' + histCtx  + '.' : '') +
-        ' Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE, exclusions=add strings.';
+        ' Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE.' +
+        ' When adding exclusions, return them as plain strings in the exclusions array.' +
+        ' Example exclusions: ["Permit fees are excluded unless specifically noted.","Hidden damage or concealed conditions are excluded.","Painting is excluded unless listed in the scope."]' +
+        ' Do not repeat exclusions already in the current exclusions list.';
 
       body = {
         model:      model,
