@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v141</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v142</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1889,7 +1889,7 @@ function closeAddLineItem(){document.getElementById("addLineItemModal").classLis
 function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
 function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(liTabMode==="detailed"){var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});}else{var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});}eCol.doc(e.id).set(e).then(function(){T("Added!");closeAddLineItem();renderEstDetailBody(e);});}
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
-function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){alert("Share:\n"+url);});}
+function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
 function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail)alert("No client contact info found.");if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
 function convertToProject(){
   var e=ger();if(!e)return;
@@ -1971,7 +1971,7 @@ function shareClientPortal(){
   var url=window.location.href.split('?')[0]+'?portal='+p.id;
   navigator.clipboard.writeText(url).then(function(){
     T('Portal link copied!');
-  }).catch(function(){alert('Share this link with your client:\n\n'+url);});
+  }).catch(function(){var d=document.createElement('textarea');d.value=url;document.body.appendChild(d);d.select();try{document.execCommand('copy');T('Portal link copied!');}catch(ex){T('Could not copy — open link manually');}document.body.removeChild(d);});
 }
 
 function renderProjectPortal(p, est, wrapper){
@@ -3063,7 +3063,7 @@ function signCOBtn(btn){
       desc:'[CO] '+co.title,
       start:'',end:'',
       budget:parseFloat(co.budgetImpact)||0,
-      actual:parseFloat(co.budgetImpact)||0,
+      actual:0,
       complete:'Not Started',
       assignTo:'',assignPhone:'',assignEmail:'',
       category:'Change Order'
@@ -4147,7 +4147,6 @@ function sendProjectInvoice(i){
 
 function markMilestonePaid(i){
   var p=gpr();if(!p)return;
-  if(!confirm('Mark this milestone as paid?'))return;
   p.paymentMilestones=p.paymentMilestones||[];
   p.paymentMilestones[i].paid=true;
   p.paymentMilestones[i].paidAt=Date.now();
@@ -4254,8 +4253,8 @@ function sendSubPortalLink(scopeIdx){
     dummy.value=link;
     document.body.appendChild(dummy);
     dummy.select();
-    try{document.execCommand('copy');T('Portal link copied! Paste it to send manually.');}
-    catch(e){alert('Send this link manually:\n\n'+link);}
+    try{document.execCommand('copy');T('Portal link copied! Paste and send to subcontractor.');}
+    catch(e){T('Could not copy link — paste manually: '+link.slice(-20));}
     document.body.removeChild(dummy);
   }
 }
