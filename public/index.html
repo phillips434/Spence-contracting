@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v149</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v150</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2823,7 +2823,22 @@ function renderTabBody(p){
     var totalImpact=(p.changeOrders||[]).reduce(function(a,c){return a+(c.status==="Approved"?parseFloat(c.budgetImpact)||0:0);},0);
     if(p.changeOrders&&p.changeOrders.length)html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;color:#aaa;margin-bottom:4px">TOTAL</div><div style="font-size:15px;font-weight:700;color:#1A1A2E">'+p.changeOrders.length+' change orders</div></div><div style="text-align:right"><div style="font-size:11px;color:#aaa;margin-bottom:4px">APPROVED IMPACT</div><div style="font-size:15px;font-weight:700;color:#E8B43A">+$'+totalImpact.toLocaleString()+'</div></div></div></div>';
     html+='<div class="sec-label">Change Orders</div>';
-    (p.changeOrders||[]).forEach(function(co,i){var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+'</div></div><button class="del-btn" onclick="delCO('+i+')">&#215;</button></div>'+(co.description?'<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>':'')+bvaHtml(co.budgetImpact||0,co.budgetImpact||0)+'<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)"><option'+(co.status==="Pending"?" selected":"")+'>Pending</option><option'+(co.status==="Approved"?" selected":"")+'>Approved</option><option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option></select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div>';
+    (p.changeOrders||[]).forEach(function(co,i){
+      var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";
+      html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">';
+      html+='<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1A1A2E">'+co.title+'</div>';
+      html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+' </div></div>';
+      html+='<button class="del-btn" onclick="delCO('+i+')">&#215;</button>';
+      if(co.status!=='Approved'&&!co.clientSignedBy) html+='<button style="background:#2B3990;border:none;border-radius:6px;color:#fff;font-size:11px;padding:4px 10px;cursor:pointer;margin-left:4px" onclick="editCO('+i+')">&#9998; Edit</button>';
+      html+='</div>';
+      if(co.description) html+='<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>';
+      html+=bvaHtml(co.budgetImpact||0,co.budgetImpact||0);
+      html+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
+      html+='<select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)">';
+      html+='<option'+(co.status==="Pending"?" selected":"")+'>Pending</option>';
+      html+='<option'+(co.status==="Approved"?" selected":"")+'>Approved</option>';
+      html+='<option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option>';
+      html+='</select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div>';
       html+='<div style="display:flex;gap:8px;margin-top:10px">';
       if(co.status==="Pending"){
         html+='<button ontouchend="event.preventDefault();approveCOContractor('+i+');" onclick="approveCOContractor('+i+');" style="flex:1;padding:8px;background:#2EAA72;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#10003; Approve</button>';
@@ -2907,7 +2922,7 @@ function renderTabBody(p){
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){
-  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];}var el=document.getElementById(id);if(el)el.style.display="none";}
+  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];_editCOIdx=null;var ab=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');if(ab)ab.textContent='Add';}var el=document.getElementById(id);if(el)el.style.display="none";}
 
 function addScopeItem(){var sel=document.getElementById("siSel"),desc=sel.value==="__c__"?document.getElementById("siCustom").value.trim():sel.value;if(!desc){alert("Enter a description.");return;}var p=gpr();p.scopeItems=p.scopeItems||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("siAssign").value;});p.scopeItems.push({desc:desc,start:document.getElementById("siSt").value,end:document.getElementById("siEn").value,budget:parseFloat(document.getElementById("siBud").value)||0,actual:parseFloat(document.getElementById("siAct").value)||0,complete:"Not Started",assignTo:document.getElementById("siAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Scope item '"+desc+"' added to "+p.client);}
 function delScopeItem(i){if(!confirm("Delete scope item?"))return;var p=gpr();p.scopeItems.splice(i,1);saveP(p);}
@@ -3241,7 +3256,65 @@ function updateCOPreview(){
   card.style.display='block';
 }
 
-function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p,"Change order '"+title+"' added to "+p.client);}
+var _editCOIdx=null;
+
+function editCO(i){
+  var p=gpr();if(!p)return;
+  var co=p.changeOrders[i];if(!co)return;
+  if(co.status==='Approved'||co.clientSignedBy){
+    T('Approved or signed change orders cannot be edited.');return;
+  }
+  // Populate form fields
+  var el;
+  el=document.getElementById('coTitle');if(el)el.value=co.title||'';
+  el=document.getElementById('coType');if(el)el.value=co.type||'';
+  el=document.getElementById('coDesc');if(el){el.value=co.description||'';el.rows=8;}
+  el=document.getElementById('coBudget');if(el)el.value=co.budgetImpact||0;
+  el=document.getElementById('coDate');if(el)el.value=co.date||'';
+  el=document.getElementById('coStatus');if(el)el.value=co.status||'Pending';
+  // Set edit state
+  _editCOIdx=i;
+  window._coDraftItems=co.lineItems||[];
+  updateCOPreview();
+  // Update Add button to show Update
+  var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
+  if(addBtn)addBtn.textContent='Update';
+  showForm('coForm');
+}
+
+function addCO(){
+  var title=document.getElementById("coTitle").value.trim();
+  if(!title){T("Enter a title.");return;}
+  var p=gpr();if(!p)return;
+  p.changeOrders=p.changeOrders||[];
+  var coData={title:title,
+    type:document.getElementById("coType").value,
+    description:document.getElementById("coDesc").value.trim(),
+    budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,
+    date:document.getElementById("coDate").value,
+    status:document.getElementById("coStatus").value,
+    lineItems:window._coDraftItems||[]};
+  if(_editCOIdx!==null){
+    // Edit mode — update existing CO
+    var existing=p.changeOrders[_editCOIdx];
+    var wasSent=existing&&(existing.status==='Sent to Client'||existing.status==='Sent');
+    coData.clientSignedBy=existing?existing.clientSignedBy:undefined;
+    coData.clientSignedAt=existing?existing.clientSignedAt:undefined;
+    coData.approvedAt=existing?existing.approvedAt:undefined;
+    coData.approvedBy=existing?existing.approvedBy:undefined;
+    if(wasSent){coData.status='Pending';coData.sentAt=null;}
+    p.changeOrders[_editCOIdx]=coData;
+    _editCOIdx=null;window._coDraftItems=[];
+    var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
+    if(addBtn)addBtn.textContent='Add';
+    var card=document.getElementById('coPreviewCard');if(card)card.style.display='none';
+    saveP(p,wasSent?'Change order updated. Please resend to client.':('Change order \''+title+'\' updated.'));
+  } else {
+    // Add mode — push new CO
+    p.changeOrders.push(coData);
+    saveP(p,"Change order '"+title+"' added to "+p.client);
+  }
+}
 function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
 function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.changeOrders[i].status=v;saveP(p,old!==v?"Change order '"+p.changeOrders[i].title+"' "+v+" on "+p.client:null);}
 function compressPhoto(dataUrl,cb){
