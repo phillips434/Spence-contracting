@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v147</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v149</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2093,7 +2093,12 @@ function renderProjectPortal(p, est, wrapper){
       var clientAmt=parseFloat(co.clientAmount||co.budgetImpact)||0;
       html+='<div style="background:#F8F9FF;border-radius:12px;padding:16px;margin-bottom:12px">';
       html+='<div style="font-size:14px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+co.title+'</div>';
-      if(co.description) html+='<div style="font-size:13px;color:#555;margin-bottom:8px">'+co.description+'</div>';
+      if(co.description){
+        var _sm=['Line Item Summary','--- SCOPE','SCOPE AND PRICING','Contract Total:'];
+        var _st=co.description;
+        _sm.forEach(function(mk){var mi=_st.indexOf(mk);if(mi>0)_st=_st.slice(0,mi).trim();});
+        if(_st) html+='<div style="font-size:13px;color:#555;margin-bottom:8px">'+_st+'</div>';
+      }
       if(co.lineItems&&co.lineItems.length){
         html+='<div style="margin-bottom:8px">';
         co.lineItems.forEach(function(li){
@@ -2828,7 +2833,7 @@ function renderTabBody(p){
       html+='</div>';
       html+='</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
-    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
+    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div id="coPreviewCard" style="display:none;background:#F0F4FF;border-radius:10px;padding:14px;margin-bottom:10px;font-size:13px"></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
     html+='<button class="btn-dark" style="width:100%;background:#1A1A2E;margin-top:8px" ontouchend="event.preventDefault();generateCOWithAI(this);" onclick="generateCOWithAI(this);">&#10024; AI Draft Change Order</button>';
     html+='</div>';
   } else if(currentTab==="comms"){
@@ -2901,7 +2906,8 @@ function renderTabBody(p){
 }
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
-function hideForm(id){var el=document.getElementById(id);if(el)el.style.display="none";}
+function hideForm(id){
+  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];}var el=document.getElementById(id);if(el)el.style.display="none";}
 
 function addScopeItem(){var sel=document.getElementById("siSel"),desc=sel.value==="__c__"?document.getElementById("siCustom").value.trim():sel.value;if(!desc){alert("Enter a description.");return;}var p=gpr();p.scopeItems=p.scopeItems||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("siAssign").value;});p.scopeItems.push({desc:desc,start:document.getElementById("siSt").value,end:document.getElementById("siEn").value,budget:parseFloat(document.getElementById("siBud").value)||0,actual:parseFloat(document.getElementById("siAct").value)||0,complete:"Not Started",assignTo:document.getElementById("siAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Scope item '"+desc+"' added to "+p.client);}
 function delScopeItem(i){if(!confirm("Delete scope item?"))return;var p=gpr();p.scopeItems.splice(i,1);saveP(p);}
@@ -3029,6 +3035,9 @@ function generateCOWithAI(btnEl){
       parsed.budgetImpact=parsed.lineItems.reduce(function(s,li){return s+(li.total||(li.qty*li.unitCost));},0);
     }
     if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
+    if(document.getElementById('coDesc')) document.getElementById('coDesc').rows=8;
+    window._coDraftItems=parsed.lineItems||[];
+    updateCOPreview();
     T('Change order drafted with line items!');
   }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
   .finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
@@ -3187,6 +3196,51 @@ function addPunchItem(text,cat){addPunch();}
 function addPunch(){var text=document.getElementById("plText").value.trim();if(!text){alert("Enter an item.");return;}var p=gpr();p.punchList=p.punchList||[];p.punchList.push({text:text,category:document.getElementById("plCat").value,done:false});saveP(p);}
 function delPunch(i){if(!confirm("Delete?"))return;var p=gpr();p.punchList.splice(i,1);saveP(p);}
 function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p,p.punchList[i].done?"Punch item completed on "+p.client:null);}
+function updateCOPreview(){
+  var card=document.getElementById('coPreviewCard');if(!card)return;
+  var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';
+  var desc=document.getElementById('coDesc')?document.getElementById('coDesc').value.trim():'';
+  var budget=document.getElementById('coBudget')?parseFloat(document.getElementById('coBudget').value)||0:0;
+  var status=document.getElementById('coStatus')?document.getElementById('coStatus').value:'';
+  if(!title&&!desc){card.style.display='none';return;}
+  // Scope summary: first paragraph before any pricing marker
+  var markers=['Line Item Summary','--- SCOPE','SCOPE AND PRICING','Contract Total:'];
+  var scopeText=desc;
+  markers.forEach(function(mk){var mi=scopeText.indexOf(mk);if(mi>0)scopeText=scopeText.slice(0,mi).trim();});
+  // Line items: if window._coDraftItems available, use them; else parse bullet lines from desc
+  var itemsHtml='';
+  var items=window._coDraftItems||[];
+  if(items.length){
+    items.forEach(function(li){
+      var total=li.total||(li.qty*li.unitCost)||0;
+      itemsHtml+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #E8EEFF">'
+        +'<span style="color:#333">'+li.desc+'</span>'
+        +'<span style="font-weight:600">$'+Math.round(total).toLocaleString()+'</span></div>';
+    });
+  } else {
+    var lines=desc.split('\n');
+    lines.forEach(function(ln){
+      var t=ln.trim();
+      if(t.startsWith('\u2022')||t.startsWith('-')){
+        itemsHtml+='<div style="padding:2px 0;color:#444">'+t+'</div>';
+      }
+    });
+  }
+  var out='<div style="font-weight:700;font-size:14px;color:#1A1A2E;margin-bottom:6px">'+title+'</div>';
+  if(status) out+='<div style="font-size:11px;color:#2B3990;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">'+status+'</div>';
+  if(scopeText) out+='<div style="color:#555;margin-bottom:8px;line-height:1.5">'+scopeText+'</div>';
+  if(itemsHtml){
+    out+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Line Items</div>';
+    out+=itemsHtml;
+  }
+  if(budget>0){
+    out+='<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:#2B3990;border-top:2px solid #C8D4FF;padding-top:8px;margin-top:8px">'
+      +'<span>Change Order Total</span><span>$'+budget.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+  }
+  card.innerHTML=out;
+  card.style.display='block';
+}
+
 function addCO(){var title=document.getElementById("coTitle").value.trim();if(!title){alert("Enter a title.");return;}var p=gpr();p.changeOrders=p.changeOrders||[];p.changeOrders.push({title:title,type:document.getElementById("coType").value,description:document.getElementById("coDesc").value.trim(),budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,date:document.getElementById("coDate").value,status:document.getElementById("coStatus").value});saveP(p,"Change order '"+title+"' added to "+p.client);}
 function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
 function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.changeOrders[i].status=v;saveP(p,old!==v?"Change order '"+p.changeOrders[i].title+"' "+v+" on "+p.client:null);}
