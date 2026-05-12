@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v156</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v157</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3251,6 +3251,21 @@ function updateCOPreview(){
   if(budget>0){
     out+='<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:#2B3990;border-top:2px solid #C8D4FF;padding-top:8px;margin-top:8px">'
       +'<span>Change Order Total</span><span>$'+budget.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+  }
+  // Parse bullet-line amounts from live description for auto-total suggestion
+  var calcTotal=0;
+  var lineRe=/[\u2022\-]\s*.+?\u2014\s*(-?\$[\d,]+)/g;
+  var lineMatch;
+  while((lineMatch=lineRe.exec(desc))!==null){
+    calcTotal+=parseFloat(lineMatch[1].replace(/[\$,]/g,''));
+  }
+  if(calcTotal!==0&&Math.round(calcTotal*100)!==Math.round(budget*100)){
+    var calcFmt='$'+Math.abs(calcTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(calcTotal<0) calcFmt='-'+calcFmt;
+    out+='<div style="margin-top:10px;padding:10px;background:#FFF3CD;border-radius:8px;font-size:12px;color:#856404;display:flex;justify-content:space-between;align-items:center">';
+    out+='<span>Calculated from line items: <strong>'+calcFmt+'</strong></span>';
+    out+='<button onclick="document.getElementById(\'coBudget\').value='+calcTotal.toFixed(2)+';updateCOPreview();" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;margin-left:8px">Use This Total</button>';
+    out+='</div>';
   }
   card.innerHTML=out;
   card.style.display='block';
