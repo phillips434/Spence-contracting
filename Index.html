@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v152</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v153</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3313,25 +3313,26 @@ function addCO(){
     date:document.getElementById("coDate").value,
     status:document.getElementById("coStatus").value,
     lineItems:window._coDraftItems||[]};
-  console.info('[ADDCO] _editCOIdx=',_editCOIdx,'type=',typeof _editCOIdx,'draftData=',!!_editCODraftData,'coCount=',p.changeOrders.length);
   if(_editCOIdx!==null){
-    console.info('[ADDCO] EDIT MODE');
     // Edit mode — update existing CO
-    var existing=p.changeOrders[_editCOIdx];
+    var editIdx=_editCOIdx; // capture before async
+    var existing=p.changeOrders[editIdx];
     var wasSent=existing&&(existing.status==='Sent to Client'||existing.status==='Sent');
     coData.clientSignedBy=existing?existing.clientSignedBy:undefined;
     coData.clientSignedAt=existing?existing.clientSignedAt:undefined;
     coData.approvedAt=existing?existing.approvedAt:undefined;
     coData.approvedBy=existing?existing.approvedBy:undefined;
     if(wasSent){coData.status='Pending';coData.sentAt=null;}
-    p.changeOrders[_editCOIdx]=coData;
-    _editCOIdx=null;_editCODraftData=null;window._coDraftItems=[];
-    var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
-    if(addBtn)addBtn.textContent='Add';
-    var card=document.getElementById('coPreviewCard');if(card)card.style.display='none';
-    saveP(p,wasSent?'Change order updated. Please resend to client.':('Change order \''+title+'\' updated.'));
+    p.changeOrders[editIdx]=coData;
+    var editMsg=wasSent?'Change order updated. Please resend to client.':('Change order \''+title+'\' updated.');
+    saveP(p,editMsg).then(function(){
+      // Clear edit state only after successful save
+      _editCOIdx=null;_editCODraftData=null;window._coDraftItems=[];
+      var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
+      if(addBtn)addBtn.textContent='Add';
+      var card=document.getElementById('coPreviewCard');if(card)card.style.display='none';
+    });
   } else {
-    console.info('[ADDCO] ADD MODE — _editCOIdx was null');
     // Add mode — push new CO
     p.changeOrders.push(coData);
     saveP(p,"Change order '"+title+"' added to "+p.client);
