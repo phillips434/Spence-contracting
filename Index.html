@@ -3313,7 +3313,9 @@ function addCO(){
     date:document.getElementById("coDate").value,
     status:document.getElementById("coStatus").value,
     lineItems:window._coDraftItems||[]};
+  console.info('[ADDCO] _editCOIdx=',_editCOIdx,'type=',typeof _editCOIdx,'draftData=',!!_editCODraftData,'coCount=',p.changeOrders.length);
   if(_editCOIdx!==null){
+    console.info('[ADDCO] EDIT MODE');
     // Edit mode — update existing CO
     var existing=p.changeOrders[_editCOIdx];
     var wasSent=existing&&(existing.status==='Sent to Client'||existing.status==='Sent');
@@ -3329,6 +3331,7 @@ function addCO(){
     var card=document.getElementById('coPreviewCard');if(card)card.style.display='none';
     saveP(p,wasSent?'Change order updated. Please resend to client.':('Change order \''+title+'\' updated.'));
   } else {
+    console.info('[ADDCO] ADD MODE — _editCOIdx was null');
     // Add mode — push new CO
     p.changeOrders.push(coData);
     saveP(p,"Change order '"+title+"' added to "+p.client);
