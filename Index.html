@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v151</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v152</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2918,11 +2918,26 @@ function renderTabBody(p){
     html+='</div>';
   }
   document.getElementById("tabBody").innerHTML=html;
+  // Restore edit state if CO edit was in progress
+  if(_editCOIdx!==null&&_editCODraftData){
+    var _ef=function(id,val){var el=document.getElementById(id);if(el)el.value=val;};
+    _ef("coTitle",_editCODraftData.title);
+    _ef("coType",_editCODraftData.type);
+    _ef("coDesc",_editCODraftData.description);
+    var descEl=document.getElementById("coDesc");if(descEl)descEl.rows=8;
+    _ef("coBudget",_editCODraftData.budgetImpact);
+    _ef("coDate",_editCODraftData.date);
+    window._coDraftItems=_editCODraftData.lineItems||[];
+    showForm("coForm");
+    var ab=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
+    if(ab)ab.textContent="Update";
+    updateCOPreview();
+  }
 }
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){
-  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];_editCOIdx=null;var ab=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');if(ab)ab.textContent='Add';}var el=document.getElementById(id);if(el)el.style.display="none";}
+  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];_editCOIdx=null;_editCODraftData=null;var ab=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');if(ab)ab.textContent='Add';}var el=document.getElementById(id);if(el)el.style.display="none";}
 
 function addScopeItem(){var sel=document.getElementById("siSel"),desc=sel.value==="__c__"?document.getElementById("siCustom").value.trim():sel.value;if(!desc){alert("Enter a description.");return;}var p=gpr();p.scopeItems=p.scopeItems||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("siAssign").value;});p.scopeItems.push({desc:desc,start:document.getElementById("siSt").value,end:document.getElementById("siEn").value,budget:parseFloat(document.getElementById("siBud").value)||0,actual:parseFloat(document.getElementById("siAct").value)||0,complete:"Not Started",assignTo:document.getElementById("siAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Scope item '"+desc+"' added to "+p.client);}
 function delScopeItem(i){if(!confirm("Delete scope item?"))return;var p=gpr();p.scopeItems.splice(i,1);saveP(p);}
@@ -3257,6 +3272,7 @@ function updateCOPreview(){
 }
 
 var _editCOIdx=null;
+var _editCODraftData=null;
 
 function editCO(i){
   var p=gpr();if(!p)return;
@@ -3274,6 +3290,7 @@ function editCO(i){
   el=document.getElementById('coStatus');if(el)el.value=co.status||'Pending';
   // Set edit state
   _editCOIdx=i;
+  _editCODraftData={title:co.title||'',type:co.type||'',description:co.description||'',budgetImpact:co.budgetImpact||0,date:co.date||'',status:co.status||'Pending',lineItems:co.lineItems||[]};
   window._coDraftItems=co.lineItems||[];
   updateCOPreview();
   // Update Add button to show Update
@@ -3306,7 +3323,7 @@ function addCO(){
     coData.approvedBy=existing?existing.approvedBy:undefined;
     if(wasSent){coData.status='Pending';coData.sentAt=null;}
     p.changeOrders[_editCOIdx]=coData;
-    _editCOIdx=null;window._coDraftItems=[];
+    _editCOIdx=null;_editCODraftData=null;window._coDraftItems=[];
     var addBtn=document.querySelector('#coForm .btn-dark[onclick="addCO()"]');
     if(addBtn)addBtn.textContent='Add';
     var card=document.getElementById('coPreviewCard');if(card)card.style.display='none';
