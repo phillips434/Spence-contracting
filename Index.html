@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v154</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v155</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2847,7 +2847,7 @@ function renderTabBody(p){
       html+='</div>';
       html+='</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'coForm\')">+ Add Change Order</button>';
-    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div id="coPreviewCard" style="display:none;background:#F0F4FF;border-radius:10px;padding:14px;margin-bottom:10px;font-size:13px"></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
+    html+='<div class="inline-form" id="coForm"><label class="fl" style="margin-bottom:6px">Title</label><input class="fi" id="coTitle" placeholder="e.g. Add under-cabinet lighting" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Type</label><select class="fi" id="coType" style="margin-bottom:8px">'+DD.changeOrderTypes.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><textarea class="fi" id="coDesc" rows="2" style="margin-bottom:8px" oninput="window._coDraftItemsStale=true;updateCOPreview();"></textarea><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Cost Impact ($)</label><input class="fi" id="coBudget" type="number" placeholder="0" oninput="updateCOPreview();"/></div><div><label class="fl">Date</label><input class="fi" id="coDate" type="date"/></div></div><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="coStatus" style="margin-bottom:10px"><option>Pending</option><option>Approved</option><option>Rejected</option></select><div id="coPreviewCard" style="display:none;background:#F0F4FF;border-radius:10px;padding:14px;margin-bottom:10px;font-size:13px"></div><div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">\u26a0\ufe0f Review and adjust the scope and total before saving. Your edited total will be used.</div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'coForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCO()">Add</button></div>';
     html+='<button class="btn-dark" style="width:100%;background:#1A1A2E;margin-top:8px" ontouchend="event.preventDefault();generateCOWithAI(this);" onclick="generateCOWithAI(this);">&#10024; AI Draft Change Order</button>';
     html+='</div>';
   } else if(currentTab==="comms"){
@@ -2921,7 +2921,7 @@ function renderTabBody(p){
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
 function showForm(id){var el=document.getElementById(id);if(el)el.style.display="block";}
 function hideForm(id){
-  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];}var el=document.getElementById(id);if(el)el.style.display="none";}
+  if(id==='coForm'){var c=document.getElementById('coPreviewCard');if(c)c.style.display='none';window._coDraftItems=[];window._coDraftItemsStale=false;}var el=document.getElementById(id);if(el)el.style.display="none";}
 
 function addScopeItem(){var sel=document.getElementById("siSel"),desc=sel.value==="__c__"?document.getElementById("siCustom").value.trim():sel.value;if(!desc){alert("Enter a description.");return;}var p=gpr();p.scopeItems=p.scopeItems||[];var member=(DD.team||[]).find(function(m){return m.name===document.getElementById("siAssign").value;});p.scopeItems.push({desc:desc,start:document.getElementById("siSt").value,end:document.getElementById("siEn").value,budget:parseFloat(document.getElementById("siBud").value)||0,actual:parseFloat(document.getElementById("siAct").value)||0,complete:"Not Started",assignTo:document.getElementById("siAssign").value,assignPhone:member?member.phone||"":"",assignEmail:member?member.email||"":""});saveP(p,"Scope item '"+desc+"' added to "+p.client);}
 function delScopeItem(i){if(!confirm("Delete scope item?"))return;var p=gpr();p.scopeItems.splice(i,1);saveP(p);}
@@ -3051,6 +3051,7 @@ function generateCOWithAI(btnEl){
     if(document.getElementById('coDesc')) document.getElementById('coDesc').value=detailDesc;
     if(document.getElementById('coDesc')) document.getElementById('coDesc').rows=8;
     window._coDraftItems=parsed.lineItems||[];
+    window._coDraftItemsStale=false;
     updateCOPreview();
     T('Change order drafted with line items!');
   }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
@@ -3221,9 +3222,9 @@ function updateCOPreview(){
   var markers=['Line Item Summary','--- SCOPE','SCOPE AND PRICING','Contract Total:'];
   var scopeText=desc;
   markers.forEach(function(mk){var mi=scopeText.indexOf(mk);if(mi>0)scopeText=scopeText.slice(0,mi).trim();});
-  // Line items: if window._coDraftItems available, use them; else parse bullet lines from desc
+  // Line items: use _coDraftItems unless manually edited (stale flag set)
   var itemsHtml='';
-  var items=window._coDraftItems||[];
+  var items=(window._coDraftItemsStale?[]:window._coDraftItems)||[];
   if(items.length){
     items.forEach(function(li){
       var total=li.total||(li.qty*li.unitCost)||0;
