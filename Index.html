@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v160</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v162</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2099,13 +2099,28 @@ function renderProjectPortal(p, est, wrapper){
         _sm.forEach(function(mk){var mi=_st.indexOf(mk);if(mi>0)_st=_st.slice(0,mi).trim();});
         if(_st) html+='<div style="font-size:13px;color:#555;margin-bottom:8px">'+_st+'</div>';
       }
-      if(co.lineItems&&co.lineItems.length){
-        html+='<div style="margin-bottom:8px">';
-        co.lineItems.forEach(function(li){
-          html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#666;padding:2px 0">';
-          html+='<span>'+li.desc+'</span><span>$'+(parseFloat(li.total)||0).toLocaleString()+'</span></div>';
+      // Parse line items from co.description first; fall back to co.lineItems
+      var _pItems=[];
+      if(co.description){
+        var _pRe=/^[\u2022\-]\s*(.+?)\s*\u2014\s*(-?\$[\d,]+)$/;
+        co.description.split('\n').forEach(function(_ln){
+          var _m=_ln.trim().match(_pRe);if(_m)_pItems.push({desc:_m[1],amt:_m[2]});
         });
-        html+='</div>';
+      }
+      if(!_pItems.length&&co.lineItems&&co.lineItems.length){
+        co.lineItems.forEach(function(li){
+          _pItems.push({desc:li.desc,amt:'$'+(parseFloat(li.total)||0).toLocaleString()});
+        });
+      }
+      if(_pItems.length){
+        var _piHtml='';
+        _pItems.forEach(function(it){
+          var _c=it.amt.indexOf('-')!==-1?'#C0392B':'#444';
+          _piHtml+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #F5F5F5">'+
+                    '<span style="color:#444">'+it.desc+'</span>'+
+                    '<span style="font-weight:600;color:'+_c+'">'+it.amt+'</span></div>';
+        });
+        html+='<div style="margin-bottom:8px">'+_piHtml+'</div>';
       }
       html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#2B3990;border-top:1px solid #EEE;padding-top:8px;margin-bottom:12px">';
       html+='<span>Change Order Total</span><span>+$'+clientAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
