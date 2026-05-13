@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v159</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v160</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2858,7 +2858,7 @@ function renderTabBody(p){
           html+='<button onclick="var _el=document.getElementById(\''+_did2+'\');_el.style.display=_el.style.display===\'none\'?\'block\':\'none\'" style="background:none;border:1px solid #DDD;border-radius:6px;padding:4px 10px;font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">&#9776; View Detail</button>';
           html+='<div id="'+_did2+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+co.description+'</div>';
         }
-      }html+=bvaHtml(co.budgetImpact||0,co.budgetImpact||0);
+      }html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F0F0F0;margin-top:6px">'+'<span style="font-size:12px;color:#888;font-weight:600">Change Order Total</span>'+'<span style="font-size:14px;font-weight:700;color:#2B3990">$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
       html+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
       html+='<select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)">';
       html+='<option'+(co.status==="Pending"?" selected":"")+'>Pending</option>';
