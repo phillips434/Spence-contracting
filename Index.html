@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v157</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v159</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2830,8 +2830,35 @@ function renderTabBody(p){
       html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+' </div></div>';
       html+='<button class="del-btn" onclick="delCO('+i+')">&#215;</button>';
       html+='</div>';
-      if(co.description) html+='<div style="font-size:12px;color:#666;margin-bottom:8px">'+co.description+'</div>';
-      html+=bvaHtml(co.budgetImpact||0,co.budgetImpact||0);
+      if(co.description){
+        var _desc=co.description;
+        var _liStart=_desc.indexOf('Line Item Summary');
+        var _scopePart=(_liStart>0?_desc.slice(0,_liStart):_desc).trim();
+        var _itemsPart=_liStart>0?_desc.slice(_liStart+17).trim():'';
+        if(_scopePart) html+='<div style="font-size:13px;color:#444;margin-bottom:8px;line-height:1.5">'+_scopePart+'</div>';
+        if(_itemsPart){
+          var _lines=_itemsPart.split('\n');
+          var _iHtml='';var _hasLI=false;
+          _lines.forEach(function(_ln){
+            var _t=_ln.trim();if(!_t)return;
+            var _m=_t.match(/^[\u2022\-]\s*(.+?)\s*\u2014\s*(-?\$[\d,]+)$/);
+            if(_m){
+              _hasLI=true;
+              var _c=_m[2].indexOf('-')!==-1?'#C0392B':'#1A1A2E';
+              _iHtml+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F0F0F0">'+'<span style="font-size:12px;color:#444">'+_m[1]+'</span>'+'<span style="font-size:12px;font-weight:700;color:'+_c+'">'+_m[2]+'</span></div>';
+            } else { _iHtml+='<div style="font-size:12px;color:#666;padding:2px 0">'+_t+'</div>'; }
+          });
+          if(_hasLI) html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Line Items</div>';
+          html+='<div style="margin-bottom:8px">'+_iHtml+'</div>';
+          var _did='coDet'+i;
+          html+='<button onclick="var _el=document.getElementById(\''+_did+'\');_el.style.display=_el.style.display===\'none\'?\'block\':\'none\'" style="background:none;border:1px solid #DDD;border-radius:6px;padding:4px 10px;font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">&#9776; View Detail</button>';
+          html+='<div id="'+_did+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+co.description+'</div>';
+        } else if(_scopePart){
+          var _did2='coDet'+i;
+          html+='<button onclick="var _el=document.getElementById(\''+_did2+'\');_el.style.display=_el.style.display===\'none\'?\'block\':\'none\'" style="background:none;border:1px solid #DDD;border-radius:6px;padding:4px 10px;font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">&#9776; View Detail</button>';
+          html+='<div id="'+_did2+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+co.description+'</div>';
+        }
+      }html+=bvaHtml(co.budgetImpact||0,co.budgetImpact||0);
       html+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
       html+='<select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)">';
       html+='<option'+(co.status==="Pending"?" selected":"")+'>Pending</option>';
