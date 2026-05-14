@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v163</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v164</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -4373,7 +4373,9 @@ function sendSubPortalLink(scopeIdx){
   if(it.start&&it.end)dates='Start: '+fmt(it.start)+' | End: '+fmt(it.end)+'\n';
   else if(it.start)dates='Start: '+fmt(it.start)+'\n';
   else if(it.end)dates='End: '+fmt(it.end)+'\n';
-  var amt=it.budget?'Contract Amount: $'+(parseFloat(it.budget)||0).toLocaleString()+'\n':'';
+  var subAmt=parseFloat(it.actual)||0;
+  if(!subAmt){T('No subcontract amount set for this item. Enter actual cost before sending.');return;}
+  var amt='Subcontract Amount: $'+subAmt.toLocaleString()+'\n';
   var msg='Hi '+name+',\n\n'
     +'You have been assigned the following scope on '+p.client+':\n\n'
     +'Scope: '+it.desc+'\n'
