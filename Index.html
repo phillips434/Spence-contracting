@@ -2713,6 +2713,7 @@ function toggleSubItemSelection(idx,cb){
 }
 
 function doSendCombined(){
+  T('Combined send clicked: '+JSON.stringify(_selectedSubItems));
   if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
   sendCombinedSubPortalLink(_selectedSubItems.slice());
   _selectedSubItems=[];
