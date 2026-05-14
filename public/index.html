@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v164</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v165</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -4401,11 +4401,94 @@ function sendSubPortalLink(scopeIdx){
   }
 }
 
+function sendCombinedSubPortalLink(idxArr){
+  var p=gpr();if(!p||!idxArr||!idxArr.length)return;
+  var items=idxArr.map(function(i){return (p.scopeItems||[])[i];}).filter(Boolean);
+  if(!items.length)return;
+  // Guard: all selected items must have actual > 0
+  var missing=items.filter(function(it){return !(parseFloat(it.actual)||0);});
+  if(missing.length){T('No subcontract amount set for one or more selected items. Enter actual cost first.');return;}
+  var totalAmt=items.reduce(function(sum,it){return sum+(parseFloat(it.actual)||0);},0);
+  var co=DD.companyName||'Contractor Desk';
+  var name=items[0].assignTo||'Team';
+  var baseUrl=window.location.origin+window.location.pathname;
+  var link=baseUrl+'?sub='+p.id+'&scopes='+idxArr.join(',');
+  var scopeList=items.map(function(it){return '- '+it.desc;}).join('\n');
+  var msg='Hi '+name+',\n\n'
+    +'You have been assigned the following scope on '+p.client+':\n\n'
+    +scopeList+'\n\n'
+    +'Combined Subcontract Amount: $'+totalAmt.toLocaleString()+'\n'
+    +'\nUse this link to view your scope, submit daily logs, and update progress:\n\n'
+    +link
+    +'\n\nQuestions? Contact us directly.\n\nThank you,\n'+co;
+  var phone=(items[0].assignPhone||'').replace(/[^0-9]/g,'');
+  var email=items[0].assignEmail||'';
+  if(phone){
+    window.open('sms:+1'+phone+'?body='+encodeURIComponent(msg),'_self');
+  } else if(email){
+    window.open('mailto:'+email+'?subject=Project+Assignment&body='+encodeURIComponent(msg),'_self');
+  } else {
+    var dummy=document.createElement('textarea');
+    dummy.value=link;document.body.appendChild(dummy);dummy.select();
+    try{document.execCommand('copy');T('Combined portal link copied! Paste and send.');}
+    catch(e){T('Copy failed — link: '+link.slice(-20));}
+    document.body.removeChild(dummy);
+  }
+}
+
 function checkSubView(){
   var params=new URLSearchParams(window.location.search);
   var pid=params.get('sub');
+  var scopes=params.get('scopes'); // combined multi-scope
   var sidx=parseInt(params.get('scope'))||0;
   if(!pid)return false;
+  // Multi-scope combined work order
+  if(scopes){
+    var idxArr=scopes.split(',').map(function(s){return parseInt(s)||0;});
+    document.getElementById('mainView').style.display='none';
+    document.body.style.background='#F4F5F7';
+    var wrap=document.createElement('div');wrap.id='subWrapper';
+    wrap.style.cssText='max-width:500px;margin:0 auto;padding:16px;font-family:sans-serif';
+    document.body.appendChild(wrap);
+    wrap.innerHTML='<div style="text-align:center;padding:20px;color:#aaa">Loading...</div>';
+    col.doc(pid).onSnapshot(function(doc){
+      if(!doc.exists){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Work order not found.</div>';return;}
+      var p=doc.data();p.id=pid;
+      var items=idxArr.map(function(i){return {item:(p.scopeItems||[])[i],idx:i};}).filter(function(x){return !!x.item;});
+      if(!items.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Scope items not found.</div>';return;}
+      var totalAmt=items.reduce(function(s,x){return s+(parseFloat(x.item.actual)||0);},0);
+      var co=p.companyName||p.logoData?'':'';
+      var logoSrc=p.logoData&&p.logoData.length>10?p.logoData:'';
+      var out='<div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:16px">';
+      if(logoSrc)out+='<div style="text-align:center;margin-bottom:12px"><img src="'+logoSrc+'" style="max-height:50px;object-fit:contain"/></div>';
+      out+='<div style="font-size:18px;font-weight:700;color:#1A1A2E;margin-bottom:4px">Work Order</div>';
+      out+='<div style="font-size:13px;color:#888;margin-bottom:12px">'+p.client+(p.type?' &middot; '+p.type:'')+'</div>';
+      out+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #F0F0F0;font-weight:700;color:#2B3990">';
+      out+='<span>Combined Subcontract Amount</span><span>$'+totalAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+      out+='</div>';
+      items.forEach(function(x){
+        var it=x.item;
+        var subAmt=parseFloat(it.actual)||0;
+        out+='<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px">';
+        out+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+it.desc+'</div>';
+        if(it.category)out+='<div style="font-size:12px;color:#888;margin-bottom:6px">'+it.category+'</div>';
+        if(it.start||it.end){
+          out+='<div style="font-size:12px;color:#555;margin-bottom:6px">';
+          if(it.start)out+='Start: '+it.start;
+          if(it.start&&it.end)out+=' &nbsp;|&nbsp; ';
+          if(it.end)out+='End: '+it.end;
+          out+='</div>';
+        }
+        if(subAmt>0)out+='<div style="font-size:13px;font-weight:600;color:#2B3990;margin-bottom:6px">Subcontract: $'+subAmt.toLocaleString()+'</div>';
+        var badge=it.status==='Complete'?'#2EAA72':it.status==='In Progress'?'#F5A623':'#888';
+        out+='<div style="display:inline-block;background:'+badge+'22;color:'+badge+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">'+(it.status||'Not Started')+'</div>';
+        out+='</div>';
+      });
+      out+='<div style="text-align:center;padding:16px;font-size:12px;color:#aaa">Powered by <strong style="color:#2B3990">Contractor Desk</strong></div>';
+      wrap.innerHTML=out;
+    });
+    return true;
+  }
   document.getElementById('mainView').style.display='none';
   document.body.style.background='#F4F5F7';
   var wrap=document.createElement('div');
