@@ -2989,10 +2989,9 @@ function renderTabBody(p){
   if(!document.getElementById("combinedSubSendBtn")){
     var _csBtn=document.createElement("div");
     _csBtn.id="combinedSubSendBtn";
-    _csBtn.style.cssText="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:200";
+    _csBtn.style.cssText="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:999";
     _csBtn.innerHTML='<button onclick="T(String.fromCharCode(66,116,110));doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
-    var _dp=document.getElementById("detailPage");
-    if(_dp)_dp.appendChild(_csBtn);
+    document.body.appendChild(_csBtn);
   }
   // Restore checkbox + button state after re-render
   if(_selectedSubItems.length){
