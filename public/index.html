@@ -260,11 +260,38 @@ body.client-mode .phead { display:none !important; }
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Password</label>
         <input id="suPassword" type="password" placeholder="Min 6 characters" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
       </div>
+      <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;cursor:pointer">
+        <input type="checkbox" id="termsCheck" style="width:18px;height:18px;margin-top:2px;accent-color:#2B3990;flex-shrink:0">
+        <span style="font-size:13px;color:#555;line-height:1.5">I agree to the <a href="/terms" target="_blank" style="color:#2B3990">Terms of Service</a>, <a href="/privacy" target="_blank" style="color:#2B3990">Privacy Policy</a>, and <a href="/beta" target="_blank" style="color:#2B3990">Beta Agreement</a>.</span>
+      </label>
       <button onclick="signUp()" style="width:100%;background:#2EAA72;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Start Free Trial</button>
     </div>
 
     <div id="authError" style="background:#FFF0F3;border:1px solid #E83A6C;border-radius:10px;padding:12px;font-size:13px;color:#E83A6C;margin-top:12px;display:none"></div>
     <div id="authLoading" style="text-align:center;padding:16px;color:#888;font-size:14px;display:none">&#9889; Please wait...</div>
+  </div>
+</div>
+
+<!-- TERMS GATE — shown to existing users who haven't agreed yet -->
+<div id="termsGate" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F5F7;z-index:210;overflow-y:auto;-webkit-overflow-scrolling:touch;align-items:center;justify-content:center">
+  <div style="max-width:420px;margin:0 auto;padding:40px 24px 60px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:28px;margin-bottom:8px">&#128221;</div>
+      <div style="font-size:22px;font-weight:800;color:#1A1A2E;margin-bottom:8px">Before You Continue</div>
+      <div style="font-size:14px;color:#888">Please review and accept our agreements to use Contractor Desk Beta.</div>
+    </div>
+    <div style="background:#fff;border-radius:14px;padding:20px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
+      <div style="margin-bottom:16px">
+        <a href="/terms" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Terms of Service <span style="color:#2B3990">&#8250;</span></a>
+        <a href="/privacy" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Privacy Policy <span style="color:#2B3990">&#8250;</span></a>
+        <a href="/beta" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Beta Agreement <span style="color:#2B3990">&#8250;</span></a>
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:4px 0">
+        <input type="checkbox" id="termsGateCheck" style="width:20px;height:20px;margin-top:1px;accent-color:#2B3990;flex-shrink:0">
+        <span style="font-size:13px;color:#555;line-height:1.5">I have read and agree to the Terms of Service, Privacy Policy, and Beta Agreement.</span>
+      </label>
+    </div>
+    <button id="termsGateBtn" style="width:100%;background:#2B3990;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer">Continue to Contractor Desk</button>
   </div>
 </div>
 
@@ -301,7 +328,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v176</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v178</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -666,7 +693,29 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 
+function showTermsGate(uid){
+  var gate=document.getElementById('termsGate');
+  if(gate)gate.style.display='block';
+  var agreeBtn=document.getElementById('termsGateBtn');
+  if(agreeBtn){
+    agreeBtn.onclick=function(){
+      var cb=document.getElementById('termsGateCheck');
+      if(!cb||!cb.checked){T('You must agree before continuing.');return;}
+      db.collection('userProfiles').doc(uid).update({agreedToTerms:true,agreedAt:Date.now()}).then(function(){
+        if(gate)gate.style.display='none';
+      }).catch(function(){T('Error saving agreement. Please try again.');});
+    };
+  }
+}
+
 function initUserCollections(uid){
+  // Check terms agreement for existing users
+  db.collection('userProfiles').doc(uid).get().then(function(d){
+    if(d.exists&&!d.data().agreedToTerms){
+      var gate=document.getElementById('termsGate');
+      if(gate)gate.style.display='flex';
+    }
+  }).catch(function(){});
   col=db.collection('projects');
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
@@ -3912,6 +3961,10 @@ function signIn(){
 }
 
 function signUp(){
+  if(!document.getElementById('termsCheck')||!document.getElementById('termsCheck').checked){
+    showAuthError('You must agree to the Terms, Privacy Policy, and Beta Agreement before continuing.');
+    return;
+  }
   var name = document.getElementById('suName').value.trim();
   var company = document.getElementById('suCompany').value.trim();
   var email = document.getElementById('suEmail').value.trim();
@@ -3932,7 +3985,9 @@ function signUp(){
       email: email,
       trialEnd: trialEnd,
       createdAt: Date.now(),
-      plan: 'trial'
+      plan: 'trial',
+      agreedToTerms: true,
+      agreedAt: Date.now()
     });
   }).then(function(docRef){
     // Check if there's a pending invite for this email
