@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v165</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v167</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2699,6 +2699,14 @@ var pendingPhoto=null;
 function triggerPhotoUpload(){document.getElementById("photoInput").click();}
 function handlePhotoUpload(event){var file=event.target.files[0];if(!file)return;if(file.size>500000){alert("Image too large. Please use a smaller photo.");return;}var reader=new FileReader();reader.onload=function(e){var p=gpr();p.notesLog=p.notesLog||[];p.notesLog.push({text:"Photo",author:"",ts:Date.now(),resolved:false,photo:e.target.result});saveP(p);event.target.value="";};reader.readAsDataURL(file);}
 
+function toggleSubItemSelection(idx,cb){
+  var pos=_selectedSubItems.indexOf(idx);
+  if(cb.checked){if(pos===-1)_selectedSubItems.push(idx);}
+  else{if(pos!==-1)_selectedSubItems.splice(pos,1);}
+  var btn=document.getElementById('combinedSubSendBtn');
+  if(btn)btn.style.display=_selectedSubItems.length>=2?'block':'none';
+}
+
 function renderTabBody(p){
   var html="";
   if(currentTab==="scope"){
@@ -2728,6 +2736,8 @@ function renderTabBody(p){
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
       if(it.assignTo){
         var _safeAssign=it.assignTo.replace(/'/g,"\\'");
+        html+='<label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#555;margin-bottom:4px">';
+        html+='<input type="checkbox" id="subCb'+i+'" onchange="toggleSubItemSelection('+i+',this)" style="width:16px;height:16px"/> Include in combined work order</label>';
         html+='<button class="btn-notify" style="background:#9B6BE8" onclick="sendSubPortalLink('+i+')">&#128279; Send Portal</button>';
       } else {
         html+='<button class="btn-notify" style="background:#9B6BE8" onclick="sendSubPortalLink('+i+')">&#128279; Send Portal</button>';
@@ -2958,6 +2968,16 @@ function renderTabBody(p){
     html+='<button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button>';
     html+='</div>';
   }
+    if(currentTab==="scope"){
+    html+='<div id="combinedSubSendBtn" style="display:none;position:sticky;bottom:72px;padding:10px 16px">';
+    html+='<button style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer"';
+    html+=' onclick="if(_selectedSubItems.length<2){T(String.fromCharCode(83,101,108,101,99,116,32,97,116,32,108,101,97,115,116,32,50,32,105,116,101,109,115));return;}';
+    html+='sendCombinedSubPortalLink(_selectedSubItems.slice());_selectedSubItems=[];';
+    html+='document.querySelectorAll(String.fromCharCode(91,105,100,94,61,115,117,98,67,98,93)).forEach(function(c){c.checked=false;});';
+    html+='document.getElementById(String.fromCharCode(99,111,109,98,105,110,101,100,83,117,98,83,101,110,100,66,116,110)).style.display=String.fromCharCode(110,111,110,101);">&#128279; Send Combined Work Order</button>';
+    html+='</div>';
+  }
+  _selectedSubItems=[];
   document.getElementById("tabBody").innerHTML=html;
 }
 function switchTLView(mode,btn){document.querySelectorAll(".vt-btn").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");var p=gpr();if(!p)return;var el=document.getElementById("tlContent");if(el)el.innerHTML=mode==="gantt"?renderGantt(p):renderCalendar(p);}
