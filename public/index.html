@@ -2713,6 +2713,7 @@ function toggleSubItemSelection(idx,cb){
 }
 
 function doSendCombined(){
+  T('dSC:'+JSON.stringify(_selectedSubItems));
   if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
   sendCombinedSubPortalLink(_selectedSubItems.slice());
   _selectedSubItems=[];
@@ -2989,7 +2990,7 @@ function renderTabBody(p){
     var _csBtn=document.createElement("div");
     _csBtn.id="combinedSubSendBtn";
     _csBtn.style.cssText="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:200";
-    _csBtn.innerHTML='<button onclick="doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
+    _csBtn.innerHTML='<button onclick="T(String.fromCharCode(66,116,110));doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
     var _dp=document.getElementById("detailPage");
     if(_dp)_dp.appendChild(_csBtn);
   }
@@ -4449,6 +4450,7 @@ function sendSubPortalLink(scopeIdx){
 }
 
 function sendCombinedSubPortalLink(idxArr){
+  T('sCPL:'+JSON.stringify(idxArr));
   var p=gpr();if(!p||!idxArr||!idxArr.length)return;
   var items=idxArr.map(function(i){return (p.scopeItems||[])[i];}).filter(Boolean);
   if(!items.length)return;
