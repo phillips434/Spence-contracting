@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v162</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v163</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2938,7 +2938,7 @@ function renderTabBody(p){
   } else if(currentTab==="daily-log"){
     var today=new Date().toISOString().split('T')[0];
     html+='<div class="sec-label">New Daily Log</div>';
-    html+='<div style="background:#EEF2F7;border-radius:12px;padding:14px;margin-bottom:16px;border:1.5px solid #DDE3EC"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date" value="'+today+'"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" ontouchend="event.preventDefault();generateAILog(this);" onclick="generateAILog(this);">&#10024; AI Generate Log Entry</button><label class="fl" style="margin-bottom:6px">Site Photos (optional)</label><input type="file" id="logPhoto" accept="image/*" capture="environment" multiple style="margin-bottom:10px;font-size:13px"/><div class="fbtns"><button class="btn-dark" style="flex:1;background:#2EAA72" onclick="addLog()">&#43; Save Log</button></div></div>';
+    html+='<div style="background:#EEF2F7;border-radius:12px;padding:14px;margin-bottom:16px;border:1.5px solid #DDE3EC"><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Date</label><input class="fi" id="logDate" type="date" value="'+today+'"/></div><div><label class="fl">Weather</label><input class="fi" id="logWeather" placeholder="e.g. Clear 72F"/></div></div><label class="fl" style="margin-bottom:6px">Crew on Site</label><input class="fi" id="logCrew" placeholder="Names" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Work Completed</label><textarea class="fi" id="logWork" rows="3" placeholder="Describe work done today..." style="margin-bottom:8px"></textarea><label class="fl" style="margin-bottom:6px">Issues / Delays</label><textarea class="fi" id="logIssues" rows="2" placeholder="Any problems or delays..." style="margin-bottom:8px"></textarea><button class="btn-ai" id="aiLogBtn" style="margin-bottom:10px" ontouchend="event.preventDefault();generateAILog(this);" onclick="generateAILog(this);">&#10024; AI Generate Log Entry</button><label class="fl" style="margin-bottom:6px">Site Photos (optional)</label><input type="file" id="logPhoto" accept="image/*" multiple style="margin-bottom:10px;font-size:13px"/><div class="fbtns"><button class="btn-dark" style="flex:1;background:#2EAA72" onclick="addLog()">&#43; Save Log</button></div></div>';
     html+='<div class="sec-label">Previous Logs</div>';
     var logs=(p.dailyLogs||[]).slice().reverse();
     if(!logs.length){html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:13px">No logs yet. Add your first one above.</div>';}
@@ -3368,6 +3368,7 @@ function addLog(){
   var photoInput=document.getElementById("logPhoto");
   if(photoInput&&photoInput.files&&photoInput.files.length>0){
     var files=Array.from(photoInput.files);
+    if(files.length>5){T('Maximum 5 photos per log.');return;}
     var processed=0;
     files.forEach(function(file){
       var reader=new FileReader();
