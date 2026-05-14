@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v171</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v172</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2713,7 +2713,6 @@ function toggleSubItemSelection(idx,cb){
 }
 
 function doSendCombined(){
-  T('Combined send clicked: '+JSON.stringify(_selectedSubItems));
   if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
   sendCombinedSubPortalLink(_selectedSubItems.slice());
   _selectedSubItems=[];
@@ -2984,12 +2983,16 @@ function renderTabBody(p){
     html+='<button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button>';
     html+='</div>';
   }
-    if(currentTab==="scope"){
-    html+='<div id="combinedSubSendBtn" style="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:100">';
-    html+='<button onclick="doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
-    html+='</div>';
+    document.getElementById("tabBody").innerHTML=html;
+  // Ensure combined send button exists directly in detailPage (not inside scroll)
+  if(!document.getElementById("combinedSubSendBtn")){
+    var _csBtn=document.createElement("div");
+    _csBtn.id="combinedSubSendBtn";
+    _csBtn.style.cssText="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:200";
+    _csBtn.innerHTML='<button onclick="doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
+    var _dp=document.getElementById("detailPage");
+    if(_dp)_dp.appendChild(_csBtn);
   }
-  document.getElementById("tabBody").innerHTML=html;
   // Restore checkbox + button state after re-render
   if(_selectedSubItems.length){
     _selectedSubItems.forEach(function(idx){
