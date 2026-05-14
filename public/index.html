@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v173</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v174</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2701,6 +2701,9 @@ function handlePhotoUpload(event){var file=event.target.files[0];if(!file)return
 
 function toggleSubItemSelection(idx,cb){
   var pos=_selectedSubItems.indexOf(idx);
+  // Update label styling
+  var lbl=document.getElementById('subCbLabel'+idx);
+  if(lbl){lbl.style.borderColor=cb.checked?'#9B6BE8':'#DDD';lbl.style.background=cb.checked?'#EDE2FF':'#F3EEFF';}
   if(cb.checked){if(pos===-1)_selectedSubItems.push(idx);}
   else{if(pos!==-1)_selectedSubItems.splice(pos,1);}
   var btn=document.getElementById('combinedSubSendBtn');
@@ -2761,8 +2764,8 @@ function renderTabBody(p){
       html+='<button style="background:#2B3990;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
       if(it.assignTo){
         var _safeAssign=it.assignTo.replace(/'/g,"\\'");
-        html+='<label id="subCbLabel'+i+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#F3EEFF;border:2px solid #DDD;border-radius:10px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent">';
-        html+='<input type="checkbox" id="subCb'+i+'" onchange="toggleSubItemSelection('+i+',this);var lbl=document.getElementById(\'subCbLabel'+i+'\');if(lbl)lbl.style.borderColor=this.checked?\'#9B6BE8\':\'#DDD\';lbl.style.background=this.checked?\'#EDE2FF\':\'#F3EEFF\'" style="width:20px;height:20px;accent-color:#9B6BE8;cursor:pointer"/>';
+        html+='<label id="subCbLabel'+i+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#F3EEFF;border:2px solid #DDD;border-radius:10px;margin-bottom:8px;cursor:pointer">';
+        html+='<input type="checkbox" id="subCb'+i+'" onchange="toggleSubItemSelection('+i+',this)" style="width:20px;height:20px;accent-color:#9B6BE8;cursor:pointer"/>';
         html+='<span style="font-size:13px;font-weight:600;color:#6B3DBF">&#10133; Add to combined work order</span></label>';
         html+='<button class="btn-notify" style="background:#9B6BE8" onclick="sendSubPortalLink('+i+')">&#128279; Send Portal</button>';
       } else {
