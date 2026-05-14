@@ -301,7 +301,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v167</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v168</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2707,6 +2707,15 @@ function toggleSubItemSelection(idx,cb){
   if(btn)btn.style.display=_selectedSubItems.length>=2?'block':'none';
 }
 
+function doSendCombined(){
+  if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
+  sendCombinedSubPortalLink(_selectedSubItems.slice());
+  _selectedSubItems=[];
+  document.querySelectorAll('[id^=subCb]').forEach(function(c){c.checked=false;});
+  var btn=document.getElementById('combinedSubSendBtn');
+  if(btn)btn.style.display='none';
+}
+
 function renderTabBody(p){
   var html="";
   if(currentTab==="scope"){
@@ -2969,12 +2978,8 @@ function renderTabBody(p){
     html+='</div>';
   }
     if(currentTab==="scope"){
-    html+='<div id="combinedSubSendBtn" style="display:none;position:sticky;bottom:72px;padding:10px 16px">';
-    html+='<button style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer"';
-    html+=' onclick="if(_selectedSubItems.length<2){T(String.fromCharCode(83,101,108,101,99,116,32,97,116,32,108,101,97,115,116,32,50,32,105,116,101,109,115));return;}';
-    html+='sendCombinedSubPortalLink(_selectedSubItems.slice());_selectedSubItems=[];';
-    html+='document.querySelectorAll(String.fromCharCode(91,105,100,94,61,115,117,98,67,98,93)).forEach(function(c){c.checked=false;});';
-    html+='document.getElementById(String.fromCharCode(99,111,109,98,105,110,101,100,83,117,98,83,101,110,100,66,116,110)).style.display=String.fromCharCode(110,111,110,101);">&#128279; Send Combined Work Order</button>';
+    html+='<div id="combinedSubSendBtn" style="display:none;position:fixed;bottom:72px;left:0;right:0;padding:10px 16px;z-index:100">';
+    html+='<button onclick="doSendCombined()" style="width:100%;padding:14px;background:#9B6BE8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(155,107,232,0.4)">&#128279; Send Combined Work Order</button>';
     html+='</div>';
   }
   _selectedSubItems=[];
