@@ -299,10 +299,13 @@ body.client-mode .phead { display:none !important; }
         <a href="javascript:void(0)" onclick="showLegalPage('privacy')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Privacy Policy <span style="color:#2B3990">&#8250;</span></a>
         <a href="javascript:void(0)" onclick="showLegalPage('beta')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Beta Agreement <span style="color:#2B3990">&#8250;</span></a>
       </div>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:4px 0">
-        <input type="checkbox" id="termsGateCheck" style="width:20px;height:20px;margin-top:1px;accent-color:#2B3990;flex-shrink:0">
-        <span style="font-size:13px;color:#555;line-height:1.5">I have read and agree to the Terms of Service, Privacy Policy, and Beta Agreement.</span>
-      </label>
+      <div id="termsAgreeToggle" onclick="toggleTermsAgree()" style="display:flex;align-items:center;gap:12px;padding:12px;background:#F3EEFF;border:2px solid #DDD;border-radius:10px;cursor:pointer;margin-top:4px;-webkit-tap-highlight-color:rgba(0,0,0,0.05)">
+        <div id="termsCheckBox" style="width:22px;height:22px;border-radius:6px;border:2px solid #CCC;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+          <span id="termsCheckMark" style="display:none;color:#fff;font-size:14px;font-weight:900">&#10003;</span>
+        </div>
+        <span style="font-size:13px;color:#444;line-height:1.5;font-weight:500">I have read and agree to the Terms of Service, Privacy Policy, and Beta Agreement.</span>
+      </div>
+      <input type="hidden" id="termsGateCheck" value="0">
     </div>
     <button id="termsGateBtn" style="width:100%;background:#2B3990;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer">Continue to Contractor Desk</button>
   </div>
@@ -341,7 +344,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v182</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v183</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -706,6 +709,29 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 
+function toggleTermsAgree(){
+  var box=document.getElementById('termsCheckBox');
+  var mark=document.getElementById('termsCheckMark');
+  var toggle=document.getElementById('termsAgreeToggle');
+  var hidden=document.getElementById('termsGateCheck');
+  var checked=hidden.value==='1';
+  if(!checked){
+    hidden.value='1';
+    box.style.background='#2B3990';
+    box.style.borderColor='#2B3990';
+    toggle.style.background='#EDE2FF';
+    toggle.style.borderColor='#9B6BE8';
+    mark.style.display='inline';
+  } else {
+    hidden.value='0';
+    box.style.background='#fff';
+    box.style.borderColor='#CCC';
+    toggle.style.background='#F3EEFF';
+    toggle.style.borderColor='#DDD';
+    mark.style.display='none';
+  }
+}
+
 function showLegalPage(type){
   var titles={terms:'Terms of Service',privacy:'Privacy Policy',beta:'Beta Agreement'};
   var contents={
@@ -728,7 +754,7 @@ function showTermsGate(uid){
   if(agreeBtn){
     agreeBtn.onclick=function(){
       var cb=document.getElementById('termsGateCheck');
-      if(!cb||!cb.checked){T('You must agree before continuing.');return;}
+      if(!cb||cb.value!=='1'){T('You must agree before continuing.');return;}
       db.collection('userProfiles').doc(uid).update({agreedToTerms:true,agreedAt:Date.now()}).then(function(){
         if(gate)gate.style.display='none';
       }).catch(function(){T('Error saving agreement. Please try again.');});
