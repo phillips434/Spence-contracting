@@ -274,6 +274,17 @@ body.client-mode .phead { display:none !important; }
   </div>
 </div>
 
+<!-- LEGAL PAGE OVERLAY -->
+<div id="legalPage" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:220;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="max-width:600px;margin:0 auto;padding:0">
+    <div style="position:sticky;top:0;background:#fff;border-bottom:1px solid #EEE;padding:16px 20px;display:flex;align-items:center;gap:12px;z-index:1">
+      <button onclick="hideLegalPage()" style="background:none;border:none;font-size:24px;color:#2B3990;cursor:pointer;padding:0;line-height:1">&#8249;</button>
+      <span id="legalPageTitle" style="font-size:16px;font-weight:700;color:#1A1A2E"></span>
+    </div>
+    <div id="legalPageContent" style="padding:24px 20px;font-size:14px;color:#444;line-height:1.7"></div>
+  </div>
+</div>
+
 <!-- TERMS GATE — shown to existing users who haven't agreed yet -->
 <div id="termsGate" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F5F7;z-index:210;overflow-y:auto;-webkit-overflow-scrolling:touch;align-items:center;justify-content:center">
   <div style="max-width:420px;margin:0 auto;padding:40px 24px 60px">
@@ -284,9 +295,9 @@ body.client-mode .phead { display:none !important; }
     </div>
     <div style="background:#fff;border-radius:14px;padding:20px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
       <div style="margin-bottom:16px">
-        <a href="/terms" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Terms of Service <span style="color:#2B3990">&#8250;</span></a>
-        <a href="/privacy" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Privacy Policy <span style="color:#2B3990">&#8250;</span></a>
-        <a href="/beta" target="_blank" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Beta Agreement <span style="color:#2B3990">&#8250;</span></a>
+        <a href="javascript:void(0)" onclick="showLegalPage('terms')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Terms of Service <span style="color:#2B3990">&#8250;</span></a>
+        <a href="javascript:void(0)" onclick="showLegalPage('privacy')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0F0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Privacy Policy <span style="color:#2B3990">&#8250;</span></a>
+        <a href="javascript:void(0)" onclick="showLegalPage('beta')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;color:#1A1A2E;text-decoration:none;font-size:14px;font-weight:600">Beta Agreement <span style="color:#2B3990">&#8250;</span></a>
       </div>
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:4px 0">
         <input type="checkbox" id="termsGateCheck" style="width:20px;height:20px;margin-top:1px;accent-color:#2B3990;flex-shrink:0">
@@ -330,7 +341,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v181</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v182</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -695,6 +706,21 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 
+function showLegalPage(type){
+  var titles={terms:'Terms of Service',privacy:'Privacy Policy',beta:'Beta Agreement'};
+  var contents={
+    terms:'<h2>Terms of Service</h2><p>Contractor Desk is provided as a beta software product. By using this application you agree to use it at your own risk. Contractor Desk is not liable for any data loss, business disruption, or damages arising from use of this beta software.</p><p>Unauthorized access, reverse engineering, or redistribution of this software is prohibited. All project data you enter remains your property. Contractor Desk does not sell or share your data with third parties.</p><p>Full terms will be published at launch. Contact us with any questions.</p>',
+    privacy:'<h2>Privacy Policy</h2><p>Contractor Desk collects only the information you provide during signup and the project data you enter. This data is stored securely using Google Firebase and is not shared with third parties.</p><p>We may use your email to send product updates. You can opt out at any time. We do not sell your data.</p><p>Full privacy policy will be published at launch.</p>',
+    beta:'<h2>Beta Agreement</h2><p>You are using a beta version of Contractor Desk. Beta software may contain bugs, incomplete features, or unexpected behavior. By continuing you acknowledge this and agree not to use this software for mission-critical operations without appropriate backups.</p><p>Your feedback helps us improve the product. Beta access may be revoked or changed at any time. Thank you for helping us build a better product for contractors.</p>'
+  };
+  document.getElementById('legalPageTitle').textContent=titles[type]||type;
+  document.getElementById('legalPageContent').innerHTML=contents[type]||'Coming soon.';
+  document.getElementById('legalPage').style.display='block';
+}
+function hideLegalPage(){
+  document.getElementById('legalPage').style.display='none';
+}
+
 function showTermsGate(uid){
   var gate=document.getElementById('termsGate');
   if(gate)gate.style.display='block';
@@ -714,8 +740,7 @@ function initUserCollections(uid){
   // Check terms agreement for existing users
   db.collection('userProfiles').doc(uid).get().then(function(d){
     if(d.exists&&!d.data().agreedToTerms){
-      var gate=document.getElementById('termsGate');
-      if(gate)gate.style.display='flex';
+      showTermsGate(uid);
     }
   }).catch(function(){});
   col=db.collection('projects');
