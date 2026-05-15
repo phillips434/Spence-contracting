@@ -330,7 +330,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v180</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v181</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -856,8 +856,9 @@ function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){
   var uid=currentUser?currentUser.uid:null;
+  if(!uid){if(cb)cb();return;} // Never fall back to owner settings if uid missing
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).get().then(function(d){
+  sCol.doc(isOwner?'dropdowns':uid).get().then(function(d){
     if(d.exists) DD=Object.assign({},DD,d.data());
     // Only apply logo for the account that owns it — clear for others
     var tl=document.getElementById('topbarLogo');
@@ -4049,16 +4050,29 @@ function checkTrialStatus(user, cb){
   if(user.uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){cb(true);return;}
   db.collection('userProfiles').doc(user.uid).get().then(function(doc){
     if(!doc.exists){
-      // Existing user (Phillip) — give full access, create profile
-      db.collection('userProfiles').doc(user.uid).set({
-        name: user.displayName || 'Phillip',
-        company: 'Contractor Desk',
-        email: user.email || '',
-        trialEnd: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year for owner
-        createdAt: Date.now(),
-        plan: 'owner'
-      });
-      cb(true);
+      if(user.uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){
+        // Owner account — create owner profile
+        db.collection('userProfiles').doc(user.uid).set({
+          name: user.displayName||'Phillip',
+          company:'Contractor Desk',
+          email:user.email||'',
+          trialEnd:Date.now()+(365*24*60*60*1000),
+          createdAt:Date.now(),
+          plan:'owner'
+        });
+        cb(true);
+      } else {
+        // New user — create trial profile if not already done by signUp()
+        db.collection('userProfiles').doc(user.uid).set({
+          name:user.displayName||user.email||'',
+          company:'',
+          email:user.email||'',
+          trialEnd:Date.now()+(14*24*60*60*1000),
+          createdAt:Date.now(),
+          plan:'trial'
+        });
+        cb(true);
+      }
       return;
     }
     var data = doc.data();
