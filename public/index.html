@@ -264,7 +264,7 @@ body.client-mode .phead { display:none !important; }
       </div>
       <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;cursor:pointer">
         <input type="checkbox" id="termsCheck" style="width:18px;height:18px;margin-top:2px;accent-color:#2B3990;flex-shrink:0">
-        <span style="font-size:13px;color:#555;line-height:1.6">I agree to the <a href="/terms" target="_blank" style="color:#2B3990;font-weight:600;text-decoration:underline">Terms of Service</a>, <a href="/privacy" target="_blank" style="color:#2B3990;font-weight:600;text-decoration:underline">Privacy Policy</a>, and <a href="/beta" target="_blank" style="color:#2B3990;font-weight:600;text-decoration:underline">Beta Agreement</a>.</span>
+        <span style="font-size:13px;color:#555;line-height:1.6">I agree to the <a href="javascript:void(0)" onclick="showLegalPage('terms')" style="color:#2B3990;font-weight:600;text-decoration:underline">Terms of Service</a>, <a href="javascript:void(0)" onclick="showLegalPage('privacy')" style="color:#2B3990;font-weight:600;text-decoration:underline">Privacy Policy</a>, and <a href="javascript:void(0)" onclick="showLegalPage('beta')" style="color:#2B3990;font-weight:600;text-decoration:underline">Beta Agreement</a>.</span>
       </label>
       <button onclick="signUp()" style="width:100%;background:#2EAA72;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Start Free Trial</button>
     </div>
@@ -344,7 +344,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v183</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v184</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
