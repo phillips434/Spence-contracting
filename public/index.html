@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v189</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v190</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -561,14 +561,13 @@ body.client-mode .phead { display:none !important; }
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
-    <div id="ownerOnlyAdmin" style="display:none">
-      <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
+          <div class="wcard" id="adminCardBackup" style="display:none;border:2px solid #2EAA72;background:#EDFAF4">
         <div style="font-size:14px;font-weight:700;color:#1A7A4E;margin-bottom:6px">&#128190; Backup All Data</div>
         <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Download a full backup of all your projects, estimates, and settings. Do this before any major update.</div>
         <button class="btn-green" onclick="backupAllData()">&#8659; Download Backup</button>
         <div id="backupStatus" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
-    <div class="wcard" style="border:2px solid #E8B43A;background:#FFFBF0">
+    <div class="wcard" id="adminCardMigrate" style="display:none;border:2px solid #E8B43A;background:#FFFBF0">
         <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
         <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
         <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateMyData()">&#128260; Move My Data Into My Account</button>
@@ -650,7 +649,7 @@ body.client-mode .phead { display:none !important; }
       </div>
       <div id="inviteStatus" style="font-size:12px;margin-top:8px;display:none"></div>
     </div>
-<div class="wcard" style="border:2px solid #2B3990;background:#EEF2FF">
+<div class="wcard" id="adminCardTag" style="display:none;" style="border:2px solid #2B3990;background:#EEF2FF">
         <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#128274; Tag My Projects</div>
         <div style="font-size:12px;color:#2B3990;margin-bottom:12px;line-height:1.5">One-time step: stamp your account ID onto all your existing projects and estimates so only you can see them. Run this once.</div>
         <button class="btn-dark" style="background:#2B3990" onclick="tagMyProjects()">&#128274; Tag All My Projects</button>
@@ -689,7 +688,6 @@ body.client-mode .phead { display:none !important; }
   </div>
 </div>
 
-</div>
 <!-- MODALS -->
 <div class="modal-overlay" id="editScopeModal"><div class="modal-box"><div class="modal-title">Edit Scope Item</div><div class="fg"><div><label class="fl">Description</label><input class="fi" id="esDesc"/></div><div class="fr2"><div><label class="fl">Start</label><input class="fi" id="esStart" type="date"/></div><div><label class="fl">End</label><input class="fi" id="esEnd" type="date"/></div></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="esBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="esActual" type="number"/></div></div><div><label class="fl">Status</label><select class="fi" id="esStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div><div><label class="fl">Assign To</label><select class="fi" id="esAssign" onchange="onScopeAssignChange()"><option value="">-- Unassigned --</option></select></div><div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="esPhone"/></div><div><label class="fl">Email</label><input class="fi" id="esEmail"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;editScopeModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditScope()">Save</button></div></div></div>
 <div class="modal-overlay" id="editChoiceModal"><div class="modal-box"><div class="modal-title">Edit Selection</div><div class="fg"><div><label class="fl">Category</label><input class="fi" id="ecCat"/></div><div><label class="fl">Item</label><input class="fi" id="ecItem"/></div><div><label class="fl">Vendor</label><input class="fi" id="ecVendor"/></div><div><label class="fl">Notes</label><input class="fi" id="ecNotes"/></div><div><label class="fl">Status</label><select class="fi" id="ecStatus"></select></div><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="ecBudget" type="number"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="ecActual" type="number"/></div></div></div><div class="fbtns"><button class="btn-ghost" onclick="closeModal(&quot;editChoiceModal&quot;)">Cancel</button><button class="btn-dark" style="flex:2" onclick="saveEditChoice()">Save</button></div></div></div>
@@ -3133,11 +3131,11 @@ function renderTabBody(p){
   }
     document.getElementById("tabBody").innerHTML=html;
   // Show admin utilities for owner only
-  var _oa=document.getElementById("ownerOnlyAdmin");
-  if(_oa){
-    var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
-    _oa.style.display=_isOw?"block":"none";
-  }
+  var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
+  ['adminCardBackup','adminCardMigrate','adminCardTag'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.style.display=_isOw?'block':'none';
+  });
   // Ensure combined send button exists directly in detailPage (not inside scroll)
   // Restore checkbox + button state after re-render
   if(_selectedSubItems.length){
