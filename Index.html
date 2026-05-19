@@ -344,7 +344,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v184</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v185</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -558,7 +558,8 @@ body.client-mode .phead { display:none !important; }
     <span class="phead-title">Settings</span>
   </div>
   <div style="padding:14px">
-    <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
+    <div id="ownerOnlyAdmin" style="display:none">
+      <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
         <div style="font-size:14px;font-weight:700;color:#1A7A4E;margin-bottom:6px">&#128190; Backup All Data</div>
         <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Download a full backup of all your projects, estimates, and settings. Do this before any major update.</div>
         <button class="btn-green" onclick="backupAllData()">&#8659; Download Backup</button>
@@ -651,7 +652,8 @@ body.client-mode .phead { display:none !important; }
         <div style="font-size:12px;color:#2B3990;margin-bottom:12px;line-height:1.5">One-time step: stamp your account ID onto all your existing projects and estimates so only you can see them. Run this once.</div>
         <button class="btn-dark" style="background:#2B3990" onclick="tagMyProjects()">&#128274; Tag All My Projects</button>
         <div id="tagStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
-      </div>
+      </div
+      </div>>
       <div class="wcard">
           <label class="fl" style="margin-bottom:8px">Company Name</label>
           <input class="fi" id="companyName" style="margin-bottom:8px"/>
@@ -898,10 +900,17 @@ document.addEventListener('click',function(ev){
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
 },true);
-function pushNotification(text,proj){nCol.add({text:text,project:proj||"",ts:Date.now(),read:false});}
+function pushNotification(text,proj){
+  var uid=currentUser?currentUser.uid:null;
+  if(!uid)return;
+  nCol.add({text:text,project:proj||"",ts:Date.now(),read:false,userId:uid});
+}
 function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
 function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
-function startNotifSync(){nCol.orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
+function startNotifSync(){
+  var uid=currentUser?currentUser.uid:null;
+  if(!uid)return;
+  nCol.where('userId','==',uid).orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
 function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n,i){return'<div class="notif-item'+(n.read?'':' unread')+'" onclick="notifTap('+i+')" style="cursor:pointer"><div style="font-size:13px;font-weight:'+(n.read?'400':'700')+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2B3990;margin-top:3px">'+n.project+'</div>':'')+(n.detail?'<div style="font-size:12px;color:#555;margin-top:3px;line-height:1.4">'+n.detail+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join('');notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
@@ -1113,9 +1122,11 @@ function startSync(){
 
   // Check if user is a team member — if so, load their owner's data
   db.collection('userProfiles').doc(uid).get().then(function(doc){
-    var ownerUid=isOwner?uid:(doc.exists&&doc.data().ownerUid?doc.data().ownerUid:uid);
-    var isTeamMember=!isOwner&&ownerUid!==uid;
-    _startSyncWithOwner(ownerUid, isOwner||isTeamMember);
+    var data=doc.exists?doc.data():{};
+    var ownerUid=isOwner?uid:(data.ownerUid||uid);
+    // seeAll: only owner OR confirmed plan='team' with ownerUid from that owner
+    var isVerifiedTeam=!isOwner&&data.plan==='team'&&data.ownerUid&&data.ownerUid!==uid;
+    _startSyncWithOwner(ownerUid, isOwner||isVerifiedTeam);
   }).catch(function(){
     _startSyncWithOwner(uid, isOwner);
   });
@@ -3112,6 +3123,12 @@ function renderTabBody(p){
     html+='</div>';
   }
     document.getElementById("tabBody").innerHTML=html;
+  // Show admin utilities for owner only
+  var _oa=document.getElementById("ownerOnlyAdmin");
+  if(_oa){
+    var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
+    _oa.style.display=_isOw?"block":"none";
+  }
   // Ensure combined send button exists directly in detailPage (not inside scroll)
   // Restore checkbox + button state after re-render
   if(_selectedSubItems.length){
