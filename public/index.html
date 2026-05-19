@@ -17,7 +17,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F5F7;min-height:100vh}
-button,select,input,textarea{-webkit-appearance:none;font-family:inherit}
+button,select,input,textarea{-webkit-appearance:none;font-family:inherit}input[type="checkbox"],input[type="radio"]{width:auto;height:auto;-webkit-appearance:checkbox}
 .topbar{background:#1A1A2E;padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:50}
 .topbar-logo{height:42px;object-fit:contain}
 .sync-bar{background:#162236;padding:5px 16px;display:flex;align-items:center;font-size:11px;color:rgba(255,255,255,0.45);gap:6px}
@@ -262,10 +262,13 @@ body.client-mode .phead { display:none !important; }
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Password</label>
         <input id="suPassword" type="password" placeholder="Min 6 characters" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:13px 14px;font-size:15px;outline:none;color:#333;background:#fff;box-sizing:border-box"/>
       </div>
-      <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;cursor:pointer">
-        <input type="checkbox" id="termsCheck" style="width:18px;height:18px;margin-top:2px;accent-color:#2B3990;flex-shrink:0">
-        <span style="font-size:13px;color:#555;line-height:1.6">I agree to the <a href="javascript:void(0)" onclick="showLegalPage('terms')" style="color:#2B3990;font-weight:600;text-decoration:underline">Terms of Service</a>, <a href="javascript:void(0)" onclick="showLegalPage('privacy')" style="color:#2B3990;font-weight:600;text-decoration:underline">Privacy Policy</a>, and <a href="javascript:void(0)" onclick="showLegalPage('beta')" style="color:#2B3990;font-weight:600;text-decoration:underline">Beta Agreement</a>.</span>
-      </label>
+      <div id="signupAgreeToggle" onclick="toggleSignupAgree()" style="display:flex;align-items:center;gap:12px;padding:12px;background:#F3EEFF;border:2px solid #DDD;border-radius:10px;margin-bottom:14px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05)">
+        <div id="signupCheckBox" style="width:22px;height:22px;border-radius:6px;border:2px solid #CCC;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <span id="signupCheckMark" style="display:none;color:#fff;font-size:14px;font-weight:900">&#10003;</span>
+        </div>
+        <span style="font-size:13px;color:#444;line-height:1.5">I agree to the <a href="javascript:void(0)" onclick="event.stopPropagation();showLegalPage('terms')" style="color:#2B3990;font-weight:600;text-decoration:underline">Terms</a>, <a href="javascript:void(0)" onclick="event.stopPropagation();showLegalPage('privacy')" style="color:#2B3990;font-weight:600;text-decoration:underline">Privacy Policy</a>, and <a href="javascript:void(0)" onclick="event.stopPropagation();showLegalPage('beta')" style="color:#2B3990;font-weight:600;text-decoration:underline">Beta Agreement</a>.</span>
+      </div>
+      <input type="hidden" id="termsCheck" value="0">
       <button onclick="signUp()" style="width:100%;background:#2EAA72;border:none;border-radius:12px;color:#fff;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Start Free Trial</button>
     </div>
 
@@ -344,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v185</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v186</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -4031,8 +4034,29 @@ function signIn(){
   });
 }
 
+function toggleSignupAgree(){
+  var box=document.getElementById('signupCheckBox');
+  var mark=document.getElementById('signupCheckMark');
+  var toggle=document.getElementById('signupAgreeToggle');
+  var hidden=document.getElementById('termsCheck');
+  if(!hidden)return;
+  var checked=hidden.value==='1';
+  if(!checked){
+    hidden.value='1';
+    if(box){box.style.background='#2B3990';box.style.borderColor='#2B3990';}
+    if(toggle){toggle.style.background='#EDE2FF';toggle.style.borderColor='#9B6BE8';}
+    if(mark)mark.style.display='inline';
+  } else {
+    hidden.value='0';
+    if(box){box.style.background='#fff';box.style.borderColor='#CCC';}
+    if(toggle){toggle.style.background='#F3EEFF';toggle.style.borderColor='#DDD';}
+    if(mark)mark.style.display='none';
+  }
+}
+
 function signUp(){
-  if(!document.getElementById('termsCheck')||!document.getElementById('termsCheck').checked){
+  var _tc=document.getElementById('termsCheck');
+  if(!_tc||_tc.value!=='1'){
     showAuthError('You must agree to the Terms, Privacy Policy, and Beta Agreement before continuing.');
     return;
   }
