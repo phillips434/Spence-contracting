@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v187</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v188</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -713,6 +713,8 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 
 var db=firebase.firestore(),auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
+var unsubProjects=null,unsubEstimates=null,unsubNotifs=null;
+var _activeUid=null; // UID guard — prevent duplicate listener init
 
 function toggleTermsAgree(){
   var box=document.getElementById('termsCheckBox');
@@ -913,7 +915,8 @@ function dismissBanner(){document.getElementById("notifBanner").classList.remove
 function startNotifSync(){
   var uid=currentUser?currentUser.uid:null;
   if(!uid)return;
-  nCol.where('userId','==',uid).orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
+  if(unsubNotifs){unsubNotifs();unsubNotifs=null;}
+  unsubNotifs=nCol.where('userId','==',uid).orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
 function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n,i){return'<div class="notif-item'+(n.read?'':' unread')+'" onclick="notifTap('+i+')" style="cursor:pointer"><div style="font-size:13px;font-weight:'+(n.read?'400':'700')+';color:#1A1A2E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2B3990;margin-top:3px">'+n.project+'</div>':'')+(n.detail?'<div style="font-size:12px;color:#555;margin-top:3px;line-height:1.4">'+n.detail+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join('');notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
 function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
@@ -1141,7 +1144,9 @@ function _startSyncWithOwner(ownerUid, seeAll){
 
   // Always read all projects (rules allow it) then filter client-side
   // This avoids needing a Firestore composite index
-  col.orderBy('client').onSnapshot(function(snap){
+  if(unsubProjects){unsubProjects();unsubProjects=null;}
+  if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
+  unsubProjects=col.orderBy('client').onSnapshot(function(snap){
     if(snap.empty&&isOwner){
       var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;
     }
@@ -1166,7 +1171,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
   });
 
   // Same for estimates
-  eCol.orderBy('createdAt','desc').onSnapshot(function(snap){
+  unsubEstimates=eCol.orderBy('createdAt','desc').onSnapshot(function(snap){
     estimates=[];
     snap.forEach(function(d){
       var e=d.data();
@@ -3718,8 +3723,13 @@ auth.onAuthStateChanged(function(user){
     return;
   }
 
-  // Logged in — set up user collections
+  // Logged in — only reinitialize if the UID changed (prevents duplicate listeners on token refresh)
+  if(_activeUid===user.uid) return;
+  _activeUid=user.uid;
   currentUser = user;
+  // Reset DD before loading new user's settings — prevents prior session bleed
+  DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
+  projects=[];estimates=[];notifications=[];unreadCount=0;
   initUserCollections(user.uid);
 
   // Check trial
@@ -4117,9 +4127,17 @@ function signUp(){
 
 function signOutUser(){
   if(!confirm('Sign out of Contractor Desk?')) return;
+  // Unsubscribe all Firestore listeners before logout
+  if(unsubProjects){unsubProjects();unsubProjects=null;}
+  if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
+  if(unsubNotifs){unsubNotifs();unsubNotifs=null;}
+  // Clear all session state
+  projects=[];estimates=[];notifications=[];unreadCount=0;
+  currentId=null;currentEstId=null;currentUser=null;_activeUid=null;
+  LOGO_SRC='';
+  // Reset DD to defaults — no previous user data bleeds into next session
+  DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
   auth.signOut().then(function(){
-    // Reset app state
-    projects=[];estimates=[];currentId=null;currentEstId=null;
     document.getElementById('mainView').style.display='none';
     document.getElementById('trialExpiredScreen').style.display='none';
     document.getElementById('authScreen').style.display='block';
@@ -4212,10 +4230,14 @@ if(_origRenderSettings){
     if(currentUser){
       var el=document.getElementById('companyName');
       if(el && el.parentElement){
-        var emailDiv=document.createElement('div');
-        emailDiv.style.cssText='font-size:11px;color:#888;margin-top:6px';
+        var emailDiv=document.getElementById('settingsSignedInAs');
+        if(!emailDiv){
+          emailDiv=document.createElement('div');
+          emailDiv.id='settingsSignedInAs';
+          emailDiv.style.cssText='font-size:11px;color:#888;margin-top:6px';
+          el.parentElement.appendChild(emailDiv);
+        }
         emailDiv.textContent='Signed in as: '+currentUser.email;
-        el.parentElement.appendChild(emailDiv);
       }
     }
   };
