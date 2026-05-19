@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v190</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v191</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -611,13 +611,13 @@ body.client-mode .phead { display:none !important; }
         <option value="custom">Custom (use AI instructions)</option>
       </select>
     </div>
-    <div class="wcard" style="border:2px solid #2B3990;background:#EEF2FF">
+    <div class="wcard" id="adminCardRestore" style="display:none;border:2px solid #2B3990;background:#EEF2FF">
       <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#128101; Restore Team from Firebase</div>
       <div style="font-size:12px;color:#2B3990;margin-bottom:12px;line-height:1.6">If your subs and employees aren't showing, tap below to force-reload your team list directly from Firebase.</div>
       <button class="btn-dark" style="background:#2B3990;margin-bottom:10px" onclick="forceLoadTeam()">&#128101; Reload Team from Firebase</button>
       <div id="teamLoadStatus" style="font-size:13px;display:none;margin-top:6px;font-weight:600;line-height:1.5"></div>
     </div>
-    <div class="wcard" style="border:2px solid #E8B43A;background:#FFFBF0">
+    <div class="wcard" id="adminCardPhase" style="display:none;border:2px solid #E8B43A;background:#FFFBF0">
       <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Phase Data Recovery</div>
       <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.6">Restore missing scope items from old timeline phase data across all projects.</div>
       <button class="btn-dark" style="background:#E8B43A;color:#1A1A2E" onclick="migrateAllProjects()">&#128260; Restore All Phase Data</button>
@@ -925,9 +925,12 @@ function loadSettings(cb){
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
   sCol.doc(isOwner?'dropdowns':uid).get().then(function(d){
     if(d.exists) DD=Object.assign({},DD,d.data());
-    // Only apply logo for the account that owns it — clear for others
+    // Apply saved logo to topbar if it exists, else use CD_LOGO default
     var tl=document.getElementById('topbarLogo');
-    if(tl){ tl.src=CD_LOGO; tl.style.display='block'; }
+    if(tl){
+      tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;
+      tl.style.display='block';
+    }
     if(cb)cb();
   }).catch(function(){if(cb)cb();});
 }
@@ -3132,7 +3135,7 @@ function renderTabBody(p){
     document.getElementById("tabBody").innerHTML=html;
   // Show admin utilities for owner only
   var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
-  ['adminCardBackup','adminCardMigrate','adminCardTag'].forEach(function(id){
+  ['adminCardBackup','adminCardMigrate','adminCardTag','adminCardRestore','adminCardPhase'].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.style.display=_isOw?'block':'none';
   });
