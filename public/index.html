@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v191</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v193</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1144,20 +1144,19 @@ function _startSyncWithOwner(ownerUid, seeAll){
   var uid=currentUser?currentUser.uid:null;
   var isOwner=ownerUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
 
-  // Always read all projects (rules allow it) then filter client-side
-  // This avoids needing a Firestore composite index
   if(unsubProjects){unsubProjects();unsubProjects=null;}
   if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
   unsubProjects=col.orderBy('client').onSnapshot(function(snap){
-    if(snap.empty&&isOwner){
+    if(snap.empty&&isOwner&&uid===ownerUid){
       var b=db.batch();SEED.forEach(function(p){b.set(col.doc(p.id),p);});b.commit();return;
     }
     projects=[];
     snap.forEach(function(d){
       var p=d.data();
-      // Owner and team members (seeAll) see everything
-      // Everyone else only sees projects tagged with their own userId
-      if(seeAll || p.userId===uid){
+      // Strict isolation: user sees ONLY their own projects
+      // Team members see their owner's projects (p.userId===ownerUid)
+      // NO global seeAll bypass — no account can see all companies
+      if(p.userId===uid || p.userId===ownerUid){
         projects.push(p);
       }
     });
@@ -1168,16 +1167,14 @@ function _startSyncWithOwner(ownerUid, seeAll){
   },function(err){
     console.error('Sync error:',err);
     setSS('error');
-    // On error show empty state instead of loading forever
     projects=[];renderAll();
   });
 
-  // Same for estimates
   unsubEstimates=eCol.orderBy('createdAt','desc').onSnapshot(function(snap){
     estimates=[];
     snap.forEach(function(d){
       var e=d.data();
-      if(seeAll || e.userId===uid){
+      if(e.userId===uid || e.userId===ownerUid){
         estimates.push(e);
       }
     });
@@ -4099,23 +4096,9 @@ function signUp(){
       agreedToTerms: true,
       agreedAt: Date.now()
     });
-  }).then(function(docRef){
-    // Check if there's a pending invite for this email
-    return db.collection('teamInvites').doc(email.toLowerCase()).get();
-  }).then(function(inviteDoc){
-    if(inviteDoc.exists && inviteDoc.data().ownerUid){
-      var ownerUid = inviteDoc.data().ownerUid;
-      var uid = auth.currentUser.uid;
-      // Link this user to the owner's account
-      return db.collection('userProfiles').doc(uid).update({
-        ownerUid: ownerUid,
-        plan: 'team',
-        status: 'active'
-      }).then(function(){
-        return inviteDoc.ref.update({status:'accepted'});
-      });
-    }
   }).then(function(){
+    // Normal company signup — teamInvites NOT checked automatically
+    // Team join only happens via explicit invite link flow
     setAuthLoading(false);
   }).catch(function(err){
     setAuthLoading(false);
