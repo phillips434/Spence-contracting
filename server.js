@@ -25,30 +25,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/estimate', async (req, res) => {
   console.log('[/api/estimate] REQUEST RECEIVED', new Date().toISOString());
-
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) {
-    console.error('[/api/estimate] ERROR: ANTHROPIC_KEY is not set');
     return res.status(500).json({ error: 'ANTHROPIC_KEY secret is not configured.' });
   }
-
   try {
     let body = req.body;
     const mode = body.mode || 'passthrough';
-    const keys = Object.keys(body).join(',');
-    console.log('[/api/estimate] mode:', mode, '| keys:', keys);
-
     if (body.mode === 'estimate') {
-      const items         = body.items      || '[]';
-      const existingExcls = body.excls      || '[]';
-      const markup        = body.markup     || 20;
-      const laborRate     = body.laborRate  || 85;
-      const location      = body.location   || '';
-      const histCtx       = body.histCtx    || '';
-      const prompt        = body.prompt     || '';
-      const model         = body.model      || 'claude-haiku-4-5-20251001';
-      const maxTok        = body.max_tokens || 2000;
-
+      const items = body.items || '[]';
+      const existingExcls = body.excls || '[]';
+      const markup = body.markup || 20;
+      const laborRate = body.laborRate || 85;
+      const location = body.location || '';
+      const histCtx = body.histCtx || '';
+      const prompt = body.prompt || '';
+      const model = body.model || 'claude-haiku-4-5-20251001';
+      const maxTok = body.max_tokens || 2000;
       const systemPrompt =
         'IMPORTANT: Your entire response must be a single raw JSON object.' +
         ' No markdown, no code fences, no backticks, no explanation.' +
@@ -60,22 +53,17 @@ app.post('/api/estimate', async (req, res) => {
         ' Current exclusions: ' + existingExcls +
         ' Markup: ' + markup + '%. Labor: $' + laborRate + '/hr.' +
         (location ? ' Location: ' + location + '.' : '') +
-        (histCtx  ? ' HISTORICAL: ' + histCtx  + '.' : '') +
+        (histCtx ? ' HISTORICAL: ' + histCtx + '.' : '') +
         ' Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE.' +
         ' When adding exclusions, return them as plain strings in the exclusions array.' +
-        ' Example exclusions: ["Permit fees are excluded unless specifically noted.","Hidden damage or concealed conditions are excluded.","Painting is excluded unless listed in the scope."]' +
         ' Do not repeat exclusions already in the current exclusions list.';
-
       body = {
-        model:      model,
+        model: model,
         max_tokens: maxTok,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: prompt }]
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }]
       };
-
-      console.log('[/api/estimate] Estimate mode | prompt len:', prompt.length, '| model:', model);
     }
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -85,20 +73,9 @@ app.post('/api/estimate', async (req, res) => {
       },
       body: JSON.stringify(body)
     });
-
-    console.log('[/api/estimate] Anthropic response status:', response.status);
     const data = await response.json();
-
-    if (!response.ok) {
-      console.error('[/api/estimate] Anthropic error:', data.error ? data.error.message : response.status);
-    } else {
-      console.log('[/api/estimate] Success | stop_reason:', data.stop_reason, '| tokens:', JSON.stringify(data.usage));
-    }
-
     res.status(response.status).json(data);
-
   } catch (err) {
-    console.error('[/api/estimate] Error:', err.message);
     res.status(500).json({ error: 'Failed to reach Anthropic API.' });
   }
 });
