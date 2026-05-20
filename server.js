@@ -7,6 +7,8 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   origin: [
     'https://spence-contracting--phillip95.replit.app',
+    'https://app.getcontractordesk.com',
+    'https://getcontractordesk.com',
     /\.replit\.app$/,
     /\.replit\.dev$/,
     'http://localhost:5000'
