@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v194</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v195</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3731,6 +3731,8 @@ auth.onAuthStateChanged(function(user){
   if(_activeUid===user.uid) return;
   _activeUid=user.uid;
   currentUser = user;
+  // Clear per-session localStorage state for this new user
+  localStorage.removeItem('onboardingDismissed');
   // Reset DD before loading new user's settings — prevents prior session bleed
   DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
   projects=[];estimates=[];notifications=[];unreadCount=0;
@@ -4125,6 +4127,7 @@ function signOutUser(){
   projects=[];estimates=[];notifications=[];unreadCount=0;
   currentId=null;currentEstId=null;currentUser=null;_activeUid=null;
   LOGO_SRC='';
+  localStorage.removeItem('onboardingDismissed');
   // Reset DD to defaults — no previous user data bleeds into next session
   DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
   auth.signOut().then(function(){
