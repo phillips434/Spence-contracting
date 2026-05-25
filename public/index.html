@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v195</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v197</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1112,14 +1112,14 @@ function editTeamMember(i){
   var phone=prompt("Phone:",m.phone||"");if(phone===null)return;
   var email=prompt("Email:",m.email||"");if(email===null)return;
   DD.team[i]={name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"};
-  sCol.doc("dropdowns").set(DD);
+  var _u3=currentUser?currentUser.uid:null;sCol.doc(_u3==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u3||'dropdowns')).set(DD);
   renderTeamList();
   T("Updated: "+name.trim());
 }
 function delTeamMember(i){
   if(!confirm("Remove this team member?"))return;
   DD.team.splice(i,1);
-  sCol.doc("dropdowns").set(DD);
+  var _u4=currentUser?currentUser.uid:null;sCol.doc(_u4==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u4||'dropdowns')).set(DD);
   renderTeamList();
   T("Removed.");
 }
@@ -2748,7 +2748,8 @@ function openScopeEditPage(i){
     sel.value=it.assignTo||'';
   }
   // Always load fresh from Firebase to ensure team is current
-  sCol.doc("dropdowns").get().then(function(d){
+  var _uid2=currentUser?currentUser.uid:null;var _isOwner2=_uid2==='L5XUqfnWrrgbAk18X36XcHDJxnz1';var _sDoc=_isOwner2?'dropdowns':(_uid2||'dropdowns');
+  sCol.doc(_sDoc).get().then(function(d){
     if(d.exists&&d.data().team&&d.data().team.length>0){
       DD.team=d.data().team;
     }
@@ -2874,7 +2875,21 @@ function renderTabBody(p){
     var items=p.scopeItems||[];var tB=0,tA=0;items.forEach(function(it){tB+=(parseFloat(it.budget)||0);tA+=(parseFloat(it.actual)||0);});
     if(wasMigrated)html+='<div class="migrate-banner">&#9989; Restored '+items.length+' scope item'+(items.length!==1?"s":"")+'from your previous phase data. Budgets and assigned contractors recovered.</div>';
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
-    if(p.estimateTotal)html+='<div class="wcard" style="background:#EEF2FF"><div style="font-size:12px;font-weight:700;color:#2B3990;margin-bottom:4px">&#128176; Estimate Total (Client Price)</div><div style="font-size:18px;font-weight:700;color:#2B3990">$'+p.estimateTotal.toLocaleString()+'</div></div>';
+    if(p.estimateTotal||p.clientTotal){
+      var _orig=p.estimateTotal||0;
+      var _curr=p.clientTotal||p.estimateTotal||0;
+      var _coCt=(p.changeOrders||[]).filter(function(c){return c.status==='Approved';}).reduce(function(a,c){return a+(parseFloat(c.budgetImpact)||0);},0);
+      html+='<div class="wcard" style="background:#EEF2FF">';
+      html+='<div style="font-size:12px;font-weight:700;color:#2B3990;margin-bottom:8px">&#128176; Contract Summary</div>';
+      html+='<div style="display:flex;justify-content:space-between;font-size:13px;color:#444;margin-bottom:4px"><span>Original Estimate</span><span>$'+_orig.toLocaleString()+'</span></div>';
+      if(Math.abs(_coCt)>0){
+        var _cs=_coCt>=0?'+':'';
+        var _cc=_coCt>=0?'#2EAA72':'#E83A6C';
+        html+='<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:'+_cc+'">Approved Change Orders</span><span style="color:'+_cc+'">'+_cs+'$'+Math.abs(_coCt).toLocaleString()+'</span></div>';
+      }
+      html+='<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#2B3990;border-top:1px solid #C8D4FF;padding-top:8px;margin-top:4px"><span>Current Contract Total</span><span>$'+_curr.toLocaleString()+'</span></div>';
+      html+='</div>';
+    }
     if(items.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tB,tA)+'</div>';
     html+='<div class="sec-label">Scope of Work Items</div>';
     items.forEach(function(it,i){
@@ -3952,7 +3967,7 @@ function removeLogo(){
   LOGO_SRC = '';
   var tl = document.getElementById('topbarLogo'); if(tl){ tl.src=CD_LOGO; tl.style.display='block'; }
   var wrap = document.getElementById('logoPreviewWrap'); if(wrap) wrap.style.display = 'none';
-  sCol.doc('dropdowns').set(DD).then(function(){ injectPWAManifest(CD_LOGO); T('Logo removed.'); });
+  var _u5=currentUser?currentUser.uid:null;sCol.doc(_u5==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u5||'dropdowns')).set(DD).then(function(){ injectPWAManifest(CD_LOGO); T('Logo removed.'); });
 }
 
 var _origOpenSettings = openSettings;
@@ -4596,8 +4611,8 @@ function syncMilestonesFromEstimate(){
     if(added===0){T('All milestones already synced.');return;}
     // Also update clientTotal if not set
     if(!p.clientTotal && e.paymentMilestones){
-      var total=milestones.reduce(function(a,m){return a+(parseFloat(m.amount)||0);},0);
-      p.clientTotal=total;
+      // Milestones synced — do NOT overwrite clientTotal (may include approved COs)
+      // p.clientTotal is managed by convertToProject and CO approval; preserve it here.
     }
     saveP(p,'Synced '+added+' milestone(s) from estimate');
     T('Synced '+added+' milestone(s)!');
