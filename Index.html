@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v198</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v200</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1054,6 +1054,14 @@ function saveP(p,notifText){
       }
     }
     testStr=JSON.stringify(p);
+    // If still too large, strip old commLog photos (keep newest, preserve text)
+    if(testStr.length>800000){
+      var cl=p.commsLog||[];
+      for(var ci=0;ci<cl.length-1;ci++){
+        if(cl[ci].photo){delete cl[ci].photo;}
+      }
+      testStr=JSON.stringify(p);
+    }
     // If still too big, strip all photos
     if(testStr.length>900000){
       for(var j=0;j<logs.length;j++){
@@ -3086,7 +3094,7 @@ function renderTabBody(p){
     if(comms.length){
       comms.slice().reverse().forEach(function(c,ri){
         var i=comms.length-1-ri;
-        var typeIcon=c.type==='Call'?'&#128222;':c.type==='Text'?'&#128172;':c.type==='Email'?'&#128140;':c.type==='Meeting'?'&#129309;':'&#128172;';
+        var typeIcon=c.type==='Call'?'&#128222;':c.type==='Text'?'&#128172;':c.type==='Email'?'&#128140;':c.type==='Meeting'?'&#129309;':c.type==='Screenshot'?'&#128247;':'&#128172;';
         html+='<div class="wcard" style="margin-bottom:8px">';
         html+='<div style="display:flex;align-items:flex-start;gap:10px">';
         html+='<div style="font-size:22px;flex-shrink:0">'+typeIcon+'</div>';
@@ -3096,6 +3104,7 @@ function renderTabBody(p){
         html+='<span style="font-size:11px;color:#aaa">'+fmtTS(c.ts)+'</span></div>';
         html+='<div style="font-size:13px;color:#333;line-height:1.5;white-space:pre-wrap">'+c.notes+'</div>';
         if(c.followUp) html+='<div style="font-size:11px;color:#E8B43A;margin-top:6px;font-weight:600">&#9888; Follow up: '+c.followUp+'</div>';
+        if(c.photo) html+='<div style="margin-top:10px"><img src="'+c.photo+'" style="max-width:100%;border-radius:8px;border:1px solid #E0E0E0" loading="lazy"/></div>';
         html+='</div>';
         html+='<button ontouchend="event.preventDefault();delComm('+i+');" onclick="delComm('+i+');" style="background:none;border:none;color:#E83A6C;font-size:20px;cursor:pointer;padding:4px 8px;min-height:36px">&#215;</button>';
         html+='</div>';
@@ -3111,13 +3120,15 @@ function renderTabBody(p){
     html+='<div class="inline-form" id="commForm">';
     html+='<div class="fr2" style="margin-bottom:8px">';
     html+='<div><label class="fl" style="margin-bottom:6px">Type</label>';
-    html+='<select class="fi" id="commType"><option>Call</option><option>Text</option><option>Email</option><option>Meeting</option><option>Other</option></select></div>';
+    html+='<select class="fi" id="commType"><option>Call</option><option>Text</option><option>Email</option><option>Meeting</option><option>Screenshot</option><option>Other</option></select></div>';
     html+='<div><label class="fl" style="margin-bottom:6px">Date</label>';
     html+='<input class="fi" id="commDate" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div></div>';
     html+='<label class="fl" style="margin-bottom:6px">Notes</label>';
     html+='<textarea class="fi" id="commNotes" rows="6" placeholder="What was discussed?&#10;Use separate lines for questions and responses" style="margin-bottom:8px"></textarea>';
     html+='<label class="fl" style="margin-bottom:6px">Follow-up Required</label>';
     html+='<input class="fi" id="commFollowUp" placeholder="e.g. Send revised quote by Friday (optional)" style="margin-bottom:10px"/>';
+    html+='<label class="fl" style="margin-bottom:6px">Screenshot (optional)</label>';
+    html+='<input type="file" id="commPhoto" accept="image/*" style="margin-bottom:12px;font-size:13px"/>';
     html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();hideForm(\'commForm\');" onclick="hideForm(\'commForm\');">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addComm();" onclick="addComm();">Save Log</button></div></div>';
 
   } else if(currentTab==="daily-log"){
@@ -3184,17 +3195,33 @@ function addComm(){
   var notes=document.getElementById('commNotes').value.trim();
   if(!notes){alert('Please enter notes.');return;}
   var p=gpr();if(!p)return;
-  p.commsLog=p.commsLog||[];
-  p.commsLog.push({
+  var entry={
     type:document.getElementById('commType').value,
     date:document.getElementById('commDate').value,
     notes:notes,
     followUp:document.getElementById('commFollowUp').value.trim(),
     ts:Date.now()
-  });
-  saveP(p,'Communication logged on '+p.client);
+  };
+  var photoInput=document.getElementById('commPhoto');
+  if(photoInput&&photoInput.files&&photoInput.files[0]){
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      compressPhoto(ev.target.result,function(comp){
+        entry.photo=comp;
+        p.commsLog=p.commsLog||[];
+        p.commsLog.push(entry);
+        saveP(p,'Communication logged on '+p.client);
+      });
+    };
+    reader.readAsDataURL(photoInput.files[0]);
+  } else {
+    p.commsLog=p.commsLog||[];
+    p.commsLog.push(entry);
+    saveP(p,'Communication logged on '+p.client);
+  }
   document.getElementById('commNotes').value='';
   document.getElementById('commFollowUp').value='';
+  if(photoInput)photoInput.value='';
   hideForm('commForm');
 }
 function sendCommSummary(i){
