@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v202</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v203</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -3170,7 +3170,8 @@ function renderTabBody(p){
         html+='<button ontouchend="event.preventDefault();delComm('+i+');" onclick="delComm('+i+');" style="background:none;border:none;color:#E83A6C;font-size:20px;cursor:pointer;padding:4px 8px;min-height:36px">&#215;</button>';
         html+='</div>';
         html+='<div style="display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">';
-        html+='<button ontouchend="event.preventDefault();sendCommSummary('+i+');" onclick="sendCommSummary('+i+');" style="flex:1;padding:8px;background:#2B3990;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;min-height:36px">&#128228; Send Summary to Client</button>';
+        html+='<button ontouchend="event.preventDefault();sendCommSummary('+i+');" onclick="sendCommSummary('+i+');" style="flex:1;padding:8px;background:#2B3990;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;min-height:36px">&#128228; Text Summary</button>';
+        html+='<button ontouchend="event.preventDefault();shareCommWithPhotos();" onclick="shareCommWithPhotos();" style="flex:1;padding:8px;background:#2EAA72;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;min-height:36px">&#128247; Share with Photos</button>';
         html+='</div>';
         html+='</div>';
       });
@@ -3294,6 +3295,23 @@ function addComm(){
   if(photoInput)photoInput.value='';
   hideForm('commForm');
 }
+function shareCommWithPhotos(){
+  var p=gpr();if(!p)return;
+  var url=window.location.href.split('?')[0]+'?portal='+p.id;
+  var msg='Hi '+p.client+',\n\nI\'ve shared our communication log including screenshots at the link below. '+'You can view all notes and images there.\n\n'+url+'\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
+  var phone=p.clientPhone||'';
+  var email=p.clientEmail||'';
+  if(navigator.share){
+    navigator.share({title:'Communication Log — '+p.client,text:msg,url:url}).catch(function(){});
+    return;
+  }
+  if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
+  else if(email){window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Communication Log — '+p.client)+'&body='+encodeURIComponent(msg);}
+  else{
+    navigator.clipboard.writeText(url).then(function(){T('Portal link copied! Send it to your client.');}).catch(function(){alert(url);});
+  }
+}
+
 function sendCommSummary(i){
   var p=gpr();if(!p)return;
   var c=(p.commsLog||[])[i];if(!c)return;
