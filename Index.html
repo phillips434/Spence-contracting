@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v200</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v201</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1057,7 +1057,9 @@ function saveP(p,notifText){
     // If still too large, strip old commLog photos (keep newest, preserve text)
     if(testStr.length>800000){
       var cl=p.commsLog||[];
+      // Strip oldest entries' photos first, preserve newest
       for(var ci=0;ci<cl.length-1;ci++){
+        if(cl[ci].photos&&cl[ci].photos.length){cl[ci].photos=[];}
         if(cl[ci].photo){delete cl[ci].photo;}
       }
       testStr=JSON.stringify(p);
@@ -3104,7 +3106,15 @@ function renderTabBody(p){
         html+='<span style="font-size:11px;color:#aaa">'+fmtTS(c.ts)+'</span></div>';
         html+='<div style="font-size:13px;color:#333;line-height:1.5;white-space:pre-wrap">'+c.notes+'</div>';
         if(c.followUp) html+='<div style="font-size:11px;color:#E8B43A;margin-top:6px;font-weight:600">&#9888; Follow up: '+c.followUp+'</div>';
-        if(c.photo) html+='<div style="margin-top:10px"><img src="'+c.photo+'" style="max-width:100%;border-radius:8px;border:1px solid #E0E0E0" loading="lazy"/></div>';
+        // photos[] array (new) or legacy single photo field
+        var _cPhotos=(c.photos&&c.photos.length)?c.photos:(c.photo?[c.photo]:[]);
+        if(_cPhotos.length){
+          html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">';
+          _cPhotos.forEach(function(src,pi){
+            html+='<img src="'+src+'" onclick="openCommPhoto(this.src)" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #E0E0E0;cursor:pointer" loading="lazy"/>';
+          });
+          html+='</div>';
+        }
         html+='</div>';
         html+='<button ontouchend="event.preventDefault();delComm('+i+');" onclick="delComm('+i+');" style="background:none;border:none;color:#E83A6C;font-size:20px;cursor:pointer;padding:4px 8px;min-height:36px">&#215;</button>';
         html+='</div>';
@@ -3127,8 +3137,9 @@ function renderTabBody(p){
     html+='<textarea class="fi" id="commNotes" rows="6" placeholder="What was discussed?&#10;Use separate lines for questions and responses" style="margin-bottom:8px"></textarea>';
     html+='<label class="fl" style="margin-bottom:6px">Follow-up Required</label>';
     html+='<input class="fi" id="commFollowUp" placeholder="e.g. Send revised quote by Friday (optional)" style="margin-bottom:10px"/>';
-    html+='<label class="fl" style="margin-bottom:6px">Screenshot (optional)</label>';
-    html+='<input type="file" id="commPhoto" accept="image/*" style="margin-bottom:12px;font-size:13px"/>';
+    html+='<label class="fl" style="margin-bottom:6px">Screenshots (optional, up to 5)</label>';
+    html+='<input type="file" id="commPhotos" accept="image/*" multiple style="margin-bottom:12px;font-size:13px"/>';
+    html+='<div style="font-size:11px;color:#888;margin-bottom:8px">Max 5 screenshots per entry.</div>';
     html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();hideForm(\'commForm\');" onclick="hideForm(\'commForm\');">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addComm();" onclick="addComm();">Save Log</button></div></div>';
 
   } else if(currentTab==="daily-log"){
@@ -3200,20 +3211,28 @@ function addComm(){
     date:document.getElementById('commDate').value,
     notes:notes,
     followUp:document.getElementById('commFollowUp').value.trim(),
-    ts:Date.now()
+    ts:Date.now(),
+    photos:[]
   };
-  var photoInput=document.getElementById('commPhoto');
-  if(photoInput&&photoInput.files&&photoInput.files[0]){
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      compressPhoto(ev.target.result,function(comp){
-        entry.photo=comp;
-        p.commsLog=p.commsLog||[];
-        p.commsLog.push(entry);
-        saveP(p,'Communication logged on '+p.client);
-      });
-    };
-    reader.readAsDataURL(photoInput.files[0]);
+  var photoInput=document.getElementById('commPhotos');
+  var files=photoInput&&photoInput.files?Array.from(photoInput.files).slice(0,5):[];
+  if(files.length>0){
+    var processed=0;
+    files.forEach(function(file){
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        compressPhoto(ev.target.result,function(comp){
+          entry.photos.push(comp);
+          processed++;
+          if(processed===files.length){
+            p.commsLog=p.commsLog||[];
+            p.commsLog.push(entry);
+            saveP(p,'Communication logged on '+p.client);
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    });
   } else {
     p.commsLog=p.commsLog||[];
     p.commsLog.push(entry);
@@ -3235,6 +3254,17 @@ function sendCommSummary(i){
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
   else if(email){window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Summary: Our '+c.type+' - '+p.client)+'&body='+encodeURIComponent(msg);}
   else{if(confirm('No client contact info on file. Copy message to clipboard?')){navigator.clipboard.writeText(msg).then(function(){T('Copied!');}).catch(function(){alert(msg);});}}
+}
+
+function openCommPhoto(src){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.onclick=function(){document.body.removeChild(overlay);};
+  var img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain';
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
 }
 
 function delComm(i){
