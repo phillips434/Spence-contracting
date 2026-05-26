@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v201</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v202</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -2310,6 +2310,57 @@ function renderProjectPortal(p, est, wrapper){
     });
   },500);
 
+  // Communication Log — show screenshots and notes shared with client
+  var sharedComms=(p.commsLog||[]).filter(function(c){return c.notes;});
+  if(sharedComms.length){
+    var commSection=document.createElement('div');
+    commSection.style.cssText='margin:24px 0 0;';
+    var commTitle=document.createElement('div');
+    commTitle.style.cssText='font-size:16px;font-weight:700;color:#1A1A2E;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E8ECF0';
+    commTitle.textContent='\uD83D\uDCDE Communication Log';
+    commSection.appendChild(commTitle);
+    sharedComms.forEach(function(c){
+      var card=document.createElement('div');
+      card.style.cssText='background:#F8F9FC;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #E8ECF0';
+      var header=document.createElement('div');
+      header.style.cssText='display:flex;justify-content:space-between;margin-bottom:8px';
+      var typeSpan=document.createElement('span');
+      typeSpan.style.cssText='font-size:12px;font-weight:700;color:#2B3990;background:#EEF2FF;padding:3px 8px;border-radius:10px';
+      typeSpan.textContent=c.type||'Communication';
+      var dateSpan=document.createElement('span');
+      dateSpan.style.cssText='font-size:12px;color:#888';
+      dateSpan.textContent=c.date||'';
+      header.appendChild(typeSpan);header.appendChild(dateSpan);
+      card.appendChild(header);
+      var notes=document.createElement('div');
+      notes.style.cssText='font-size:14px;color:#333;line-height:1.6;white-space:pre-wrap;margin-bottom:8px';
+      notes.textContent=c.notes||'';
+      card.appendChild(notes);
+      if(c.followUp){
+        var fu=document.createElement('div');
+        fu.style.cssText='font-size:12px;color:#E8A020;font-weight:600;margin-bottom:8px';
+        fu.textContent='\u26A0\uFE0F Follow up: '+c.followUp;
+        card.appendChild(fu);
+      }
+      // Screenshots inline
+      var photos=(c.photos&&c.photos.length)?c.photos:(c.photo?[c.photo]:[]);
+      if(photos.length){
+        var gallery=document.createElement('div');
+        gallery.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:8px';
+        photos.forEach(function(src){
+          var img=document.createElement('img');
+          img.src=src;
+          img.style.cssText='width:100%;max-width:480px;border-radius:8px;border:1px solid #DDE;cursor:pointer;display:block';
+          img.onclick=function(){openCommPhoto(src);};
+          gallery.appendChild(img);
+        });
+        card.appendChild(gallery);
+      }
+      commSection.appendChild(card);
+    });
+    wrapper.appendChild(commSection);
+  }
+
   // Retry CO canvases - they may need more time
   setTimeout(function(){
     (p.changeOrders||[]).forEach(function(co,i){
@@ -3111,7 +3162,7 @@ function renderTabBody(p){
         if(_cPhotos.length){
           html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">';
           _cPhotos.forEach(function(src,pi){
-            html+='<img src="'+src+'" onclick="openCommPhoto(this.src)" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #E0E0E0;cursor:pointer" loading="lazy"/>';
+            html+='<img src="'+src+'" onclick="openCommPhoto(this.src)" style="width:110px;height:110px;object-fit:cover;border-radius:8px;border:1px solid #E0E0E0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)" loading="lazy"/>';
           });
           html+='</div>';
         }
@@ -3221,7 +3272,7 @@ function addComm(){
     files.forEach(function(file){
       var reader=new FileReader();
       reader.onload=function(ev){
-        compressPhoto(ev.target.result,function(comp){
+        compressCommPhoto(ev.target.result,function(comp){
           entry.photos.push(comp);
           processed++;
           if(processed===files.length){
@@ -3258,11 +3309,18 @@ function sendCommSummary(i){
 
 function openCommPhoto(src){
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer';
-  overlay.onclick=function(){document.body.removeChild(overlay);};
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch';
+  overlay.onclick=function(e){if(e.target===overlay)document.body.removeChild(overlay);};
+  // Close button
+  var closeBtn=document.createElement('button');
+  closeBtn.textContent='✕';
+  closeBtn.style.cssText='position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1';
+  closeBtn.onclick=function(){document.body.removeChild(overlay);};
+  overlay.appendChild(closeBtn);
+  // Image
   var img=document.createElement('img');
   img.src=src;
-  img.style.cssText='max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain';
+  img.style.cssText='max-width:96vw;max-height:88vh;border-radius:6px;object-fit:contain;display:block';
   overlay.appendChild(img);
   document.body.appendChild(overlay);
 }
@@ -3598,6 +3656,28 @@ function addCO(){
 }
 function delCO(i){if(!confirm("Delete?"))return;var p=gpr();p.changeOrders.splice(i,1);saveP(p);}
 function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.changeOrders[i].status=v;saveP(p,old!==v?"Change order '"+p.changeOrders[i].title+"' "+v+" on "+p.client:null);}
+function compressCommPhoto(dataUrl,cb){
+  var img=new Image();
+  img.onload=function(){
+    // Screenshots: max 1200px, quality 0.8 — optimized for text readability
+    var maxW=1200,maxH=1600,w=img.width,h=img.height;
+    if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+    if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
+    var c=document.createElement('canvas');
+    c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    var compressed=c.toDataURL('image/jpeg',0.80);
+    // Safety: if still over 350KB drop quality to 0.65
+    if(compressed.length>480000){
+      var c2=document.createElement('canvas');
+      c2.width=w;c2.height=h;
+      c2.getContext('2d').drawImage(img,0,0,w,h);
+      compressed=c2.toDataURL('image/jpeg',0.65);
+    }
+    cb(compressed);
+  };
+  img.src=dataUrl;
+}
+
 function compressPhoto(dataUrl,cb){
   var img=new Image();
   img.onload=function(){
