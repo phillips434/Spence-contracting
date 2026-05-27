@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v204</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v205</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1184,6 +1184,8 @@ function _startSyncWithOwner(ownerUid, seeAll){
     estimates=[];
     snap.forEach(function(d){
       var e=d.data();
+      // Exclude converted estimates — they live as projects now
+      if(e.converted===true||e.status==='Converted') return;
       if(e.userId===uid || e.userId===ownerUid){
         estimates.push(e);
       }
@@ -2082,8 +2084,13 @@ function convertToProject(){
   console.info('[Convert] Creating project '+jobNum+' with '+scopeItems.length+' scope items, budget $'+np.budget);
 
   col.doc(np.id).set(np).then(function(){
+    // Mark estimate as converted — this removes it from all users' estimate lists
     e.projectId=np.id;
-    eCol.doc(e.id).set(e);
+    e.status='Converted';
+    e.converted=true;
+    e.convertedAt=Date.now();
+    return eCol.doc(e.id).set(e);
+  }).then(function(){
     T("Project "+jobNum+" created!");
     document.getElementById("estDetailPage").classList.remove("show");
     switchMainTab("projects");
