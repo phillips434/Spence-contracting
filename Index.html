@@ -347,7 +347,7 @@ body.client-mode .phead { display:none !important; }
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v205</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v206</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -1043,33 +1043,37 @@ function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocat
 function saveP(p,notifText){
   setSS("saving");
   // Check document size — Firestore limit is 1MB
-  // If too large, strip photos from older logs (keep last 3)
   var testStr=JSON.stringify(p);
+
+  // Step 1: over 700KB — strip daily log photos from older entries (keep last 3)
   if(testStr.length>700000 && p.dailyLogs && p.dailyLogs.length>0){
     var logs=p.dailyLogs;
-    var keepPhotos=3; // keep photos in most recent logs
+    var keepPhotos=3;
     for(var i=0;i<logs.length-keepPhotos;i++){
       if(logs[i].photos && logs[i].photos.length>0){
         logs[i].photos=[];
       }
     }
     testStr=JSON.stringify(p);
-    // If still too large, strip old commLog photos (keep newest, preserve text)
-    if(testStr.length>800000){
-      var cl=p.commsLog||[];
-      // Strip oldest entries' photos first, preserve newest
-      for(var ci=0;ci<cl.length-1;ci++){
-        if(cl[ci].photos&&cl[ci].photos.length){cl[ci].photos=[];}
-        if(cl[ci].photo){delete cl[ci].photo;}
-      }
-      testStr=JSON.stringify(p);
+  }
+
+  // Step 2: still over 850KB — strip ALL daily log photos
+  if(testStr.length>850000 && p.dailyLogs){
+    for(var j=0;j<p.dailyLogs.length;j++){
+      p.dailyLogs[j].photos=[];
     }
-    // If still too big, strip all photos
-    if(testStr.length>900000){
-      for(var j=0;j<logs.length;j++){
-        logs[j].photos=[];
-      }
+    testStr=JSON.stringify(p);
+  }
+
+  // Step 3: only strip comm log photos as absolute last resort (>950KB)
+  // Comm screenshots are preserved unless project is near the 1MB hard limit
+  if(testStr.length>950000){
+    var cl=p.commsLog||[];
+    for(var ci=0;ci<cl.length;ci++){
+      if(cl[ci].photos&&cl[ci].photos.length){cl[ci].photos=[];}
+      if(cl[ci].photo){delete cl[ci].photo;}
     }
+    testStr=JSON.stringify(p);
   }
   return col.doc(p.id).set(p).then(function(){
     T("Saved!");
