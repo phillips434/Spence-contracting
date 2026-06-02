@@ -977,7 +977,7 @@ function testAIConnection(){
   var pingCtrl=new AbortController();
   var pingTimeout=setTimeout(function(){pingCtrl.abort();},8000);
 
-  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]}),
@@ -1788,7 +1788,7 @@ function generateAIEstimate(){
 
   _aiStatus('📡 Sending request...');
 
-  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
@@ -1900,7 +1900,7 @@ function generateAIEstimate(){
       var _retryTimeout=setTimeout(function(){_retryCtrl.abort();},30000);
       setTimeout(function(){
         _aiStatus('📡 Retrying...');
-        fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+        fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
@@ -1962,7 +1962,7 @@ function generateAILog(){
   var sp='You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: '+(items||'General construction');
   var _logCtrl=new AbortController();
   var _logTimeout=setTimeout(function(){_logCtrl.abort();},15000);
-  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,
@@ -3409,7 +3409,7 @@ function generateCOWithAI(btnEl){
     +(histCtx2?' Historical accuracy: '+histCtx2+'.':'')+' Adjust costs accordingly.';
   var _coCtrl=new AbortController();
   var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
-  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1200,system:sp,
@@ -3533,7 +3533,7 @@ function generatePunchListAI(btnEl){
   var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, no markdown, no code fences, no explanation. Example: ["Touch up paint","Verify all outlets work","Clean all surfaces","Remove debris"]';
   var _plCtrl=new AbortController();
   var _plTimeout=setTimeout(function(){_plCtrl.abort();},20000);
-  fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,system:sp,
@@ -3953,7 +3953,7 @@ auth.onAuthStateChanged(function(user){
       }
       // Wake Replit server in background on login (prevents cold start on first AI use)
       setTimeout(function(){
-        fetch('https://spence-contracting--phillip95.replit.app/api/estimate',{
+        fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
