@@ -4057,7 +4057,7 @@ function injectPWAManifest(logoDataUrl){
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;
   var swCode = [
-    "var CACHE='contractordesk-v2';",
+    "var CACHE='contractordesk-v3';",
     "var SKIP=['firestore','firebase','googleapis','anthropic','replit'];",
     "self.addEventListener('install',function(e){",
     "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(['./']);}).then(function(){return self.skipWaiting();}));",
@@ -4071,19 +4071,56 @@ function registerServiceWorker(){
     "  if(e.request.method!=='GET') return;",
     "  var url=e.request.url;",
     "  for(var i=0;i<SKIP.length;i++){if(url.indexOf(SKIP[i])>=0)return;}",
+    "  // Network-first for navigation requests (ensures index.html updates promptly)",
+    "  try{",
+    "    if(e.request.mode==='navigate' || (e.request.headers && e.request.headers.get && e.request.headers.get('accept') && e.request.headers.get('accept').indexOf('text/html')>=0)){",
+    "      e.respondWith(fetch(e.request).then(function(r){var rc=r.clone();caches.open(CACHE).then(function(c){c.put('./',rc);});return r;}).catch(function(){return caches.match('./');}));",
+    "      return;",
+    "    }",
+    "  }catch(err){}",
     "  e.respondWith(fetch(e.request).then(function(r){",
     "    var rc=r.clone();",
     "    caches.open(CACHE).then(function(c){c.put(e.request,rc);});",
     "    return r;",
     "  }).catch(function(){return caches.match(e.request);}));",
-    "});"
+    "});",
+    "// Allow page to tell SW to skipWaiting when user accepts update",
+    "self.addEventListener('message',function(e){ if(e.data==='skipWaiting') return self.skipWaiting(); });"
   ].join('\n');
   try{
     var blob = new Blob([swCode], {type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob), {scope:'./'}).then(function(){
+    navigator.serviceWorker.register(URL.createObjectURL(blob), {scope:'./'}).then(function(reg){
+      // If there's an active waiting worker, prompt user to update
+      try{
+        if(reg.waiting){ showSWUpdateBanner(reg); }
+        reg.addEventListener('updatefound',function(){
+          var nw = reg.installing;
+          if(!nw) return;
+          nw.addEventListener('statechange',function(){
+            if(nw.state==='installed' && navigator.serviceWorker.controller){ showSWUpdateBanner(reg); }
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange',function(){ window.location.reload(); });
+      }catch(e){console.warn('[PWA] update handling error',e);}
       }).catch(function(err){
       console.warn('[PWA] SW skipped:', err.message);
     });
+
+    // Create a minimal update banner UI and handler
+    function showSWUpdateBanner(reg){
+      if(document.getElementById('swUpdateBanner')) return; // already shown
+      var b = document.createElement('div');
+      b.id = 'swUpdateBanner';
+      b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;padding:12px 14px;background:#111;color:#fff;border-radius:10px;display:flex;gap:10px;align-items:center;z-index:99999;box-shadow:0 6px 18px rgba(0,0,0,0.2)';
+      b.innerHTML = '<div style="flex:1;font-size:14px;font-weight:700">A new version is available</div>'+
+        '<button id="swRefreshBtn" style="background:#2EAA72;border:none;padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer">Refresh</button>'+
+        '<button id="swDismissBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.12);padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer">Dismiss</button>';
+      document.body.appendChild(b);
+      document.getElementById('swRefreshBtn').onclick = function(){
+        if(reg && reg.waiting) reg.waiting.postMessage('skipWaiting');
+      };
+      document.getElementById('swDismissBtn').onclick = function(){ b.remove(); };
+    }
   } catch(e){ console.warn('[PWA] SW error:', e); }
 }
 
