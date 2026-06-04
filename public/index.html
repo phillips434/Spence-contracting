@@ -1044,6 +1044,7 @@ function saveP(p,notifText){
   setSS("saving");
   // Check document size — Firestore limit is 1MB
   var testStr=JSON.stringify(p);
+  var tooLarge=false;
 
   // Step 1: over 700KB — strip daily log photos from older entries (keep last 3)
   if(testStr.length>700000 && p.dailyLogs && p.dailyLogs.length>0){
@@ -1065,15 +1066,14 @@ function saveP(p,notifText){
     testStr=JSON.stringify(p);
   }
 
-  // Step 3: only strip comm log photos as absolute last resort (>950KB)
-  // Comm screenshots are preserved unless project is near the 1MB hard limit
+  // Step 3: warn when the project is too large to save with all comms attachments
   if(testStr.length>950000){
-    var cl=p.commsLog||[];
-    for(var ci=0;ci<cl.length;ci++){
-      if(cl[ci].photos&&cl[ci].photos.length){cl[ci].photos=[];}
-      if(cl[ci].photo){delete cl[ci].photo;}
-    }
-    testStr=JSON.stringify(p);
+    tooLarge=true;
+  }
+  if(tooLarge){
+    T("Project too large to save with all attachments. Remove or shrink some images and try again.");
+    setSS("error");
+    return Promise.reject(new Error("Project too large to save with all attachments."));
   }
   return col.doc(p.id).set(p).then(function(){
     T("Saved!");
@@ -3695,20 +3695,13 @@ function updateCOStatus(i,v){var p=gpr();var old=p.changeOrders[i].status;p.chan
 function compressCommPhoto(dataUrl,cb){
   var img=new Image();
   img.onload=function(){
-    // Screenshots: max 1200px, quality 0.8 — optimized for text readability
-    var maxW=1200,maxH=1600,w=img.width,h=img.height;
+    // Screenshots: max 900x1200px, quality 0.65 for comms attachments
+    var maxW=900,maxH=1200,w=img.width,h=img.height;
     if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
     if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
     var c=document.createElement('canvas');
     c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
-    var compressed=c.toDataURL('image/jpeg',0.80);
-    // Safety: if still over 350KB drop quality to 0.65
-    if(compressed.length>480000){
-      var c2=document.createElement('canvas');
-      c2.width=w;c2.height=h;
-      c2.getContext('2d').drawImage(img,0,0,w,h);
-      compressed=c2.toDataURL('image/jpeg',0.65);
-    }
+    var compressed=c.toDataURL('image/jpeg',0.65);
     cb(compressed);
   };
   img.src=dataUrl;
