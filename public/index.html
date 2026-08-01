@@ -977,7 +977,7 @@ function testAIConnection(){
   var pingCtrl=new AbortController();
   var pingTimeout=setTimeout(function(){pingCtrl.abort();},8000);
 
-fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
+fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]}),
@@ -1360,20 +1360,33 @@ function renderEstDetailBody(e){
   // AI panel - only for contractor, never in client view
   var isClientMode=document.body.classList.contains('client-mode')||window.location.search.indexOf('est=')>=0;
   if(!isClientMode){
-  html+='<div style="padding:14px;background:#fff;border-bottom:2px solid #EEE">';
-  html+='<div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">';
-  html+='<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>';
-  html+='<div style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:10px">Add items, remove items, adjust markup, generate exclusions</div>';
-  html+='<textarea id="aiPrompt" rows="3" style="width:100%;border-radius:10px;border:none;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px" placeholder="e.g. Generate line items for kitchen remodel"></textarea>';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
-  html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate line items for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
-  html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Remove the line item: &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>';
-  html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Change markup on all items to &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>';
-  html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate standard exclusions for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
-  html+="</div>";
-  html+='<button onclick="generateAIEstimate()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">&#10024; Run AI Command</button>';
-  html+='<div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>';
-  html+='</div></div>';
+    var aiQuestionState=window._aiEstimateQuestionState||{active:false,originalPrompt:'',questions:[],answers:[]};
+    var isQuestionFlow=!!(aiQuestionState.active&&aiQuestionState.questions&&aiQuestionState.questions.length);
+    var aiHelperText=isQuestionFlow?'Answer the questions below to continue the estimate.':'Add items, remove items, adjust markup, generate exclusions';
+    var aiPlaceholder=isQuestionFlow?'Type your answers here...':'e.g. Generate line items for kitchen remodel';
+    var aiButtonLabel=isQuestionFlow?'💬 Submit Answers':'✨ Run AI Command';
+    html+='<div style="padding:14px;background:#fff;border-bottom:2px solid #EEE">';
+    html+='<div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">';
+    html+='<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>';
+    html+='<div style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:10px">'+aiHelperText+'</div>';
+    if(isQuestionFlow){
+      html+='<div style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:10px 12px;margin-bottom:10px">';
+      html+='<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#fff">Follow-up questions</div>';
+      (aiQuestionState.questions||[]).forEach(function(q){
+        html+='<div style="font-size:12px;color:rgba(255,255,255,0.9);margin-bottom:6px">• '+q+'</div>';
+      });
+      html+='</div>';
+    }
+    html+='<textarea id="aiPrompt" rows="3" style="width:100%;border-radius:10px;border:none;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px" placeholder="'+aiPlaceholder+'"></textarea>';
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate line items for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
+    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Remove the line item: &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>';
+    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Change markup on all items to &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>';
+    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate standard exclusions for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
+    html+='</div>';
+    html+='<button onclick="generateAIEstimate()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2B3990,#4A5FD0);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">'+aiButtonLabel+'</button>';
+    html+='<div id="aiLoading" style="display:none;text-align:center;color:rgba(255,255,255,0.8);padding:10px;font-size:13px">&#9889; AI is working...</div>';
+    html+='</div></div>';
   }
   // AI Generator
 
@@ -1732,6 +1745,11 @@ function saveEstimate(e, msg){
     throw err;
   });
 }
+function shouldUseIntakeGate(prompt){
+  var text=(prompt||'').toLowerCase();
+  if(!text){return false;}
+  return !/\b(?:add|remove|delete|markup|exclusion|exclusions|update|edit|change order|change markup|modify)\b/.test(text);
+}
 function generateAIEstimate(){
   var prompt,e,profile,dm,lr,existingItems,existingExcls;
 
@@ -1747,116 +1765,78 @@ function generateAIEstimate(){
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=false;});
   }
 
-  try {
-    prompt=document.getElementById('aiPrompt').value.trim();
-    if(!prompt){T('Enter a command or job description first.');return;}
-    e=ger();if(!e){T('No estimate loaded.');return;}
-    document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
-    _aiStatus('⏳ Button clicked — preparing request...');
-    profile=DD.aiProfile||{};
-    dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
-    lr=parseFloat(profile.laborRate)||85;
-    existingItems=JSON.stringify((e.lineItems||[]).slice(0,20).map(function(li,i){
-      return{index:i,desc:li.desc,category:li.category,total:li.total};
-    }));
-    existingExcls=JSON.stringify((e.exclusions||[]).slice(0,10));
-  } catch(setupErr){
-    _aiDone();
-    T('Setup error: '+setupErr.message);
-    return;
+  function runEstimateRequest(payload){
+    var _aiController=new AbortController();
+    var _aiStart=Date.now();
+    var _aiTimeout=setTimeout(function(){
+      _aiStatus('⏱ 30s timeout — aborting...','#E8B43A');
+      _aiController.abort();
+    },30000);
+    var _slowWarn=setTimeout(function(){
+      var el=document.getElementById('aiLoading');
+      if(el&&el.style.display!=='none'){
+        _aiStatus('⏳ Still working... Replit server warming up (up to 30s)');
+      }
+    },10000);
+
+    _aiStatus('📡 Sending request...');
+
+    return fetch('/api/estimate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      signal:_aiController.signal
+    }).then(function(r){
+      clearTimeout(_aiTimeout);
+      if(!r.ok){
+        return r.text().then(function(t){throw new Error('Server error '+r.status+': '+t.slice(0,100));});
+      }
+      return r.json();
+    }).finally(function(){
+      clearTimeout(_slowWarn);
+      clearTimeout(_aiTimeout);
+    });
   }
 
-  // System prompt built server-side to avoid gateway blocking
-  var _histCtxVal=window._histCtx||'';
-  window._histCtx=null;
-
-  var _aiController=new AbortController();
-  var _aiStart=Date.now();
-  var _hardAbortFired=false;
-
-  // Hard 30s abort
-  var _aiTimeout=setTimeout(function(){
-    _hardAbortFired=true;
-    _aiStatus('⏱ 30s timeout — aborting...','#E8B43A');
-    _aiController.abort();
-  },30000);
-
-  // Slow-server warning at 10s
-  var _slowWarn=setTimeout(function(){
-    var el=document.getElementById('aiLoading');
-    if(el&&el.style.display!=='none'){
-      _aiStatus('⏳ Still working... Replit server warming up (up to 30s)');
-    }
-  },10000);
-
-  _aiStatus('📡 Sending request...');
-
-  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
-      prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
-      location:profile.location||'',histCtx:_histCtxVal,
-      messages:[{role:'user',content:prompt}]}),
-    signal:_aiController.signal
-  }).then(function(r){
-    clearTimeout(_aiTimeout);
-    _aiStatus('📥 Response received ('+Math.round((Date.now()-_aiStart)/1000)+'s) — parsing...');
-    if(!r.ok){
-      return r.text().then(function(t){
-        throw new Error('Server error '+r.status+': '+t.slice(0,100));
-      });
-    }
-    return r.json();
-  })
-  .then(function(data){
-    // DIAGNOSTICS: surface exact failure point
-    if(data.type==='error'||data.error){
-      _aiDone();
-      var em=data.error?data.error.message:JSON.stringify(data).slice(0,120);
-      T('Anthropic error: '+em);
-      console.error('[AI] Anthropic error:',JSON.stringify(data).slice(0,300));
-      return;
+  function parseAIResponse(data){
+    if(data && typeof data === 'object' && !Array.isArray(data) && typeof data.action !== 'undefined'){
+      return data;
     }
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     var blockType=(data.content&&data.content[0]?data.content[0].type:'none');
-    _aiStatus('📥 Response '+text.length+'chars ('+blockType+') — parsing...');
     if(!text){
       _aiDone();
       T('AI empty response ('+blockType+') — check Replit logs');
       console.error('[AI] Empty. Response:',JSON.stringify(data).slice(0,300));
-      return;
+      return null;
     }
-    // Robust JSON extractor — handles all AI response formats:
-    // raw JSON, ```json fenced, ``` fenced, text before/after, whitespace
     text=text.trim();
-    // Strip markdown fences if present
     if(text.indexOf('```')!==-1){
       text=text.replace(/^```(?:json)?\s*/,'').replace(/\s*```\s*$/,'').trim();
     }
-    // Extract first complete JSON object regardless of surrounding text
     var jsonMatch=text.match(/\{[\s\S]*\}/);
     if(!jsonMatch){
       _aiDone();
       T('AI response did not contain JSON — try again');
       console.error('[AI] No JSON found. Length:',text.length,'First 50:',text.slice(0,50));
-      return;
+      return null;
     }
-    var parsed;
     try{
-      parsed=JSON.parse(jsonMatch[0]);
+      return JSON.parse(jsonMatch[0]);
     }catch(pe){
-      // Try trimming to last } in case of trailing garbage
       var trimmed=jsonMatch[0].slice(0,jsonMatch[0].lastIndexOf('}')+1);
       try{
-        parsed=JSON.parse(trimmed);
+        return JSON.parse(trimmed);
       }catch(pe2){
         _aiDone();
         T('AI response could not be parsed — try again');
         console.error('[AI] Parse failed:',pe.message);
-        return;
+        return null;
       }
     }
+  }
+
+  function applyEstimateChanges(parsed){
     var e2=ger();if(!e2){_aiDone();return;}
     e2.lineItems=e2.lineItems||[];
     e2.exclusions=e2.exclusions||[];
@@ -1890,71 +1870,107 @@ function generateAIEstimate(){
     }).catch(function(saveErr){
       T('AI completed but save failed: '+saveErr.message);
     });
-  })
-  .catch(function(err){
-    clearTimeout(_aiTimeout);
-    var elapsed=Math.round((Date.now()-_aiStart)/1000);
-    var isNetworkErr=err.message&&(err.message.indexOf('Load failed')!==-1||err.message.indexOf('Failed to fetch')!==-1||err.message.indexOf('NetworkError')!==-1);
+  }
 
-    if(isNetworkErr && elapsed < 35){
-      // Server is sleeping — retry once after 8s wake-up window
-      _aiStatus('⏳ Server waking up... retrying in 8 seconds');
-      var _retryCtrl=new AbortController();
-      var _retryTimeout=setTimeout(function(){_retryCtrl.abort();},30000);
-      setTimeout(function(){
-        _aiStatus('📡 Retrying...');
-        fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({mode:'estimate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
-            prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
-            location:profile.location||'',histCtx:_histCtxVal,
-            messages:[{role:'user',content:prompt}]}),
-          signal:_retryCtrl.signal
-        }).then(function(r){
-          clearTimeout(_retryTimeout);
-          _aiStatus('📥 Retry response received — parsing...');
-          if(!r.ok) return r.text().then(function(t){throw new Error('Server error '+r.status+': '+t.slice(0,100));});
-          return r.json();
-        }).then(function(data){
-          var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-          if(!text){_aiDone();T('AI returned empty response');return;}
-          var jsonMatch=text.match(/\{[\s\S]*\}/);
-          var parsed;
-          try{parsed=JSON.parse(jsonMatch?jsonMatch[0]:'');}catch(pe){_aiDone();T('AI format error — try again');return;}
-          var e2=ger();if(!e2){_aiDone();return;}
-          e2.lineItems=e2.lineItems||[];e2.exclusions=e2.exclusions||[];
-          var changes=[];
-          if(parsed.lineItems&&parsed.lineItems.length){e2.lineItems=e2.lineItems.concat(parsed.lineItems);changes.push('Added '+parsed.lineItems.length+' item(s)');}
-          if(parsed.deleteIndexes&&parsed.deleteIndexes.length){var td=parsed.deleteIndexes.slice().sort(function(a,b){return b-a;});td.forEach(function(i){if(i>=0&&i<e2.lineItems.length)e2.lineItems.splice(i,1);});changes.push('Removed '+parsed.deleteIndexes.length+' item(s)');}
-          if(parsed.updateItems&&parsed.updateItems.length){parsed.updateItems.forEach(function(u){if(u.index>=0&&u.index<e2.lineItems.length){e2.lineItems[u.index]=Object.assign({},e2.lineItems[u.index],u);delete e2.lineItems[u.index].index;}});changes.push('Updated '+parsed.updateItems.length+' item(s)');}
-          if(parsed.exclusions&&parsed.exclusions.length){e2.exclusions=e2.exclusions.concat(parsed.exclusions);changes.push('Added '+parsed.exclusions.length+' exclusion(s)');}
-          eCol.doc(e2.id).set(e2).then(function(){T(parsed.message||changes.join(', ')||'Done!');document.getElementById('aiPrompt').value='';renderEstDetailBody(e2);}).catch(function(se){T('AI done but save failed: '+se.message);});
-        }).catch(function(retryErr){
-          clearTimeout(_retryTimeout);
-          var msg;
-          if(retryErr.name==='AbortError') msg='⏱ AI timed out. Try the Test Connection button in Settings.';
-          else msg='❌ AI unreachable. Check Settings → Test Connection to diagnose.';
-          T(msg);
-          console.error('[AI] Retry failed:',retryErr.message);
-        }).finally(function(){
-          clearTimeout(_retryTimeout);
-          _aiDone();
-        });
-      }, 8000);
-      return; // don't call _aiDone yet — retry is in progress
-    } else if(err.name==='AbortError'){
-      T('⏱ AI timed out after '+elapsed+'s. Open Replit to wake the server, then try again.');
-    } else {
-      T('❌ AI error: '+err.message+' — check Settings → Test Connection');
-    }
-    console.error('[AI]',err.name,err.message,'after',elapsed+'s');
-  })
-  .finally(function(){
-    clearTimeout(_slowWarn);
-    clearTimeout(_aiTimeout);
+  function handleAIError(err){
     _aiDone();
-  });
+    T('❌ AI error: '+(err.message||'Unknown error')+' — check Settings → Test Connection');
+    console.error('[AI] Request failed:',err.name,err.message);
+  }
+
+  try {
+    prompt=document.getElementById('aiPrompt').value.trim();
+    if(!prompt){T('Enter a command or job description first.');return;}
+    e=ger();if(!e){T('No estimate loaded.');return;}
+    document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
+    _aiStatus('⏳ Button clicked — preparing request...');
+    profile=DD.aiProfile||{};
+    dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
+    lr=parseFloat(profile.laborRate)||85;
+    existingItems=JSON.stringify((e.lineItems||[]).slice(0,20).map(function(li,i){
+      return{index:i,desc:li.desc,category:li.category,total:li.total};
+    }));
+    existingExcls=JSON.stringify((e.exclusions||[]).slice(0,10));
+  } catch(setupErr){
+    _aiDone();
+    T('Setup error: '+setupErr.message);
+    return;
+  }
+
+  var _histCtxVal=window._histCtx||'';
+  window._histCtx=null;
+  var intakeState=window._aiEstimateQuestionState||{active:false,originalPrompt:'',questions:[],answers:[]};
+  var isQuestionFlow=!!(intakeState.active&&intakeState.questions&&intakeState.questions.length);
+  var originalPrompt=isQuestionFlow?intakeState.originalPrompt||prompt:prompt;
+  if(isQuestionFlow){
+    intakeState.answers=intakeState.answers||[];
+    intakeState.answers.push(prompt);
+    window._aiEstimateQuestionState=intakeState;
+  } else {
+    window._aiEstimateQuestionState={active:false,originalPrompt:prompt,questions:[],answers:[]};
+  }
+  var questionContext={
+    originalPrompt:originalPrompt,
+    questions:(intakeState.questions||[]).slice(),
+    answers:(intakeState.answers||[]).slice()
+  };
+
+  var intakePayload={mode:'estimate-intake',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+    prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
+    location:profile.location||'',histCtx:_histCtxVal,
+    questionContext:questionContext,
+    messages:[{role:'user',content:prompt}]};
+  var generationPayload={mode:'estimate-generate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+    prompt:originalPrompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
+    location:profile.location||'',histCtx:_histCtxVal,
+    questionContext:questionContext,
+    messages:[{role:'user',content:originalPrompt}]};
+
+  var shouldGate=isQuestionFlow||shouldUseIntakeGate(originalPrompt);
+  if(shouldGate){
+    runEstimateRequest(intakePayload).then(function(data){
+      if(!data){return;}
+      var parsed=parseAIResponse(data);
+      if(!parsed){return;}
+      var action=(parsed.action||'').toString();
+      if(action==='questions'&&Array.isArray(parsed.questions)&&parsed.questions.length){
+        window._aiEstimateQuestionState={
+          active:true,
+          originalPrompt:originalPrompt,
+          questions:parsed.questions.slice(),
+          answers:(intakeState.answers||[]).slice()
+        };
+        T('Need a few more details before I can finish this estimate.');
+        renderEstDetailBody(e);
+        _aiDone();
+        return;
+      }
+      if(action==='ready'){
+        window._aiEstimateQuestionState={active:false,originalPrompt:'',questions:[],answers:[]};
+        runEstimateRequest(generationPayload).then(function(data2){
+          if(!data2){return;}
+          var parsed2=parseAIResponse(data2);
+          if(!parsed2){return;}
+          applyEstimateChanges(parsed2);
+        }).catch(handleAIError);
+        return;
+      }
+      if(parsed.lineItems||parsed.deleteIndexes||parsed.updateItems||parsed.exclusions){
+        applyEstimateChanges(parsed);
+        return;
+      }
+      _aiDone();
+      T('Unexpected intake response — try again.');
+    }).catch(handleAIError);
+    return;
+  }
+
+  runEstimateRequest(generationPayload).then(function(data){
+    if(!data){return;}
+    var parsed=parseAIResponse(data);
+    if(!parsed){return;}
+    applyEstimateChanges(parsed);
+  }).catch(handleAIError);
 }
 
 function generateAILog(){
@@ -1965,7 +1981,7 @@ function generateAILog(){
   var sp='You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: '+(items||'General construction');
   var _logCtrl=new AbortController();
   var _logTimeout=setTimeout(function(){_logCtrl.abort();},15000);
-  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
+  fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,
@@ -3412,7 +3428,7 @@ function generateCOWithAI(btnEl){
     +(histCtx2?' Historical accuracy: '+histCtx2+'.':'')+' Adjust costs accordingly.';
   var _coCtrl=new AbortController();
   var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
-  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
+  fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1200,system:sp,
@@ -3536,7 +3552,7 @@ function generatePunchListAI(btnEl){
   var sp='You are a construction project manager. Generate a final punch list for a '+p.type+' project. Return ONLY a JSON array of strings, no markdown, no code fences, no explanation. Example: ["Touch up paint","Verify all outlets work","Clean all surfaces","Remove debris"]';
   var _plCtrl=new AbortController();
   var _plTimeout=setTimeout(function(){_plCtrl.abort();},20000);
-  fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
+  fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,system:sp,
@@ -3949,7 +3965,7 @@ auth.onAuthStateChanged(function(user){
       }
       // Wake Replit server in background on login (prevents cold start on first AI use)
       setTimeout(function(){
-        fetch('https://spence-contracting-production.up.railway.app/api/estimate',{
+        fetch('/api/estimate',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
