@@ -415,7 +415,7 @@ app.post("/api/estimate", async (req, res) => {
             }
             let normalized;
             try{
-              normalized = normalizeAIGenerated(parsed, Number(laborRate)||85, Number(markup)||20);
+              normalized = normalizeAIGenerated(parsed, Number(body.laborRate ?? 85), Number(body.markup ?? 20));
             }catch(err){
               console.error("AI BREAKDOWN NORMALIZATION ERROR:", err.message || err);
               console.error("AI BREAKDOWN RAW RESPONSE:", rawText);
