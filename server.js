@@ -82,6 +82,12 @@ app.post("/api/estimate", async (req, res) => {
             ' {"action":"questions","questions":["question 1","question 2"]}' +
             ' or {"action":"ready"}.' +
             " Do not add, edit, remove, or change any line items or exclusions." +
+            " Ask only follow-up questions whose answers could materially affect project scope, quantity, labor, materials, equipment, subcontractor cost, schedule-driven cost, or total price." +
+            " Do not ask administrative questions such as client name, property owner name, contact information, or other project-profile details unless they directly affect pricing." +
+            " Treat the original estimate request and prior questionContext as authoritative known information." +
+            " Never ask the user to restate the project type, main scope, or other information already provided." +
+            " Prefer specific construction questions over generic questions; for example, ask about roof type, siding, door size, electrical feed, slab conditions, finishes, access, or other scope-specific details when relevant rather than asking broad questions like “What are the main deliverables?”." +
+            " Ask only the minimum number of questions necessary to produce a defensible estimate." +
             " Do not ask about project budget; ContractorDesk calculates cost and budget is not part of intake." +
             " Treat unknown or unavailable answers as valid responses." +
             " Do not repeat a question simply because the answer was “don't know”, “unknown”, “not sure”, “N/A”, or similar." +
