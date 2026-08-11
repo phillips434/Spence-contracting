@@ -237,6 +237,106 @@ app.post("/api/estimate", async (req, res) => {
             max_tokens: (anthropicBody && anthropicBody.max_tokens) || 2000,
             temperature: 0
           };
+          if (AI_BREAKDOWN_EXPERIMENT && mode === "estimate-generate") {
+            openaiBody.max_tokens = 8000;
+            openaiBody.response_format = {
+              type: "json_schema",
+              json_schema: {
+                name: "estimate_generate_schema",
+                strict: true,
+                schema: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: [
+                    "action",
+                    "lineItems",
+                    "deleteIndexes",
+                    "updateItems",
+                    "exclusions",
+                    "message"
+                  ],
+                  properties: {
+                    action: {
+                      type: "string"
+                    },
+                    lineItems: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: [
+                          "category",
+                          "desc",
+                          "qty",
+                          "unit",
+                          "materials",
+                          "laborHours",
+                          "equipmentOrSubCost",
+                          "metadata"
+                        ],
+                        properties: {
+                          category: { type: "string" },
+                          desc: { type: "string" },
+                          qty: { type: "number" },
+                          unit: { type: "string" },
+                          materials: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: [
+                                "desc",
+                                "qty",
+                                "unit",
+                                "unitCost"
+                              ],
+                              properties: {
+                                desc: { type: "string" },
+                                qty: { type: "number" },
+                                unit: { type: "string" },
+                                unitCost: { type: "number" }
+                              }
+                            }
+                          },
+                          laborHours: { type: "number" },
+                          equipmentOrSubCost: { type: "number" },
+                          metadata: {
+                            type: "object",
+                            additionalProperties: false,
+                            required: ["assumptions"],
+                            properties: {
+                              assumptions: { type: "string" }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    deleteIndexes: {
+                      type: "array",
+                      items: { type: "number" }
+                    },
+                    updateItems: {
+                      type: "array",
+                      maxItems: 0,
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        properties: {},
+                        required: []
+                      }
+                    },
+                    exclusions: {
+                      type: "array",
+                      items: { type: "string" }
+                    },
+                    message: {
+                      type: "string"
+                    }
+                  }
+                }
+              }
+            };
+          }
           response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
