@@ -143,9 +143,9 @@ app.post("/api/estimate", async (req, res) => {
             model: openaiModel,
             messages: [
               { role: "system", content: (anthropicBody && anthropicBody.system) || "" },
-              { role: "user", content: prompt + followUpContext }
+              { role: "user", content: (anthropicBody && anthropicBody.messages && anthropicBody.messages[0] && anthropicBody.messages[0].content) || "" }
             ],
-            max_tokens: maxTok,
+            max_tokens: (anthropicBody && anthropicBody.max_tokens) || 2000,
             temperature: 0
           };
           response = await fetch("https://api.openai.com/v1/chat/completions", {
