@@ -303,12 +303,24 @@ app.post("/api/estimate", async (req, res) => {
         if (AI_BREAKDOWN_EXPERIMENT && mode === 'estimate-generate'){
           try{
             const rawText = (data && data.content && data.content[0] && data.content[0].text) || (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || (data && data.rawText) || '';
+            // Diagnostic: log raw AI response for experiment runs
+            console.log("AI BREAKDOWN RAW RESPONSE:", rawText);
             let parsed = null;
-            try{ parsed = rawText ? JSON.parse(rawText.trim()) : null; }catch(pErr){ parsed = null; }
+            try{ parsed = rawText ? JSON.parse(rawText.trim()) : null; }catch(pErr){
+              console.error("AI BREAKDOWN JSON PARSE FAILED:", rawText);
+              parsed = null;
+            }
             if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
               return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
             }
-            const normalized = normalizeAIGenerated(parsed, Number(laborRate)||85, Number(markup)||20);
+            let normalized;
+            try{
+              normalized = normalizeAIGenerated(parsed, Number(laborRate)||85, Number(markup)||20);
+            }catch(err){
+              console.error("AI BREAKDOWN NORMALIZATION ERROR:", err.message || err);
+              console.error("AI BREAKDOWN RAW RESPONSE:", rawText);
+              throw err;
+            }
             if(!normalized){
               return res.status(500).json({error:'Normalization failed.'});
             }
