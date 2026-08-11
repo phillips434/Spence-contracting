@@ -130,31 +130,71 @@ app.post("/api/estimate", async (req, res) => {
       }
 
       try {
-        console.log("STEP 5 - Sending request to Anthropic");
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify(anthropicBody),
-        });
-        console.log("STEP 6 - Anthropic response received", { status: response.status, ok: response.ok });
-        const responseText = await response.text();
+        console.log("STEP 5 - Sending request to model backend");
+
+        let response;
+        let responseText;
         let data;
-        try {
-          data = responseText ? JSON.parse(responseText) : {};
-        } catch (parseErr) {
-          data = { rawText: responseText };
-        }
-        console.log("STEP 7 - Anthropic response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
-        if (!response.ok) {
-          console.error("[/api/estimate] Anthropic non-OK response", {
-            status: response.status,
-            body: responseText,
-            mode: mode,
+
+        // If this is an intake request and OPENAI_API_KEY is present, route intake to OpenAI
+        if (isIntakeRequest && process.env.OPENAI_API_KEY) {
+          const openaiModel = "gpt-4.1";
+          const openaiBody = {
+            model: openaiModel,
+            messages: [
+              { role: "system", content: systemPrompt || "" },
+              { role: "user", content: prompt + followUpContext }
+            ],
+            max_tokens: maxTok,
+            temperature: 0
+          };
+          response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + process.env.OPENAI_API_KEY
+            },
+            body: JSON.stringify(openaiBody),
           });
+          console.log("STEP 6 - OpenAI response received", { status: response.status, ok: response.ok });
+          responseText = await response.text();
+          try {
+            const openaiJson = responseText ? JSON.parse(responseText) : {};
+            const messageText = (openaiJson.choices && openaiJson.choices[0] && openaiJson.choices[0].message && openaiJson.choices[0].message.content) || "";
+            data = { content: [{ text: messageText }], _raw: openaiJson };
+          } catch (parseErr) {
+            data = { rawText: responseText };
+          }
+          console.log("STEP 7 - OpenAI response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
+          if (!response.ok) {
+            console.error("[/api/estimate] OpenAI non-OK response", { status: response.status, body: responseText, mode: mode });
+          }
+        } else {
+          // Default: Anthropic
+          response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify(anthropicBody),
+          });
+          console.log("STEP 6 - Anthropic response received", { status: response.status, ok: response.ok });
+          responseText = await response.text();
+          try {
+            data = responseText ? JSON.parse(responseText) : {};
+          } catch (parseErr) {
+            data = { rawText: responseText };
+          }
+          console.log("STEP 7 - Anthropic response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
+          if (!response.ok) {
+            console.error("[/api/estimate] Anthropic non-OK response", {
+              status: response.status,
+              body: responseText,
+              mode: mode,
+            });
+          }
         }
         if (isIntakeRequest && data && data.content && data.content[0] && typeof data.content[0].text === "string") {
           try {
