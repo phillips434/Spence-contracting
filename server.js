@@ -3,6 +3,73 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
+const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' || process.env.AI_BREAKDOWN_EXPERIMENT === '1');
+
+function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
+
+function normalizeAIGenerated(parsed, laborRate, markup){
+  if(!parsed || !Array.isArray(parsed.lineItems)) throw new Error('AI response must contain a lineItems array');
+  return parsed.lineItems.map(function(li, idx){
+    // materials must be present and an array
+    if(!li.hasOwnProperty('materials') || !Array.isArray(li.materials)){
+      throw new Error('lineItems['+idx+'] missing required "materials" array (use [] when no materials apply)');
+    }
+    // qty must be present and a finite number
+    if(!li.hasOwnProperty('qty') || !Number.isFinite(Number(li.qty))){
+      throw new Error('lineItems['+idx+'] missing or invalid numeric "qty"');
+    }
+    // laborHours must be present and a finite number
+    if(!li.hasOwnProperty('laborHours') || !Number.isFinite(Number(li.laborHours))){
+      throw new Error('lineItems['+idx+'] missing or invalid numeric "laborHours" (use 0 when none)');
+    }
+    // equipmentOrSubCost must be present and a finite number
+    if(!li.hasOwnProperty('equipmentOrSubCost') || !Number.isFinite(Number(li.equipmentOrSubCost))){
+      throw new Error('lineItems['+idx+'] missing or invalid numeric "equipmentOrSubCost" (use 0 when none)');
+    }
+    // Validate materials entries
+    var materials = li.materials;
+    for(var mi=0; mi<materials.length; mi++){
+      var m = materials[mi];
+      if(!m || typeof m !== 'object'){
+        throw new Error('lineItems['+idx+'].materials['+mi+'] must be an object');
+      }
+      if(!m.hasOwnProperty('qty') || !Number.isFinite(Number(m.qty))){
+        throw new Error('lineItems['+idx+'].materials['+mi+'] missing or invalid numeric "qty"');
+      }
+      if(!m.hasOwnProperty('unitCost') || !Number.isFinite(Number(m.unitCost))){
+        throw new Error('lineItems['+idx+'].materials['+mi+'] missing or invalid numeric "unitCost"');
+      }
+    }
+    // Compute material cost from materials array
+    var materialCost = materials.reduce(function(s,m){
+      return s + (Number(m.qty) * Number(m.unitCost));
+    },0);
+    var laborHours = Number(li.laborHours);
+    var laborCost = _round2(laborHours * (Number(laborRate)||0));
+    var equipmentOrSubCost = Number(li.equipmentOrSubCost);
+    // Authoritative baseCost is computed by server
+    var baseCost = _round2(materialCost + laborCost + equipmentOrSubCost);
+    var qty = Number(li.qty);
+    var unitCost = qty>0? _round2(baseCost/qty) : _round2(baseCost);
+    // IMPORTANT: total must be the authoritative baseCost (do NOT recompute from rounded unitCost)
+    var total = baseCost;
+    return {
+      category: li.category || '',
+      desc: li.desc || '',
+      qty: qty,
+      unit: li.unit || '',
+      unitCost: unitCost,
+      total: total,
+      markup: Number(markup)||0,
+      aiBreakdown: {
+        materials: materials,
+        laborHours: laborHours,
+        equipmentOrSubCost: equipmentOrSubCost,
+        assumptions: (li.metadata && li.metadata.assumptions) || ''
+      }
+    };
+  });
+}
 
 const corsOptions = {
   origin: [
@@ -91,34 +158,56 @@ app.post("/api/estimate", async (req, res) => {
             " Do not repeat a question simply because the answer was “don't know”, “unknown”, “not sure”, “N/A”, or similar." +
             " Use the provided questionContext as authoritative history. If a question has already been asked and has a corresponding answer, consider it resolved and do not ask it again." +
             " Do not explain anything.";
-          const systemPrompt = isIntakeRequest
-            ? isIntakePrompt
-            : "IMPORTANT: Your entire response must be a single raw JSON object." +
-                " No markdown, no code fences, no backticks, no explanation." +
-                " Start your response with { and end with }." +
-                " You are a construction estimator." +
-                ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}' +
-                " IMPORTANT: total = qty * unitCost. markup = percentage for client price." +
-                " Current items: " +
-                items +
-                " Current exclusions: " +
-                existingExcls +
-                " Markup: " +
-                markup +
-                "%. Labor: $" +
-                laborRate +
-                "/hr." +
-                (location ? " Location: " + location + "." : "") +
-                (histCtx ? " HISTORICAL: " + histCtx + "." : "") +
-                " Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE." +
-                " When adding exclusions, return them as plain strings in the exclusions array." +
-                " Do not repeat exclusions already in the current exclusions list.";
+          let systemPrompt;
+          if (isIntakeRequest) {
+            systemPrompt = isIntakePrompt;
+          } else if (AI_BREAKDOWN_EXPERIMENT && mode === 'estimate-generate') {
+            // Experimental prompt: require AI to return explicit breakdowns (materials, laborHours, equipmentOrSubCost)
+            systemPrompt =
+              "IMPORTANT: Your entire response must be a single raw JSON object. No markdown, no code fences, no backticks, no explanation. Start your response with { and end with }. You are a construction estimator." +
+              " RETURN JSON with this top-level shape: {\"action\":\"add|update|ready\",\"lineItems\":[{...}],\"deleteIndexes\":[],\"updateItems\":[],\"exclusions\":[],\"message\":\"\"}." +
+              " For this experiment each line item MUST follow this structure exactly (use the exact fields and types): " +
+              "{\"category\":\"...\",\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"materials\":[{\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"unitCost\":number}],\"laborHours\":number,\"equipmentOrSubCost\":number,\"metadata\":{\"assumptions\":\"...\"}}" +
+              " STRICT RULES:" +
+              " - materials must always be an array (use [] when no materials apply)." +
+              " - laborHours must always be numeric (use 0 when none)." +
+              " - equipmentOrSubCost must always be numeric (use 0 when none)." +
+              " IMPORTANT: Do NOT return authoritative materialCost, laborCost, baseCost, unitCost, total, or markup. Do NOT return any lump-sum totals. The model should only determine quantities, material unit prices, labor hours, and assumptions. ContractorDesk will perform all arithmetic and apply the authoritative markup exactly once." +
+              " Current items: " + items + " Current exclusions: " + existingExcls +
+              (location ? " Location: " + location + "." : "") +
+              (histCtx ? " HISTORICAL: " + histCtx + "." : "") +
+              " RETURN valid JSON only.";
+          } else {
+            systemPrompt =
+              "IMPORTANT: Your entire response must be a single raw JSON object." +
+              " No markdown, no code fences, no backticks, no explanation." +
+              " Start your response with { and end with }." +
+              " You are a construction estimator." +
+              ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}' +
+              " IMPORTANT: total = qty * unitCost. markup = percentage for client price." +
+              " Current items: " +
+              items +
+              " Current exclusions: " +
+              existingExcls +
+              " Markup: " +
+              markup +
+              "%. Labor: $" +
+              laborRate +
+              "/hr." +
+              (location ? " Location: " + location + "." : "") +
+              (histCtx ? " HISTORICAL: " + histCtx + "." : "") +
+              " Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE." +
+              " When adding exclusions, return them as plain strings in the exclusions array." +
+              " Do not repeat exclusions already in the current exclusions list.";
+          }
           anthropicBody = {
             model: model,
             max_tokens: maxTok,
             system: systemPrompt,
             messages: [{ role: "user", content: prompt + followUpContext }],
           };
+          // If experiment flag is enabled and mode is estimate-generate, and the model is instructed
+          // to return breakdown-only line items, we must enforce that via the system prompt.
         }
         console.log("STEP 4 - Anthropic payload built", { mode, hasSystem: !!anthropicBody.system });
       } catch (err) {
@@ -208,6 +297,35 @@ app.post("/api/estimate", async (req, res) => {
             }
           } catch (err) {
             // Fall back to the standard Anthropic response if the model does not follow the intake format.
+          }
+        }
+        // If experiment flag is enabled and this is an estimate generation run, normalize the AI breakdown server-side
+        if (AI_BREAKDOWN_EXPERIMENT && mode === 'estimate-generate'){
+          try{
+            const rawText = (data && data.content && data.content[0] && data.content[0].text) || (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || (data && data.rawText) || '';
+            let parsed = null;
+            try{ parsed = rawText ? JSON.parse(rawText.trim()) : null; }catch(pErr){ parsed = null; }
+            if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
+              return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
+            }
+            const normalized = normalizeAIGenerated(parsed, Number(laborRate)||85, Number(markup)||20);
+            if(!normalized){
+              return res.status(500).json({error:'Normalization failed.'});
+            }
+            const out = {
+              action: parsed.action || 'add',
+              lineItems: normalized,
+              deleteIndexes: parsed.deleteIndexes || [],
+              updateItems: parsed.updateItems || [],
+              exclusions: parsed.exclusions || [],
+              message: parsed.message || ''
+            };
+            console.log('STEP 8 - Returning normalized estimate to client');
+            return res.status(response.status).json(out);
+          }catch(err){
+            console.error('STEP 8 ERROR - Normalization failed',err);
+            if(err && err.stack) console.error(err.stack);
+            return res.status(500).json({error:'Server normalization failure.'});
           }
         }
         console.log("STEP 8 - Returning response to client");
