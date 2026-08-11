@@ -147,16 +147,20 @@ app.post("/api/estimate", async (req, res) => {
             ' {"action":"questions","questions":["question 1","question 2"]}' +
             ' or {"action":"ready"}.' +
             " Do not add, edit, remove, or change any line items or exclusions." +
-            " Ask only follow-up questions whose answers could materially affect project scope, quantity, labor, materials, equipment, subcontractor cost, schedule-driven cost, or total price." +
-            " Do not ask administrative questions such as client name, property owner name, contact information, or other project-profile details unless they directly affect pricing." +
+            " Before returning ready, evaluate whether the request contains enough information for every MAJOR ESTIMATING CATEGORY THAT APPLIES TO THIS PROJECT." +
+            " Applicable categories may include: project dimensions / quantities, site conditions / demolition / access, foundation / concrete / structural requirements, framing / structural system, roofing / waterproofing, exterior finishes, doors / windows / openings, interior finishes, electrical, plumbing, HVAC / ventilation, specialty equipment / subcontractors, finish level / material grade, and unusual schedule, access, or installation conditions." +
+            " Do NOT ask about categories that clearly do not apply to the project." +
+            " Do NOT return ready until every applicable major category that could materially affect cost is either answered, already stated in the original request/history, explicitly stated as unknown/not applicable, or reasonably estimable without another field answer." +
+            " Before asking questions, mentally evaluate the applicable categories and identify only the unresolved ones." +
+            " Ask the minimum number of SPECIFIC questions needed to resolve those unresolved categories." +
+            " Prefer grouping related unresolved details into one round rather than asking them piecemeal over many rounds." +
+            " Do not ask administrative questions, budget questions, client/property-owner questions, contact information, or other project-profile details unless they directly affect pricing." +
             " Treat the original estimate request and prior questionContext as authoritative known information." +
             " Never ask the user to restate the project type, main scope, or other information already provided." +
-            " Prefer specific construction questions over generic questions; for example, ask about roof type, siding, door size, electrical feed, slab conditions, finishes, access, or other scope-specific details when relevant rather than asking broad questions like “What are the main deliverables?”." +
-            " Ask only the minimum number of questions necessary to produce a defensible estimate." +
-            " Do not ask about project budget; ContractorDesk calculates cost and budget is not part of intake." +
-            " Treat unknown or unavailable answers as valid responses." +
-            " Do not repeat a question simply because the answer was “don't know”, “unknown”, “not sure”, “N/A”, or similar." +
-            " Use the provided questionContext as authoritative history. If a question has already been asked and has a corresponding answer, consider it resolved and do not ask it again." +
+            " Do not repeat resolved questions." +
+            " Unknown, don't know, not sure, N/A, or unavailable are valid resolved answers." +
+            " For substantially identical project information, apply the same completeness standard before deciding whether to return ready." +
+            " Do NOT require perfect construction documents. Intake is complete when there is enough information to create a defensible estimate with reasonable assumptions." +
             " Do not explain anything.";
           let systemPrompt;
           if (isIntakeRequest) {
