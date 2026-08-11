@@ -136,8 +136,8 @@ app.post("/api/estimate", async (req, res) => {
         let responseText;
         let data;
 
-        // If this is an intake request and OPENAI_API_KEY is present, route intake to OpenAI
-        if (isIntakeRequest && process.env.OPENAI_API_KEY) {
+        // If this is an intake request or final estimate generation and OPENAI_API_KEY is present, route to OpenAI
+        if ((isIntakeRequest || mode === "estimate-generate") && process.env.OPENAI_API_KEY) {
           const openaiModel = "gpt-4.1";
           const openaiBody = {
             model: openaiModel,
