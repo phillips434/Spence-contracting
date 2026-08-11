@@ -81,7 +81,12 @@ app.post("/api/estimate", async (req, res) => {
             " Return only one JSON object with exactly one of these forms:" +
             ' {"action":"questions","questions":["question 1","question 2"]}' +
             ' or {"action":"ready"}.' +
-            " Do not add, edit, remove, or change any line items or exclusions. Do not explain anything.";
+            " Do not add, edit, remove, or change any line items or exclusions." +
+            " Do not ask about project budget; ContractorDesk calculates cost and budget is not part of intake." +
+            " Treat unknown or unavailable answers as valid responses." +
+            " Do not repeat a question simply because the answer was “don't know”, “unknown”, “not sure”, “N/A”, or similar." +
+            " Use the provided questionContext as authoritative history. If a question has already been asked and has a corresponding answer, consider it resolved and do not ask it again." +
+            " Do not explain anything.";
           const systemPrompt = isIntakeRequest
             ? isIntakePrompt
             : "IMPORTANT: Your entire response must be a single raw JSON object." +
