@@ -142,7 +142,7 @@ app.post("/api/estimate", async (req, res) => {
           const openaiBody = {
             model: openaiModel,
             messages: [
-              { role: "system", content: systemPrompt || "" },
+              { role: "system", content: (anthropicBody && anthropicBody.system) || "" },
               { role: "user", content: prompt + followUpContext }
             ],
             max_tokens: maxTok,
@@ -231,7 +231,7 @@ app.post("/api/estimate", async (req, res) => {
     if (err && err.stack) {
       console.error(err.stack);
     }
-    return res.status(500).json({ error: "Failed to reach Anthropic API." });
+    return res.status(500).json({ error: "Failed to reach AI provider." });
   }
 });
 
