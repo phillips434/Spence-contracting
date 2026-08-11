@@ -71,10 +71,8 @@ app.post("/api/estimate", async (req, res) => {
           const followUpContext = questionContext
             ? " FOLLOW-UP CONTEXT: Original request: " +
               (questionContext.originalPrompt || "") +
-              ". Questions asked: " +
-              JSON.stringify(questionContext.questions || []) +
-              ". Answers received: " +
-              JSON.stringify(questionContext.answers || [])
+              ". Question history: " +
+              JSON.stringify(questionContext.history || [])
             : "";
           const isIntakePrompt =
             "IMPORTANT: You are only deciding whether a new estimate request has enough information to proceed." +
