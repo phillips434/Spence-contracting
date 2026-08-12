@@ -276,6 +276,10 @@ app.post("/api/estimate", async (req, res) => {
               ? [
                   "title",
                   "description",
+                  "geometry",
+                  "openings",
+                  "noOpeningsEvidence",
+                  "message",
                   "lineItems"
                 ]
               : [
@@ -291,15 +295,17 @@ app.post("/api/estimate", async (req, res) => {
                   title: { type: "string" },
                   description: { type: "string" },
                   geometry: {
-                    type: "object",
+                    type: ["object", "null"],
                     additionalProperties: false,
+                    required: ["footprint", "wallHeight_ft", "roof"],
                     properties: {
                       footprint: {
-                        type: "object",
+                        type: ["object", "null"],
                         additionalProperties: false,
+                        required: ["length_ft", "width_ft"],
                         properties: {
                           length_ft: {
-                            type: "object",
+                            type: ["object", "null"],
                             additionalProperties: false,
                             required: ["value", "evidence"],
                             properties: {
@@ -308,7 +314,7 @@ app.post("/api/estimate", async (req, res) => {
                             }
                           },
                           width_ft: {
-                            type: "object",
+                            type: ["object", "null"],
                             additionalProperties: false,
                             required: ["value", "evidence"],
                             properties: {
@@ -319,7 +325,7 @@ app.post("/api/estimate", async (req, res) => {
                         }
                       },
                       wallHeight_ft: {
-                        type: "object",
+                        type: ["object", "null"],
                         additionalProperties: false,
                         required: ["value", "evidence"],
                         properties: {
@@ -328,11 +334,12 @@ app.post("/api/estimate", async (req, res) => {
                         }
                       },
                       roof: {
-                        type: "object",
+                        type: ["object", "null"],
                         additionalProperties: false,
+                        required: ["type", "pitch", "overhang_in"],
                         properties: {
                           type: {
-                            type: "object",
+                            type: ["object", "null"],
                             additionalProperties: false,
                             required: ["value", "evidence"],
                             properties: {
@@ -341,7 +348,7 @@ app.post("/api/estimate", async (req, res) => {
                             }
                           },
                           pitch: {
-                            type: "object",
+                            type: ["object", "null"],
                             additionalProperties: false,
                             required: ["value", "evidence"],
                             properties: {
@@ -350,7 +357,7 @@ app.post("/api/estimate", async (req, res) => {
                             }
                           },
                           overhang_in: {
-                            type: "object",
+                            type: ["object", "null"],
                             additionalProperties: false,
                             required: ["value", "evidence"],
                             properties: {
@@ -363,7 +370,7 @@ app.post("/api/estimate", async (req, res) => {
                     }
                   },
                   openings: {
-                    type: "array",
+                    type: ["array", "null"],
                     items: {
                       type: "object",
                       additionalProperties: false,
@@ -376,7 +383,7 @@ app.post("/api/estimate", async (req, res) => {
                     }
                   },
                   noOpeningsEvidence: { type: ["string", "null"] },
-                  message: { type: "string" },
+                  message: { type: ["string", "null"] },
                   lineItems: {
                     type: "array",
                     items: {
