@@ -214,6 +214,9 @@ app.post("/api/estimate", async (req, res) => {
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
       console.log("STEP 3 - Internal mode determined", { mode, isIntakeRequest, isEstimateIntakeRequest, isCOIntakeRequest, isEstimateRequest, isChangeOrderGenerateRequest });
 
+      const title = body.title || "";
+      const description = body.description || "";
+
       let anthropicBody = {
         model: body.model || "claude-haiku-4-5-20251001",
         max_tokens: body.max_tokens || 2000,
@@ -229,8 +232,6 @@ app.post("/api/estimate", async (req, res) => {
           const location = body.location || "";
           const histCtx = body.histCtx || "";
           const prompt = body.prompt || "";
-          const title = body.title || "";
-          const description = body.description || "";
           const originalEstimateContext = body.originalEstimateContext || "";
           const model = body.model || "claude-haiku-4-5-20251001";
           const maxTok = body.max_tokens || 2000;
