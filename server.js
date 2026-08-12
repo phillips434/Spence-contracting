@@ -101,6 +101,118 @@ function validateCOIntakeReadiness(payload){
   };
 }
 
+function parseCrewSizeFromText(text){
+  if (!text) return null;
+  const patterns = [
+    /(\d+(?:\.\d+)?)\s*(?:workers?|people|crew|electricians?|carpenters?|laborers?|plumbers?|painters?|drywallers?)\b/i,
+    /(?:crew|team|workforce)\s*(?:of)?\s*(\d+(?:\.\d+)?)\b/i,
+    /(?:workers?|people|crew)\s*[:=]\s*(\d+(?:\.\d+)?)\b/i
+  ];
+  for (let i = 0; i < patterns.length; i++) {
+    const match = text.match(patterns[i]);
+    if (match && match[1]) return Number(match[1]);
+  }
+  return null;
+}
+
+function parseDurationFromText(text){
+  if (!text) return null;
+  const match = text.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
+  if (!match) return null;
+  return {
+    value: Number(match[1]),
+    unit: match[2].toLowerCase()
+  };
+}
+
+function parseTotalLaborHoursFromText(text){
+  if (!text) return null;
+  const patterns = [
+    /(\d+(?:\.\d+)?)\s*(?:total\s+)?labor\s*hours?\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:total\s+)?man-hours?\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:labor\s*hours?|man-hours?)\b/i,
+    /(?:labor\s*hours?|man-hours?)\s*[:=]\s*(\d+(?:\.\d+)?)\b/i
+  ];
+  for (let i = 0; i < patterns.length; i++) {
+    const match = text.match(patterns[i]);
+    if (match && match[1]) return Number(match[1]);
+  }
+  return null;
+}
+
+function buildAuthoritativeLaborFact(inputText, history){
+  const historyText = collectHistoryText(history || []);
+  const combinedText = [inputText, historyText].filter(function(item){ return typeof item === 'string' && item.trim(); }).join(' ');
+  if (!combinedText) return { isResolved: false, totalHours: 0, crewSize: null, durationValue: null, durationUnit: null, source: 'contractor' };
+
+  const totalLaborHours = parseTotalLaborHoursFromText(combinedText);
+  const crewSize = parseCrewSizeFromText(combinedText);
+  const duration = parseDurationFromText(combinedText);
+
+  let finalHours = totalLaborHours;
+  if (!finalHours && crewSize && duration && duration.value) {
+    let multiplier = 8;
+    if (/^(day|days)$/.test(duration.unit)) multiplier = 8;
+    if (/^(hour|hours)$/.test(duration.unit)) multiplier = 1;
+    if (/^(shift|shifts)$/.test(duration.unit)) multiplier = 8;
+    if (/^(week|weeks)$/.test(duration.unit)) multiplier = 40;
+    finalHours = crewSize * duration.value * multiplier;
+  }
+
+  const isResolved = !!(finalHours && Number.isFinite(finalHours) && finalHours > 0);
+  return {
+    isResolved: isResolved,
+    totalHours: isResolved ? Number(finalHours.toFixed(2)) : 0,
+    crewSize: crewSize ? Number(crewSize) : null,
+    durationValue: duration ? Number(duration.value) : null,
+    durationUnit: duration ? duration.unit : null,
+    source: 'contractor'
+  };
+}
+
+function applyCOAuthoritativeLabor(parsed, authoritativeLabor){
+  if (!parsed || !parsed.lineItems || !Array.isArray(parsed.lineItems)) return parsed;
+  if (!authoritativeLabor || !authoritativeLabor.isResolved || !authoritativeLabor.totalHours) return parsed;
+
+  const targetHours = Number(authoritativeLabor.totalHours);
+  const dedicatedIndex = parsed.lineItems.findIndex(function(li){
+    const text = ((li && li.category) || '') + ' ' + ((li && li.desc) || '');
+    return /labor|crew|man-hours|work hours|additional labor/i.test(text);
+  });
+
+  if (dedicatedIndex >= 0) {
+    parsed.lineItems[dedicatedIndex].category = parsed.lineItems[dedicatedIndex].category || 'Labor';
+    parsed.lineItems[dedicatedIndex].desc = parsed.lineItems[dedicatedIndex].desc || 'Contractor-authoritative labor';
+    parsed.lineItems[dedicatedIndex].qty = targetHours;
+    parsed.lineItems[dedicatedIndex].unit = parsed.lineItems[dedicatedIndex].unit || 'hrs';
+    parsed.lineItems[dedicatedIndex].laborHours = targetHours;
+    parsed.lineItems[dedicatedIndex].materials = Array.isArray(parsed.lineItems[dedicatedIndex].materials) ? parsed.lineItems[dedicatedIndex].materials : [];
+    parsed.lineItems[dedicatedIndex].equipmentOrSubCost = Number(parsed.lineItems[dedicatedIndex].equipmentOrSubCost || 0);
+    parsed.lineItems[dedicatedIndex].metadata = parsed.lineItems[dedicatedIndex].metadata || {};
+    parsed.lineItems[dedicatedIndex].metadata.assumptions = (parsed.lineItems[dedicatedIndex].metadata.assumptions || '') + ' Contractor-supplied labor total is authoritative for this change-order scope.';
+  } else {
+    parsed.lineItems.push({
+      category: 'Labor',
+      desc: 'Contractor-authoritative labor',
+      qty: targetHours,
+      unit: 'hrs',
+      materials: [],
+      laborHours: targetHours,
+      equipmentOrSubCost: 0,
+      metadata: { assumptions: 'Contractor-supplied labor total is authoritative for this change-order scope.' }
+    });
+  }
+
+  for (let i = 0; i < parsed.lineItems.length; i++) {
+    if (i === dedicatedIndex) continue;
+    if (parsed.lineItems[i] && Number(parsed.lineItems[i].laborHours) > 0) {
+      parsed.lineItems[i].laborHours = 0;
+    }
+  }
+
+  return parsed;
+}
+
 function normalizeAIGenerated(parsed, laborRate, markup){
   if(!parsed || !Array.isArray(parsed.lineItems)) throw new Error('AI response must contain a lineItems array');
   return parsed.lineItems.map(function(li, idx){
@@ -806,10 +918,17 @@ app.post("/api/estimate", async (req, res) => {
             if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
               return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
             }
+            const authoritativeLabor = mode === 'change-order-generate'
+              ? (body.authoritativeLabor || buildAuthoritativeLaborFact(
+                  (body.title || '') + ' ' + (body.description || '') + ' ' + (body.prompt || '') + ' ' + (body.originalEstimateContext || ''),
+                  body.questionContext && Array.isArray(body.questionContext.history) ? body.questionContext.history : []
+                ))
+              : null;
             if (mode === "change-order-generate") {
               const aiParsedBeforeNormalize = JSON.parse(JSON.stringify(parsed));
               console.log('CO_PRICING_DIAGNOSTIC ' + JSON.stringify({
                 parsedAIOutputBeforeNormalize: aiParsedBeforeNormalize,
+                authoritativeLabor: authoritativeLabor,
                 note: 'Raw parsed model output before normalizeAIGenerated()'
               }, null, 0));
             }
@@ -820,6 +939,9 @@ app.post("/api/estimate", async (req, res) => {
               }
             } catch (phase1Err) {
               console.warn("AI BREAKDOWN PHASE1 GEOMETRY WARNING:", phase1Err && phase1Err.message ? phase1Err.message : phase1Err);
+            }
+            if (mode === 'change-order-generate') {
+              applyCOAuthoritativeLabor(parsed, authoritativeLabor);
             }
             let normalized;
             try{
@@ -953,4 +1075,6 @@ module.exports = {
   validateCOIntakeReadiness,
   hasLaborDurationStatement,
   hasResolvedCrewOrLaborHoursFact,
+  buildAuthoritativeLaborFact,
+  applyCOAuthoritativeLabor,
 };

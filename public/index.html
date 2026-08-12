@@ -3436,6 +3436,7 @@ function runCOGenerationRequest(title, desc, btnEl){
   var origItems=origEst?(origEst.lineItems||[]).slice(0,6).map(function(li){return (li.category||'')+': '+li.desc+' @$'+li.unitCost+'/'+li.unit;}).join('; '):'';
   var _coCtrl=new AbortController();
   var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
+  var authoritativeLabor=deriveAuthoritativeLaborFromScope(title+' '+desc, (window._aiCOQuestionState && window._aiCOQuestionState.history) || []);
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -3450,6 +3451,7 @@ function runCOGenerationRequest(title, desc, btnEl){
       description:desc,
       originalEstimateContext:origItems,
       histCtx:histCtx2,
+      authoritativeLabor:authoritativeLabor,
       messages:[{role:'user',content:title+(desc?' - '+desc:'')}] 
     }),
     signal:_coCtrl.signal
@@ -3495,6 +3497,36 @@ function runCOGenerationRequest(title, desc, btnEl){
   }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
   .finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
 }
+function deriveAuthoritativeLaborFromScope(text, history){
+  var combined=(text||'')+' '+(Array.isArray(history)?history.map(function(entry){
+    var q=(entry&&entry.questions)?entry.questions.join(' '):'';
+    var a=(entry&&entry.answer!==undefined&&entry.answer!==null)?String(entry.answer):'';
+    return (q+' '+a).trim();
+  }).join(' '):'');
+  var totalMatch=combined.match(/(\d+(?:\.\d+)?)\s*(?:total\s+)?labor\s*(?:hours?|hrs?)\b/i);
+  var crewMatch=combined.match(/(\d+(?:\.\d+)?)\s*(?:workers?|people|crew|electricians?|carpenters?|laborers?|plumbers?|painters?|drywallers?)\b/i);
+  var durationMatch=combined.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
+  var totalHours=totalMatch?Number(totalMatch[1]):null;
+  if(!totalHours && crewMatch && durationMatch){
+    var crew=Number(crewMatch[1]);
+    var durationValue=Number(durationMatch[1]);
+    var durationUnit=(durationMatch[2]||'').toLowerCase();
+    var hoursPerDuration=8;
+    if(/^(hour|hours)$/.test(durationUnit)) hoursPerDuration=1;
+    if(/^(shift|shifts)$/.test(durationUnit)) hoursPerDuration=8;
+    if(/^(week|weeks)$/.test(durationUnit)) hoursPerDuration=40;
+    totalHours=crew*durationValue*hoursPerDuration;
+  }
+  return {
+    isResolved: !!(totalHours && Number.isFinite(totalHours) && totalHours > 0),
+    totalHours: totalHours && Number.isFinite(totalHours) ? Number(totalHours.toFixed(2)) : 0,
+    crewSize: crewMatch ? Number(crewMatch[1]) : null,
+    durationValue: durationMatch ? Number(durationMatch[1]) : null,
+    durationUnit: durationMatch ? durationMatch[2].toLowerCase() : null,
+    source: 'contractor'
+  };
+}
+
 function generateCOWithAI(btnEl){
   var p=gpr();if(!p)return;
   var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';

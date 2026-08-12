@@ -1,8 +1,71 @@
 const assert = require('assert');
 const http = require('http');
-const { app, validateCOIntakeReadiness } = require('../server');
+const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor } = require('../server');
 
 describe('coIntakeReadiness', () => {
+  it('builds a contractor authoritative labor fact from a 2-day 1-worker scope', () => {
+    const result = buildAuthoritativeLaborFact(
+      'Replace additional knob and tube wiring throughout. 2 additional days of work.',
+      [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.totalHours, 16);
+    assert.strictEqual(result.crewSize, 1);
+    assert.strictEqual(result.durationValue, 2);
+    assert.strictEqual(result.durationUnit, 'days');
+  });
+
+  it('enforces the authoritative 16-hour total when AI item labor duplicates the contractor scope', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Labor', desc: 'Additional labor for wiring replacement (2 days)', qty: 16, unit: 'hrs', materials: [], laborHours: 16, equipmentOrSubCost: 0, metadata: { assumptions: 'contractor labor' } },
+        { category: 'Electrical', desc: 'Install single gang old work boxes', qty: 8, unit: 'ea', materials: [], laborHours: 1.6, equipmentOrSubCost: 0, metadata: { assumptions: 'component labor' } },
+        { category: 'Electrical', desc: 'Install double gang old work box', qty: 1, unit: 'ea', materials: [], laborHours: 0.25, equipmentOrSubCost: 0, metadata: { assumptions: 'component labor' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: true, totalHours: 16, crewSize: 1, durationValue: 2, durationUnit: 'days', source: 'contractor' });
+
+    const totalLabor = parsed.lineItems.reduce((sum, li) => sum + Number(li.laborHours || 0), 0);
+    assert.strictEqual(totalLabor, 16);
+    assert.strictEqual(parsed.lineItems[0].laborHours, 16);
+    assert.strictEqual(parsed.lineItems[1].laborHours, 0);
+    assert.strictEqual(parsed.lineItems[2].laborHours, 0);
+  });
+
+  it('resolves 3 workers for 1 day to 24 hours', () => {
+    const result = buildAuthoritativeLaborFact(
+      'Framing crew. 3 workers for 1 day.',
+      []
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.totalHours, 24);
+  });
+
+  it('resolves 2 workers for 4 hours to 8 hours', () => {
+    const result = buildAuthoritativeLaborFact(
+      '2 workers for 4 hours',
+      []
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.totalHours, 8);
+  });
+
+  it('leaves labor estimation unchanged when no contractor labor is resolved', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Electrical', desc: 'Install boxes', qty: 1, unit: 'ea', materials: [], laborHours: 10, equipmentOrSubCost: 0, metadata: { assumptions: 'AI estimate' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: false, totalHours: 0, crewSize: null, durationValue: null, durationUnit: null, source: 'contractor' });
+
+    assert.strictEqual(parsed.lineItems[0].laborHours, 10);
+  });
+
   it('returns questions when a labor duration is stated without crew size or total labor hours', () => {
     const payload = {
       title: 'Replace knob and tube wiring',
