@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' || process.env.AI_BREAKDOWN_EXPERIMENT === '1');
@@ -169,14 +170,24 @@ app.post("/api/estimate", async (req, res) => {
             // Experimental prompt: require AI to return explicit breakdowns (materials, laborHours, equipmentOrSubCost)
             systemPrompt =
               "IMPORTANT: Your entire response must be a single raw JSON object. No markdown, no code fences, no backticks, no explanation. Start your response with { and end with }. You are a construction estimator." +
-              " RETURN JSON with this top-level shape: {\"action\":\"add|update|ready\",\"lineItems\":[{...}],\"deleteIndexes\":[],\"updateItems\":[],\"exclusions\":[],\"message\":\"\"}." +
-              " For this experiment each line item MUST follow this structure exactly (use the exact fields and types): " +
-              "{\"category\":\"...\",\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"materials\":[{\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"unitCost\":number}],\"laborHours\":number,\"equipmentOrSubCost\":number,\"metadata\":{\"assumptions\":\"...\"}}" +
+              " RETURN JSON with this top-level shape: {\"action\":\"add|update|ready\",\"geometry\":{...},\"openings\":[{...}],\"noOpeningsEvidence\":\"\"|null,\"lineItems\":[{...}],\"deleteIndexes\":[],\"updateItems\":[],\"exclusions\":[],\"message\":\"\"}." +
+              " Keep the current line item shape exactly: {\"category\":\"...\",\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"materials\":[{...}],\"laborHours\":number,\"equipmentOrSubCost\":number,\"metadata\":{\"assumptions\":\"...\"}}." +
+              " In addition, include geometry and openings at the top level so the server can verify Phase1 determinism. " +
+              " geometry.footprint.length_ft = {\"value\":number|null,\"evidence\":string|null}; geometry.footprint.width_ft = {\"value\":number|null,\"evidence\":string|null}; geometry.wallHeight_ft = {\"value\":number|null,\"evidence\":string|null}; geometry.roof.type = {\"value\":\"gable\"|string|null,\"evidence\":string|null}; geometry.roof.pitch = {\"value\":number|null,\"evidence\":string|null}; geometry.roof.overhang_in = {\"value\":number|null,\"evidence\":string|null}; " +
+              " openings must be an array of objects with width_ft:number|null, height_ft:number|null, evidence:string. An opening may have one missing dimension when unresolved; represent it as null. " +
+              " noOpeningsEvidence must be a string or null; server decides openingsStatus. " +
+              " For each material object, include desc, qty, unit, unitCost, primary, quantityBasis, basisPerUnit. " +
+              " quantityBasis must be one of: roof-area, siding-area, wall-area, ai-estimated. " +
+              " basisPerUnit must be a number or null. If primary unit is sqft, basisPerUnit must be null. If primary unit is a package unit such as bundle/sheet/carton, basisPerUnit is the sqft covered per unit. " +
+              " Exactly one primary:true material is allowed per applicable line item. Accessories must be primary:false and quantityBasis:\"ai-estimated\" with basisPerUnit:null. " +
+              " Do not decide openingsStatus. The server decides that. " +
+              " Do NOT return authoritative materialCost, laborCost, baseCost, unitCost, total, or markup. Do NOT return any lump-sum totals. The model should only determine quantities, material unit prices, labor hours, assumptions, geometry evidence, and material Phase1 metadata. ContractorDesk will perform all arithmetic and apply markup exactly once. " +
               " STRICT RULES:" +
               " - materials must always be an array (use [] when no materials apply)." +
               " - laborHours must always be numeric (use 0 when none)." +
               " - equipmentOrSubCost must always be numeric (use 0 when none)." +
-              " IMPORTANT: Do NOT return authoritative materialCost, laborCost, baseCost, unitCost, total, or markup. Do NOT return any lump-sum totals. The model should only determine quantities, material unit prices, labor hours, and assumptions. ContractorDesk will perform all arithmetic and apply the authoritative markup exactly once." +
+              " - geometry, openings, and noOpeningsEvidence are required fields for this experiment." +
+              " - all defined properties must be present; do not omit required fields, even when null." +
               " Current items: " + items + " Current exclusions: " + existingExcls +
               (location ? " Location: " + location + "." : "") +
               (histCtx ? " HISTORICAL: " + histCtx + "." : "") +
@@ -253,6 +264,9 @@ app.post("/api/estimate", async (req, res) => {
                   additionalProperties: false,
                   required: [
                     "action",
+                    "geometry",
+                    "openings",
+                    "noOpeningsEvidence",
                     "lineItems",
                     "deleteIndexes",
                     "updateItems",
@@ -263,6 +277,99 @@ app.post("/api/estimate", async (req, res) => {
                     action: {
                       type: "string"
                     },
+                    geometry: {
+                      type: "object",
+                      additionalProperties: false,
+                      required: [
+                        "footprint",
+                        "wallHeight_ft",
+                        "roof"
+                      ],
+                      properties: {
+                        footprint: {
+                          type: "object",
+                          additionalProperties: false,
+                          required: ["length_ft", "width_ft"],
+                          properties: {
+                            length_ft: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: ["value", "evidence"],
+                              properties: {
+                                value: { type: ["number", "null"] },
+                                evidence: { type: ["string", "null"] }
+                              }
+                            },
+                            width_ft: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: ["value", "evidence"],
+                              properties: {
+                                value: { type: ["number", "null"] },
+                                evidence: { type: ["string", "null"] }
+                              }
+                            }
+                          }
+                        },
+                        wallHeight_ft: {
+                          type: "object",
+                          additionalProperties: false,
+                          required: ["value", "evidence"],
+                          properties: {
+                            value: { type: ["number", "null"] },
+                            evidence: { type: ["string", "null"] }
+                          }
+                        },
+                        roof: {
+                          type: "object",
+                          additionalProperties: false,
+                          required: ["type", "pitch", "overhang_in"],
+                          properties: {
+                            type: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: ["value", "evidence"],
+                              properties: {
+                                value: { type: ["string", "null"] },
+                                evidence: { type: ["string", "null"] }
+                              }
+                            },
+                            pitch: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: ["value", "evidence"],
+                              properties: {
+                                value: { type: ["number", "null"] },
+                                evidence: { type: ["string", "null"] }
+                              }
+                            },
+                            overhang_in: {
+                              type: "object",
+                              additionalProperties: false,
+                              required: ["value", "evidence"],
+                              properties: {
+                                value: { type: ["number", "null"] },
+                                evidence: { type: ["string", "null"] }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    openings: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: ["width_ft", "height_ft", "evidence"],
+                        properties: {
+                          width_ft: { type: ["number", "null"] },
+                          height_ft: { type: ["number", "null"] },
+                          evidence: { type: "string" }
+                        }
+                      }
+                    },
+                    noOpeningsEvidence: { type: ["string", "null"] },
                     lineItems: {
                       type: "array",
                       items: {
@@ -292,13 +399,22 @@ app.post("/api/estimate", async (req, res) => {
                                 "desc",
                                 "qty",
                                 "unit",
-                                "unitCost"
+                                "unitCost",
+                                "primary",
+                                "quantityBasis",
+                                "basisPerUnit"
                               ],
                               properties: {
                                 desc: { type: "string" },
                                 qty: { type: "number" },
                                 unit: { type: "string" },
-                                unitCost: { type: "number" }
+                                unitCost: { type: "number" },
+                                primary: { type: "boolean" },
+                                quantityBasis: {
+                                  type: "string",
+                                  enum: ["roof-area", "siding-area", "wall-area", "ai-estimated"]
+                                },
+                                basisPerUnit: { type: ["number", "null"] }
                               }
                             }
                           },
@@ -416,6 +532,12 @@ app.post("/api/estimate", async (req, res) => {
             }
             if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
               return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
+            }
+            try {
+              const verified = verifyAndComputeCanonical(parsed, body.questionContext || {});
+              applyPrimaryMaterialOverrides(parsed, verified);
+            } catch (phase1Err) {
+              console.warn("AI BREAKDOWN PHASE1 GEOMETRY WARNING:", phase1Err && phase1Err.message ? phase1Err.message : phase1Err);
             }
             let normalized;
             try{
