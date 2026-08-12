@@ -8,6 +8,68 @@ const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' 
 
 function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
 
+function collectHistoryText(history){
+  if (!Array.isArray(history)) return '';
+  return history.map(function(entry){
+    if (!entry) return '';
+    if (typeof entry === 'string') return entry;
+    if (typeof entry === 'object') {
+      if (Array.isArray(entry.questions) && entry.questions.length) {
+        return entry.questions.join(' ');
+      }
+      if (entry.answer) return entry.answer;
+      if (entry.question) return entry.question;
+      return JSON.stringify(entry);
+    }
+    return String(entry);
+  }).join(' ');
+}
+
+function hasLaborDurationStatement(text){
+  if (!text) return false;
+  return /(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts)\b/i.test(text);
+}
+
+function hasResolvedCrewOrLaborHoursFact(text){
+  if (!text) return false;
+  const crewPatterns = [
+    /\b(?:crew|workforce|team|workers?|laborers?|electricians?|technicians?|people)\b[^\n]{0,50}\b(?:of\s+)?\d+(?:\.\d+)?\b/i,
+    /\b\d+(?:\.\d+)?\s+(?:workers?|laborers?|electricians?|technicians?|people|crew)\b/i
+  ];
+  const laborHoursPatterns = [
+    /\b(?:total\s+)?labor\s*hours?\b[^\n]{0,50}\b\d+(?:\.\d+)?\b/i,
+    /\b\d+(?:\.\d+)?\s+(?:labor\s*hours?|man-hours?)\b/i
+  ];
+  return crewPatterns.some(function(pattern){ return pattern.test(text); }) ||
+    laborHoursPatterns.some(function(pattern){ return pattern.test(text); });
+}
+
+function validateCOIntakeReadiness(payload){
+  const promptText = [
+    payload && payload.title,
+    payload && payload.description,
+    payload && payload.prompt,
+    payload && payload.questionContext && payload.questionContext.originalPrompt,
+    collectHistoryText(payload && payload.questionContext && payload.questionContext.history)
+  ].filter(function(item){ return typeof item === 'string' && item.trim(); }).join(' ');
+
+  if (!hasLaborDurationStatement(promptText)) {
+    return null;
+  }
+  if (hasResolvedCrewOrLaborHoursFact(promptText)) {
+    return null;
+  }
+
+  const durationMatch = promptText.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts)\b/i);
+  const durationText = durationMatch ? durationMatch[1] + ' ' + durationMatch[2] : 'that duration';
+  return {
+    action: 'questions',
+    questions: [
+      'How many workers will be working for those ' + durationText + '?'
+    ]
+  };
+}
+
 function normalizeAIGenerated(parsed, laborRate, markup){
   if(!parsed || !Array.isArray(parsed.lineItems)) throw new Error('AI response must contain a lineItems array');
   return parsed.lineItems.map(function(li, idx){
@@ -176,8 +238,10 @@ app.post("/api/estimate", async (req, res) => {
               "Use the original CO description and prior questionContext as authoritative known information. Never ask for information already stated in the original description or previous answers. " +
               "Unknown, don't know, N/A, unavailable, or not applicable are valid resolved answers. Treat them as complete. " +
               "Ask only unresolved questions that materially affect scope or price. Do not ask budget questions. Do not ask for contact details. Do not re-ask quantities already supplied such as lengths, counts, or material quantities present in the original request/history. " +
-              "Only ask if something materially affects labor, materials, access, change scope, or crew assumptions. For ambiguous labor phrases like '2 additional days of work', ask only if crew size or total labor hours are still unknown. " +
-              "Return valid JSON only.";
+              "Preserve already-known facts such as 500 LF Romex, 10 round boxes, 8 single-gang boxes, and 1 double-gang box; do not ask those again. " +
+              "A labor duration without crew size or total labor hours is unresolved. For example, '2 additional days of work' is NOT sufficient by itself if crew size or total labor hours are unknown. " +
+              "If the scope includes a duration but not a crew size or total labor-hours fact, ask a question such as 'How many workers will be working for those 2 additional days?' or 'What is the total labor hours for the additional work?' " +
+              "Only ask if something materially affects labor, materials, access, change scope, or crew assumptions. Return valid JSON only.";
           } else if (isIntakeRequest) {
             systemPrompt = isIntakePrompt;
           } else if (AI_BREAKDOWN_EXPERIMENT && (mode === 'estimate-generate' || mode === 'change-order-generate')) {
@@ -630,12 +694,25 @@ app.post("/api/estimate", async (req, res) => {
         if (isIntakeRequest && data && data.content && data.content[0] && typeof data.content[0].text === "string") {
           try {
             const parsedText = JSON.parse(data.content[0].text.trim());
-            if (
-              parsedText &&
-              (parsedText.action === "questions" || parsedText.action === "ready")
-            ) {
+            if (parsedText && (parsedText.action === "questions" || parsedText.action === "ready")) {
+              let finalText = parsedText;
+
+              if (isCOIntakeRequest && finalText.action === "ready") {
+                const override = validateCOIntakeReadiness({
+                  title: title || body.title || '',
+                  description: description || body.description || '',
+                  prompt: body.prompt || '',
+                  questionContext: body.questionContext || null
+                });
+
+                if (override) {
+                  finalText = override;
+                  console.log("STEP 8 - Override CO intake from ready to questions due to unresolved labor duration ambiguity", override);
+                }
+              }
+
               console.log("STEP 8 - Returning response to client");
-              return res.status(response.status).json(parsedText);
+              return res.status(response.status).json(finalText);
             }
           } catch (err) {
             // Fall back to the standard Anthropic response if the model does not follow the intake format.
@@ -741,6 +818,15 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port", PORT);
-});
+if (require.main === module) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log("Server running on port", PORT);
+  });
+}
+
+module.exports = {
+  app,
+  validateCOIntakeReadiness,
+  hasLaborDurationStatement,
+  hasResolvedCrewOrLaborHoursFact,
+};
