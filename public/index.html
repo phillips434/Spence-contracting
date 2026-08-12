@@ -3528,6 +3528,7 @@ function generateCOWithAI(btnEl){
       questionContext:questionContext,
       messages:[{role:'user',content:nextPrompt}]
     })}).then(function(r){return r.json();}).then(function(data){
+      console.log('CO_INTAKE_BROWSER_RESPONSE', data);
       if(data && data.action==='questions' && Array.isArray(data.questions) && data.questions.length){
         var nextState=window._aiCOQuestionState||{active:false,originalPrompt:combined,questions:[],history:[]};
         nextState.active=true;
@@ -3567,6 +3568,7 @@ function generateCOWithAI(btnEl){
       messages:[{role:'user',content:combined}]
     })
   }).then(function(r){return r.json();}).then(function(data){
+    console.log('CO_INTAKE_BROWSER_RESPONSE', data);
     if(data && data.action==='questions' && Array.isArray(data.questions) && data.questions.length){
       var qstate=window._aiCOQuestionState||{active:false,originalPrompt:combined,questions:[],history:[]};
       qstate.active=true;

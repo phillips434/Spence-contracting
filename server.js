@@ -724,28 +724,59 @@ app.post("/api/estimate", async (req, res) => {
         }
         if (isIntakeRequest && data && data.content && data.content[0] && typeof data.content[0].text === "string") {
           try {
-            const parsedText = JSON.parse(data.content[0].text.trim());
-            if (parsedText && (parsedText.action === "questions" || parsedText.action === "ready")) {
-              let finalText = parsedText;
-
-              if (isCOIntakeRequest && finalText.action === "ready") {
-                const override = validateCOIntakeReadiness({
-                  title: title || body.title || '',
-                  description: description || body.description || '',
-                  prompt: body.prompt || '',
-                  questionContext: body.questionContext || null
-                });
-
-                if (override) {
-                  finalText = override;
-                  console.log("STEP 8 - Override CO intake from ready to questions due to unresolved labor duration ambiguity", override);
+            const rawText = data.content[0].text;
+            const parsedText = JSON.parse(rawText.trim());
+            const followUpRound = Boolean(body && body.questionContext && Array.isArray(body.questionContext.history) && body.questionContext.history.length);
+            const readinessResult = isCOIntakeRequest ? validateCOIntakeReadiness({
+              title: title || body.title || '',
+              description: description || body.description || '',
+              prompt: body.prompt || '',
+              questionContext: body.questionContext || null
+            }) : null;
+            const finalObject = (() => {
+              if (parsedText && (parsedText.action === "questions" || parsedText.action === "ready")) {
+                let finalText = parsedText;
+                if (isCOIntakeRequest && finalText.action === "ready" && readinessResult) {
+                  finalText = readinessResult;
                 }
+                return finalText;
               }
+              return null;
+            })();
 
+            console.log("CO_INTAKE_DIAGNOSTIC", {
+              isCOIntakeRequest,
+              round: followUpRound ? "follow-up" : "first",
+              prompt: body && body.prompt,
+              questionContext: body && body.questionContext,
+              rawProviderText: rawText,
+              extractedModelContent: data && data.content && data.content[0] && data.content[0].text,
+              parsedIntakeObject: parsedText,
+              validateCOIntakeReadiness: readinessResult,
+              finalObject,
+              status: response && response.status,
+              httpStatus: response && response.status
+            });
+
+            if (finalObject) {
               console.log("STEP 8 - Returning response to client");
-              return res.status(response.status).json(finalText);
+              return res.status(response.status).json(finalObject);
             }
           } catch (err) {
+            console.log("CO_INTAKE_DIAGNOSTIC", {
+              isCOIntakeRequest,
+              round: Boolean(body && body.questionContext && Array.isArray(body.questionContext.history) && body.questionContext.history.length) ? "follow-up" : "first",
+              prompt: body && body.prompt,
+              questionContext: body && body.questionContext,
+              rawProviderText: (data && data.content && data.content[0] && data.content[0].text) || null,
+              extractedModelContent: (data && data.content && data.content[0] && data.content[0].text) || null,
+              parsedIntakeObject: null,
+              validateCOIntakeReadiness: null,
+              finalObject: null,
+              status: response && response.status,
+              httpStatus: response && response.status,
+              parseError: err && err.message ? err.message : err
+            });
             // Fall back to the standard Anthropic response if the model does not follow the intake format.
           }
         }
