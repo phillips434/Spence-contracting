@@ -14,15 +14,31 @@ function collectHistoryText(history){
     if (!entry) return '';
     if (typeof entry === 'string') return entry;
     if (typeof entry === 'object') {
+      const parts = [];
       if (Array.isArray(entry.questions) && entry.questions.length) {
-        return entry.questions.join(' ');
+        parts.push(entry.questions.join(' '));
       }
-      if (entry.answer) return entry.answer;
-      if (entry.question) return entry.question;
+      if (entry.question) parts.push(entry.question);
+      if (entry.answer || entry.answer === 0) parts.push(String(entry.answer));
+      if (entry.answers && Array.isArray(entry.answers) && entry.answers.length) {
+        parts.push(entry.answers.join(' '));
+      }
+      if (parts.length) return parts.join(' ');
       return JSON.stringify(entry);
     }
     return String(entry);
   }).join(' ');
+}
+
+function hasAnswerToQuestion(history, matcher){
+  if (!Array.isArray(history)) return false;
+  return history.some(function(entry){
+    if (!entry || typeof entry !== 'object') return false;
+    const questionText = (Array.isArray(entry.questions) ? entry.questions.join(' ') : (entry.question || '')).toLowerCase();
+    const answerText = (entry.answer !== undefined && entry.answer !== null) ? String(entry.answer) : '';
+    if (!questionText || !answerText) return false;
+    return matcher(questionText, answerText);
+  });
 }
 
 function hasLaborDurationStatement(text){
@@ -30,33 +46,48 @@ function hasLaborDurationStatement(text){
   return /(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts)\b/i.test(text);
 }
 
-function hasResolvedCrewOrLaborHoursFact(text){
+function hasResolvedCrewOrLaborHoursFact(text, history){
+  if (!text && !history) return false;
+
+  if (Array.isArray(history) && history.length) {
+    const crewResolved = hasAnswerToQuestion(history, function(questionText, answerText){
+      return (/\bworkers?\b|\bcrew\b|\bteam\b|\bpeople\b/.test(questionText) && /\d+(?:\.\d+)?/.test(answerText));
+    });
+    const laborHoursResolved = hasAnswerToQuestion(history, function(questionText, answerText){
+      return (/\blabor\s*hours?\b|\bman-hours?\b|\bhours?\b/.test(questionText) && /\d+(?:\.\d+)?/.test(answerText));
+    });
+    if (crewResolved || laborHoursResolved) return true;
+  }
+
   if (!text) return false;
   const crewPatterns = [
-    /\b(?:crew|workforce|team|workers?|laborers?|electricians?|technicians?|people)\b[^\n]{0,50}\b(?:of\s+)?\d+(?:\.\d+)?\b/i,
-    /\b\d+(?:\.\d+)?\s+(?:workers?|laborers?|electricians?|technicians?|people|crew)\b/i
+    /\b(?:crew|workforce|team|workers?|laborers?|electricians?|technicians?|people)\b[^\n]{0,80}\b(?:of\s+)?\d+(?:\.\d+)?\b/i,
+    /\b\d+(?:\.\d+)?\s+(?:workers?|laborers?|electricians?|technicians?|people|crew)\b/i,
+    /\b(?:crew\s*size|worker\s*count|workers?\s*[:=])\s*\d+(?:\.\d+)?\b/i
   ];
   const laborHoursPatterns = [
-    /\b(?:total\s+)?labor\s*hours?\b[^\n]{0,50}\b\d+(?:\.\d+)?\b/i,
-    /\b\d+(?:\.\d+)?\s+(?:labor\s*hours?|man-hours?)\b/i
+    /\b(?:total\s+)?labor\s*hours?\b[^\n]{0,80}\b\d+(?:\.\d+)?\b/i,
+    /\b\d+(?:\.\d+)?\s+(?:labor\s*hours?|man-hours?)\b/i,
+    /\b(?:total\s+)?labor\s*hours?\s*[:=]\s*\d+(?:\.\d+)?\b/i
   ];
   return crewPatterns.some(function(pattern){ return pattern.test(text); }) ||
     laborHoursPatterns.some(function(pattern){ return pattern.test(text); });
 }
 
 function validateCOIntakeReadiness(payload){
+  const questionHistory = payload && payload.questionContext && payload.questionContext.history;
   const promptText = [
     payload && payload.title,
     payload && payload.description,
     payload && payload.prompt,
     payload && payload.questionContext && payload.questionContext.originalPrompt,
-    collectHistoryText(payload && payload.questionContext && payload.questionContext.history)
+    collectHistoryText(questionHistory)
   ].filter(function(item){ return typeof item === 'string' && item.trim(); }).join(' ');
 
   if (!hasLaborDurationStatement(promptText)) {
     return null;
   }
-  if (hasResolvedCrewOrLaborHoursFact(promptText)) {
+  if (hasResolvedCrewOrLaborHoursFact(promptText, questionHistory)) {
     return null;
   }
 

@@ -21,6 +21,27 @@ describe('coIntakeReadiness', () => {
     assert.ok(result.questions.some((q) => q.toLowerCase().includes('workers') || q.toLowerCase().includes('labor hours')));
   });
 
+  it('recognizes a question + answer as resolving crew-size ambiguity on a second intake round', () => {
+    const payload = {
+      title: 'Work will require 2 additional days of labor.',
+      description: 'Work will require 2 additional days of labor.',
+      prompt: 'Work will require 2 additional days of labor.',
+      questionContext: {
+        originalPrompt: 'Work will require 2 additional days of labor.',
+        history: [
+          {
+            questions: ['How many workers will be working for those 2 additional days?'],
+            answer: '1'
+          }
+        ]
+      }
+    };
+
+    const result = validateCOIntakeReadiness(payload);
+
+    assert.strictEqual(result, null);
+  });
+
   it('allows ready when labor duration is paired with crew-size fact', () => {
     const payload = {
       title: 'Replace knob and tube wiring',
