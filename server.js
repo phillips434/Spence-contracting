@@ -140,13 +140,37 @@ function parseTotalLaborHoursFromText(text){
   return null;
 }
 
+function parseCrewSizeFromHistory(history){
+  if (!Array.isArray(history)) return null;
+
+  for (let i = 0; i < history.length; i++) {
+    const entry = history[i];
+    if (!entry || typeof entry !== 'object') continue;
+
+    const questionParts = Array.isArray(entry.questions) ? entry.questions : [entry.question];
+    const questionText = questionParts.filter(function(item){ return typeof item === 'string' && item.trim(); }).join(' ');
+    const answerText = (entry.answer !== undefined && entry.answer !== null)
+      ? String(entry.answer)
+      : (Array.isArray(entry.answers) ? entry.answers.join(' ') : '');
+
+    if (!questionText || !answerText) continue;
+    if (!/\b(?:how\s+many|workers?|people|crew|team|personnel|electricians?|carpenters?|plumbers?|laborers?|technicians?|craftsmen?)\b/i.test(questionText)) continue;
+
+    const match = answerText.match(/(\d+(?:\.\d+)?)/);
+    if (match && match[1]) return Number(match[1]);
+  }
+
+  return null;
+}
+
 function buildAuthoritativeLaborFact(inputText, history){
   const historyText = collectHistoryText(history || []);
   const combinedText = [inputText, historyText].filter(function(item){ return typeof item === 'string' && item.trim(); }).join(' ');
   if (!combinedText) return { isResolved: false, totalHours: 0, crewSize: null, durationValue: null, durationUnit: null, source: 'contractor' };
 
+  const crewSizeFromHistory = parseCrewSizeFromHistory(history || []);
   const totalLaborHours = parseTotalLaborHoursFromText(combinedText);
-  const crewSize = parseCrewSizeFromText(combinedText);
+  const crewSize = crewSizeFromHistory !== null ? crewSizeFromHistory : parseCrewSizeFromText(combinedText);
   const duration = parseDurationFromText(combinedText);
 
   let finalHours = totalLaborHours;

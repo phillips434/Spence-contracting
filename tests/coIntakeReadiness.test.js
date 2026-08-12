@@ -34,6 +34,59 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(parsed.lineItems[2].laborHours, 0);
   });
 
+  it('CASE A: resolves a bare numeric worker answer from structured history', () => {
+    const result = buildAuthoritativeLaborFact(
+      'Replace additional knob and tube wiring. 2 additional days of work.',
+      [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.crewSize, 1);
+    assert.strictEqual(result.totalHours, 16);
+  });
+
+  it('CASE B: resolves a crew-size answer from a people question', () => {
+    const result = buildAuthoritativeLaborFact(
+      '1 day of work.',
+      [{ questions: ['How many people will be on the crew?'], answer: '3' }]
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.crewSize, 3);
+    assert.strictEqual(result.totalHours, 24);
+  });
+
+  it('CASE C: resolves a worker count for a short duration', () => {
+    const result = buildAuthoritativeLaborFact(
+      '4 hours of work.',
+      [{ questions: ['How many workers?'], answer: '2' }]
+    );
+
+    assert.strictEqual(result.isResolved, true);
+    assert.strictEqual(result.crewSize, 2);
+    assert.strictEqual(result.totalHours, 8);
+  });
+
+  it('CASE D: ignores numeric answers when the question is not about workers or crew size', () => {
+    const result = buildAuthoritativeLaborFact(
+      '2 additional days of work.',
+      [{ questions: ['What is the total number of items to inspect?'], answer: '1' }]
+    );
+
+    assert.strictEqual(result.crewSize, null);
+    assert.strictEqual(result.isResolved, false);
+  });
+
+  it('CASE E: ignores non-numeric answers for crew-size questions', () => {
+    const result = buildAuthoritativeLaborFact(
+      '2 additional days of work.',
+      [{ questions: ['How many workers will be working for those 2 additional days?'], answer: 'Unknown' }]
+    );
+
+    assert.strictEqual(result.crewSize, null);
+    assert.strictEqual(result.isResolved, false);
+  });
+
   it('resolves 3 workers for 1 day to 24 hours', () => {
     const result = buildAuthoritativeLaborFact(
       'Framing crew. 3 workers for 1 day.',
