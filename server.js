@@ -546,14 +546,38 @@ app.post("/api/estimate", async (req, res) => {
             },
             body: JSON.stringify(openaiBody),
           });
+          if (mode === "change-order-generate") {
+            console.log("CO_OPENAI_DIAGNOSTIC status", response && response.status, "ok", response && response.ok);
+          }
           console.log("STEP 6 - OpenAI response received", { status: response.status, ok: response.ok });
           responseText = await response.text();
           try {
             const openaiJson = responseText ? JSON.parse(responseText) : {};
+            if (mode === "change-order-generate") {
+              const choice = openaiJson && openaiJson.choices && openaiJson.choices[0];
+              const message = choice && choice.message ? choice.message : null;
+              const refusal = message && message.refusal ? message.refusal : null;
+              const content = message && message.content ? message.content : null;
+              console.log("CO_OPENAI_DIAGNOSTIC finish_reason", choice && choice.finish_reason);
+              console.log("CO_OPENAI_DIAGNOSTIC has_content", !!content);
+              console.log("CO_OPENAI_DIAGNOSTIC content", content);
+              console.log("CO_OPENAI_DIAGNOSTIC refusal", refusal);
+              if (!response.ok) {
+                console.log("CO_OPENAI_DIAGNOSTIC raw_error_response", responseText);
+              }
+            }
             const messageText = (openaiJson.choices && openaiJson.choices[0] && openaiJson.choices[0].message && openaiJson.choices[0].message.content) || "";
             data = { content: [{ text: messageText }], _raw: openaiJson };
           } catch (parseErr) {
+            if (mode === "change-order-generate") {
+              console.log("CO_OPENAI_DIAGNOSTIC parse_error", parseErr && parseErr.message ? parseErr.message : parseErr);
+              console.log("CO_OPENAI_DIAGNOSTIC raw_response_text", responseText);
+            }
             data = { rawText: responseText };
+          }
+          if (mode === "change-order-generate") {
+            console.log("CO_OPENAI_DIAGNOSTIC parsed_data_keys", data && Object.keys(data));
+            console.log("CO_OPENAI_DIAGNOSTIC parsed_content_text_exists", !!(data && data.content && data.content[0] && data.content[0].text));
           }
           console.log("STEP 7 - OpenAI response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
           if (!response.ok) {
@@ -604,11 +628,23 @@ app.post("/api/estimate", async (req, res) => {
         if (AI_BREAKDOWN_EXPERIMENT && (mode === 'estimate-generate' || mode === 'change-order-generate')){
           try{
             const rawText = (data && data.content && data.content[0] && data.content[0].text) || (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || (data && data.rawText) || '';
+            if (mode === "change-order-generate") {
+              console.log("CO_OPENAI_DIAGNOSTIC rawText_before_parse", rawText);
+            }
             console.log("AI BREAKDOWN RAW RESPONSE:", rawText);
             let parsed = null;
             try{ parsed = rawText ? JSON.parse(rawText.trim()) : null; }catch(pErr){
+              if (mode === "change-order-generate") {
+                console.log("CO_OPENAI_DIAGNOSTIC parse_failed", pErr && pErr.message ? pErr.message : pErr);
+              }
               console.error("AI BREAKDOWN JSON PARSE FAILED:", rawText);
               parsed = null;
+            }
+            if (mode === "change-order-generate") {
+              const parsedKeys = parsed && typeof parsed === 'object' ? Object.keys(parsed) : [];
+              console.log("CO_OPENAI_DIAGNOSTIC parsed_keys", parsedKeys);
+              console.log("CO_OPENAI_DIAGNOSTIC lineItems_is_array", !!(parsed && Array.isArray(parsed.lineItems)));
+              console.log("CO_OPENAI_DIAGNOSTIC lineItems_length", parsed && Array.isArray(parsed.lineItems) ? parsed.lineItems.length : null);
             }
             if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
               return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
