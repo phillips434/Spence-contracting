@@ -744,7 +744,7 @@ app.post("/api/estimate", async (req, res) => {
               return null;
             })();
 
-            console.log("CO_INTAKE_DIAGNOSTIC", {
+            console.log("CO_INTAKE_DIAGNOSTIC " + JSON.stringify({
               isCOIntakeRequest,
               round: followUpRound ? "follow-up" : "first",
               prompt: body && body.prompt,
@@ -756,14 +756,14 @@ app.post("/api/estimate", async (req, res) => {
               finalObject,
               status: response && response.status,
               httpStatus: response && response.status
-            });
+            }, null, 0));
 
             if (finalObject) {
               console.log("STEP 8 - Returning response to client");
               return res.status(response.status).json(finalObject);
             }
           } catch (err) {
-            console.log("CO_INTAKE_DIAGNOSTIC", {
+            console.log("CO_INTAKE_DIAGNOSTIC " + JSON.stringify({
               isCOIntakeRequest,
               round: Boolean(body && body.questionContext && Array.isArray(body.questionContext.history) && body.questionContext.history.length) ? "follow-up" : "first",
               prompt: body && body.prompt,
@@ -776,7 +776,7 @@ app.post("/api/estimate", async (req, res) => {
               status: response && response.status,
               httpStatus: response && response.status,
               parseError: err && err.message ? err.message : err
-            });
+            }, null, 0));
             // Fall back to the standard Anthropic response if the model does not follow the intake format.
           }
         }
