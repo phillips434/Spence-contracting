@@ -114,10 +114,12 @@ app.post("/api/estimate", async (req, res) => {
     try {
       body = req.body || {};
       const mode = body.mode || "passthrough";
-      const isIntakeRequest = mode === "estimate-intake";
+      const isEstimateIntakeRequest = mode === "estimate-intake";
+      const isCOIntakeRequest = mode === "change-order-intake";
+      const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
       const isEstimateRequest = mode === "estimate" || mode === "estimate-generate";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
-      console.log("STEP 3 - Internal mode determined", { mode, isIntakeRequest, isEstimateRequest, isChangeOrderGenerateRequest });
+      console.log("STEP 3 - Internal mode determined", { mode, isIntakeRequest, isEstimateIntakeRequest, isCOIntakeRequest, isEstimateRequest, isChangeOrderGenerateRequest });
 
       let anthropicBody = {
         model: body.model || "claude-haiku-4-5-20251001",
@@ -168,7 +170,15 @@ app.post("/api/estimate", async (req, res) => {
             " Do NOT require perfect construction documents. Intake is complete when there is enough information to create a defensible estimate with reasonable assumptions." +
             " Do not explain anything.";
           let systemPrompt;
-          if (isIntakeRequest) {
+          if (isCOIntakeRequest) {
+            systemPrompt =
+              "IMPORTANT: You are only deciding whether a change order has enough information to proceed. Return only one JSON object with exactly one of these forms: {\"action\":\"questions\",\"questions\":[\"question 1\",\"question 2\"]} or {\"action\":\"ready\"}. Do not add, edit, remove, or change any line items or costs. " +
+              "Use the original CO description and prior questionContext as authoritative known information. Never ask for information already stated in the original description or previous answers. " +
+              "Unknown, don't know, N/A, unavailable, or not applicable are valid resolved answers. Treat them as complete. " +
+              "Ask only unresolved questions that materially affect scope or price. Do not ask budget questions. Do not ask for contact details. Do not re-ask quantities already supplied such as lengths, counts, or material quantities present in the original request/history. " +
+              "Only ask if something materially affects labor, materials, access, change scope, or crew assumptions. For ambiguous labor phrases like '2 additional days of work', ask only if crew size or total labor hours are still unknown. " +
+              "Return valid JSON only.";
+          } else if (isIntakeRequest) {
             systemPrompt = isIntakePrompt;
           } else if (AI_BREAKDOWN_EXPERIMENT && (mode === 'estimate-generate' || mode === 'change-order-generate')) {
             if (mode === 'change-order-generate') {

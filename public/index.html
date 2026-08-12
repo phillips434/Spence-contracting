@@ -3410,12 +3410,23 @@ function clearCOCanvas(idx){
   var c=document.getElementById('coSigCanvas'+idx);
   if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
 }
-function generateCOWithAI(btnEl){
+function renderCOQuestionUI(questions){
+  var form=document.getElementById('coForm');
+  if(!form)return;
+  var existing=document.getElementById('coQuestionCard');
+  if(existing)existing.parentNode.removeChild(existing);
+  var html='<div id="coQuestionCard" style="margin-top:12px;padding:12px;border:1px solid #CFE0FF;background:#F6F9FF;border-radius:10px">';
+  html+='<div style="font-size:12px;color:#2B3990;font-weight:700;margin-bottom:8px">Need a few more details before this Change Order is ready.</div>';
+  (questions||[]).forEach(function(q, idx){
+    html+='<div style="font-size:12px;color:#333;margin-bottom:6px">'+(idx+1)+'. '+q+'</div>';
+  });
+  html+='<textarea id="coQuestionAnswer" rows="3" class="fi" placeholder="Answer here..." style="margin-top:8px;margin-bottom:8px"></textarea>';
+  html+='<button type="button" class="btn-dark" style="width:100%" onclick="generateCOWithAI(this)">Continue</button>';
+  html+='</div>';
+  form.insertAdjacentHTML('beforeend', html);
+}
+function runCOGenerationRequest(title, desc, btnEl){
   var p=gpr();if(!p)return;
-  var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';
-  var desc=document.getElementById('coDesc')?document.getElementById('coDesc').value.trim():'';
-  var combined=title+(desc?' - '+desc:'');
-  if(!combined){alert('Enter a title or description first, then tap AI Draft.');return;}
   var btn=btnEl||document.querySelector('.co-ai-btn');if(btn){btn.disabled=true;btn.textContent='Drafting...';}
   var profile=DD.aiProfile||{};
   var markup=parseFloat(profile.markup)||20;
@@ -3439,7 +3450,7 @@ function generateCOWithAI(btnEl){
       description:desc,
       originalEstimateContext:origItems,
       histCtx:histCtx2,
-      messages:[{role:'user',content:combined}]
+      messages:[{role:'user',content:title+(desc?' - '+desc:'')}] 
     }),
     signal:_coCtrl.signal
   }).then(function(r){clearTimeout(_coTimeout);return r.json();})
@@ -3483,6 +3494,96 @@ function generateCOWithAI(btnEl){
     T('Change order drafted with line items!');
   }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI error: '+err.message);})
   .finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
+}
+function generateCOWithAI(btnEl){
+  var p=gpr();if(!p)return;
+  var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';
+  var desc=document.getElementById('coDesc')?document.getElementById('coDesc').value.trim():'';
+  var combined=title+(desc?' - '+desc:'');
+  if(!combined){alert('Enter a title or description first, then tap AI Draft.');return;}
+  var btn=btnEl||document.querySelector('.co-ai-btn');
+  var state=window._aiCOQuestionState||{active:false,originalPrompt:'',questions:[],history:[]};
+  var profile=DD.aiProfile||{};
+
+  if(state.active && state.questions && state.questions.length){
+    var answerEl=document.getElementById('coQuestionAnswer');
+    var answer=(answerEl?answerEl.value:'').trim();
+    if(!answer){T('Please answer the follow-up question to continue.');return;}
+    state.history=state.history||[];
+    state.history.push({questions:state.questions.slice(),answer:answer});
+    state.questions=[];
+    state.active=false;
+    window._aiCOQuestionState=state;
+    var nextPrompt=answer;
+    var questionContext={originalPrompt:state.originalPrompt||combined,history:(state.history||[]).slice()};
+    if(btn){btn.disabled=true;btn.textContent='Checking scope...';}
+    fetch('/api/estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      mode:'change-order-intake',
+      model:'gpt-4.1',
+      max_tokens:1200,
+      prompt:nextPrompt,
+      title:title,
+      description:desc,
+      location:profile.location||'',
+      questionContext:questionContext,
+      messages:[{role:'user',content:nextPrompt}]
+    })}).then(function(r){return r.json();}).then(function(data){
+      if(data && data.action==='questions' && Array.isArray(data.questions) && data.questions.length){
+        var nextState=window._aiCOQuestionState||{active:false,originalPrompt:combined,questions:[],history:[]};
+        nextState.active=true;
+        nextState.originalPrompt=nextState.originalPrompt||combined;
+        nextState.questions=data.questions.slice();
+        window._aiCOQuestionState=nextState;
+        renderCOQuestionUI(nextState.questions);
+        return;
+      }
+      if(data && data.action==='ready'){
+        window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+        var existingCard=document.getElementById('coQuestionCard');
+        if(existingCard)existingCard.parentNode.removeChild(existingCard);
+        runCOGenerationRequest(title, desc, btn);
+        return;
+      }
+      T('CO intake did not resolve successfully. Please try again.');
+    }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI intake error: '+err.message);}).finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
+    return;
+  }
+
+  state={active:false,originalPrompt:combined,questions:[],history:[]};
+  window._aiCOQuestionState=state;
+  if(btn){btn.disabled=true;btn.textContent='Checking scope...';}
+  fetch('/api/estimate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      mode:'change-order-intake',
+      model:'gpt-4.1',
+      max_tokens:1200,
+      prompt:combined,
+      title:title,
+      description:desc,
+      location:profile.location||'',
+      questionContext:{originalPrompt:combined,history:[]},
+      messages:[{role:'user',content:combined}]
+    })
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data && data.action==='questions' && Array.isArray(data.questions) && data.questions.length){
+      var qstate=window._aiCOQuestionState||{active:false,originalPrompt:combined,questions:[],history:[]};
+      qstate.active=true;
+      qstate.originalPrompt=combined;
+      qstate.questions=data.questions.slice();
+      qstate.history=qstate.history||[];
+      window._aiCOQuestionState=qstate;
+      renderCOQuestionUI(qstate.questions);
+      return;
+    }
+    if(data && data.action==='ready'){
+      window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+      runCOGenerationRequest(title, desc, btn);
+      return;
+    }
+    T('CO intake did not resolve successfully. Please try again.');
+  }).catch(function(err){T(err.name==='AbortError'?'CO AI timed out — try again':'CO AI intake error: '+err.message);}).finally(function(){if(btn){btn.disabled=false;btn.textContent='&#10024; AI Draft Change Order';}});
 }
 
 function signCOBtn(btn){
