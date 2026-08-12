@@ -806,6 +806,13 @@ app.post("/api/estimate", async (req, res) => {
             if(!parsed || !Array.isArray(parsed.lineItems) || !parsed.lineItems.length){
               return res.status(200).json({action:'error',message:'AI must return JSON with a lineItems array containing materials and labor breakdown for each generated item.',rawText: rawText});
             }
+            if (mode === "change-order-generate") {
+              const aiParsedBeforeNormalize = JSON.parse(JSON.stringify(parsed));
+              console.log('CO_PRICING_DIAGNOSTIC ' + JSON.stringify({
+                parsedAIOutputBeforeNormalize: aiParsedBeforeNormalize,
+                note: 'Raw parsed model output before normalizeAIGenerated()'
+              }, null, 0));
+            }
             try {
               if (parsed.geometry) {
                 const verified = verifyAndComputeCanonical(parsed, body.questionContext || {});
@@ -828,6 +835,60 @@ app.post("/api/estimate", async (req, res) => {
             const normalizedBudgetImpact = normalized.reduce(function(sum, li){
               return sum + (Number(li.total) || 0);
             }, 0);
+            const markupPct = Number(body.markup ?? 20);
+            const totalMaterialsCost = normalized.reduce(function(sum, li){
+              return sum + (Number(li.aiBreakdown && li.aiBreakdown.materials ? li.aiBreakdown.materials.reduce(function(mSum, m){ return mSum + (Number(m.qty || 0) * Number(m.unitCost || 0)); }, 0) : 0) || 0);
+            }, 0);
+            const totalLaborHours = normalized.reduce(function(sum, li){
+              return sum + (Number(li.aiBreakdown && li.aiBreakdown.laborHours) || 0);
+            }, 0);
+            const totalLaborCost = normalized.reduce(function(sum, li){
+              return sum + (Number(li.total) || 0) - (Number(li.aiBreakdown && li.aiBreakdown.materials ? li.aiBreakdown.materials.reduce(function(mSum, m){ return mSum + (Number(m.qty || 0) * Number(m.unitCost || 0)); }, 0) : 0) || 0) - (Number(li.aiBreakdown && li.aiBreakdown.equipmentOrSubCost) || 0);
+            }, 0);
+            const totalEquipmentOrSubCost = normalized.reduce(function(sum, li){
+              return sum + (Number(li.aiBreakdown && li.aiBreakdown.equipmentOrSubCost) || 0);
+            }, 0);
+            const subtotal = normalizedBudgetImpact;
+            const markupAmount = Number((subtotal * (markupPct / 100)).toFixed(2));
+            const finalTotal = Number((subtotal + markupAmount).toFixed(2));
+            if (mode === "change-order-generate") {
+              console.log('CO_PRICING_DIAGNOSTIC ' + JSON.stringify({
+                lineItems: normalized.map(function(li){
+                  const materialCost = Number(li.aiBreakdown && li.aiBreakdown.materials ? li.aiBreakdown.materials.reduce(function(s, m){ return s + (Number(m.qty || 0) * Number(m.unitCost || 0)); }, 0) : 0) || 0;
+                  const laborHours = Number(li.aiBreakdown && li.aiBreakdown.laborHours) || 0;
+                  const laborRate = Number(body.laborRate ?? 85);
+                  const laborCost = Number((laborHours * laborRate).toFixed(2));
+                  const equipmentOrSubCost = Number(li.aiBreakdown && li.aiBreakdown.equipmentOrSubCost) || 0;
+                  const baseCost = Number((materialCost + laborCost + equipmentOrSubCost).toFixed(2));
+                  const lineItemMarkupPct = Number(markupPct);
+                  const lineItemMarkupAmount = Number((baseCost * (lineItemMarkupPct / 100)).toFixed(2));
+                  return {
+                    desc: li.desc,
+                    materialCost: Number(materialCost.toFixed(2)),
+                    laborHours: laborHours,
+                    laborRate: laborRate,
+                    laborCost: laborCost,
+                    equipmentOrSubCost: Number(equipmentOrSubCost.toFixed(2)),
+                    baseCost: Number(baseCost.toFixed(2)),
+                    markupPct: lineItemMarkupPct,
+                    markupAmount: Number(lineItemMarkupAmount.toFixed(2)),
+                    finalLineItemTotal: Number((Number(li.total) || baseCost).toFixed(2))
+                  };
+                }),
+                topLevelPricing: {
+                  totalMaterialsCost: Number(totalMaterialsCost.toFixed(2)),
+                  totalLaborHours: Number(totalLaborHours.toFixed(2)),
+                  totalLaborCost: Number(totalLaborCost.toFixed(2)),
+                  totalEquipmentOrSubCost: Number(totalEquipmentOrSubCost.toFixed(2)),
+                  subtotal: Number(subtotal.toFixed(2)),
+                  markupPct: markupPct,
+                  markupAmount: Number(markupAmount.toFixed(2)),
+                  budgetImpact: Number(normalizedBudgetImpact.toFixed(2)),
+                  finalTotal: Number(finalTotal.toFixed(2))
+                },
+                note: 'Actual normalized line items and server totals after normalizeAIGenerated()'
+              }, null, 0));
+            }
             const out = mode === 'change-order-generate'
               ? {
                   title: parsed.title || title || '',
