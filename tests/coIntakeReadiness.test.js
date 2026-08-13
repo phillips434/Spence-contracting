@@ -847,6 +847,98 @@ describe('coIntakeReadiness', () => {
     });
   });
 
+  it('locks in the knob-and-tube 400 ft 12/2 NM-B authoritative facts and repeatability', () => {
+    const { buildAuthoritativeLaborFact, resolveCanonicalMaterialIdentity, applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG } = require('../server');
+    const contractorScope = 'replace knob and tube wiring 400\' all 12/2 wire will need 10 round old work boxes 8 single gang old work boxes and 1 double gang old work box it will require 2 additional days of labor';
+    const followUpAnswer = '1 worker';
+    const materialRaw = {
+      desc: '12/2 Romex',
+      qty: 400,
+      unit: 'ft',
+      unitCost: 1.25,
+      primary: true,
+      quantityBasis: 'ai-estimated',
+      basisPerUnit: null
+    };
+
+    const laborFact = buildAuthoritativeLaborFact(contractorScope, [{ questions: ['How many workers will be working for those 2 additional days?'], answer: followUpAnswer }]);
+    assert.strictEqual(laborFact.isResolved, true);
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(laborFact.crewSize, 1);
+    assert.strictEqual(laborFact.durationValue, 2);
+    assert.strictEqual(laborFact.durationUnit, 'days');
+
+    const candidateScope = 'replace knob and tube wiring 400\' all 12/2 wire will need 10 round old work boxes 8 single gang old work boxes and 1 double gang old work box it will require 2 additional days of labor';
+    assert.ok(candidateScope.includes('400\''));
+    assert.ok(candidateScope.includes('12/2'));
+    assert.ok(candidateScope.includes('10 round old work boxes'));
+    assert.ok(candidateScope.includes('8 single gang old work boxes'));
+    assert.ok(candidateScope.includes('1 double gang old work box'));
+    assert.ok(candidateScope.includes('2 additional days of labor'));
+
+    const canonicalKey = resolveCanonicalMaterialIdentity(materialRaw.desc);
+    assert.strictEqual(canonicalKey, 'nm-b 12/2');
+    assert.notStrictEqual(canonicalKey, 'nm-b 14/2');
+    assert.notStrictEqual(canonicalKey, null);
+
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Run cable',
+        qty: 400,
+        unit: 'ft',
+        laborHours: 16,
+        equipmentOrSubCost: 0,
+        materials: [materialRaw],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    applyAuthoritativeMaterialPricing(parsed);
+    assert.strictEqual(parsed.lineItems[0].materials[0].qty, 400);
+    assert.strictEqual(parsed.lineItems[0].materials[0].unit, 'ft');
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, MATERIAL_PRICE_CATALOG['nm-b 12/2'].unitCost);
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 0.72);
+
+    const laborCost = Number((laborFact.totalHours * 85).toFixed(2));
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(laborCost, 1360);
+
+    const materialCost = Number((parsed.lineItems[0].materials[0].qty * parsed.lineItems[0].materials[0].unitCost).toFixed(2));
+    assert.strictEqual(materialCost, 288);
+
+    const repeatMaterial = {
+      desc: '12/2 Romex',
+      qty: 400,
+      unit: 'ft',
+      unitCost: 1.25,
+      primary: true,
+      quantityBasis: 'ai-estimated',
+      basisPerUnit: null
+    };
+    const repeatParsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Run cable',
+        qty: 400,
+        unit: 'ft',
+        laborHours: 16,
+        equipmentOrSubCost: 0,
+        materials: [repeatMaterial],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+    applyAuthoritativeMaterialPricing(repeatParsed);
+    assert.strictEqual(repeatParsed.lineItems[0].materials[0].qty, 400);
+    assert.strictEqual(repeatParsed.lineItems[0].materials[0].unitCost, 0.72);
+    assert.strictEqual(repeatParsed.lineItems[0].materials[0].unit, 'ft');
+
+    assert.ok(!candidateScope.toLowerCase().includes('14/2'));
+    assert.ok(!candidateScope.toLowerCase().includes('various gauges'));
+    assert.ok(!candidateScope.toLowerCase().includes('14 gauge'));
+    assert.ok(!candidateScope.toLowerCase().includes('various'));
+  });
+
   it('CASE A: applies the catalog price when 12/2 Romex is in feet and matches the catalog unit', () => {
     const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG, resolveCanonicalMaterialIdentity } = require('../server');
     const parsed = {
