@@ -519,6 +519,13 @@ body.client-mode .phead { display:none !important; }
     <div class="fg">
       <div><label class="fl">Client Name *</label><input class="fi" id="efClient"/></div>
       <div><label class="fl">Project Type *</label><input class="fi" id="efType"/></div>
+      <div><label class="fl">Project Class</label>
+        <select class="fi" id="efProjectClass">
+          <option value="">Select</option>
+          <option value="residential">Residential</option>
+          <option value="commercial">Commercial</option>
+        </select>
+      </div>
       <div><label class="fl">Address</label><input class="fi" id="efAddress"/></div>
       <div class="fr2">
         <div><label class="fl">Date</label><input class="fi" id="efDate" type="date"/></div>
@@ -1609,148 +1616,17 @@ function calcMsAmt(pctVal){
 function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document.getElementById('msPct').value:0); }
 
 
-function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
-function isResidentialEstimate(e){
-  if(!e)return false;
-  var type=(e.type||'').toString().toLowerCase();
-  if(/residential|house|home|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|renovation|remodel/i.test(type)) return true;
-  var lineItems=Array.isArray(e.lineItems)?e.lineItems:[];
-  return lineItems.some(function(li){
-    var text=((li&&li.desc)||'')+' '+((li&&li.category)||'')+' '+((li&&li.unit)||'');
-    return /knob|tube|old-work|old work|nm-b|romex|single-gang|single gang|double-gang|double gang|electrical|plumbing|lighting|roofing|hvac/i.test(text);
-  });
-}
-function buildResidentialEstimateDescription(e){
-  if(!isResidentialEstimate(e)) return null;
-
-  var lineItems=Array.isArray(e.lineItems)?e.lineItems.filter(function(li){return li && (li.desc||'').trim();}):[];
-  var noteText=(typeof e.notes === 'string' && e.notes.trim()) ? e.notes.trim() : '';
-  var sentences=[];
-  if(noteText){
-    sentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])/).map(function(s){return s.trim();}).filter(Boolean);
-  } else {
-    sentences=lineItems.map(function(li){
-      var desc=(li.desc||'').trim();
-      if(!desc)return '';
-      return desc.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
-    }).filter(Boolean);
-  }
-
-  var seen={};
-  function addUnique(list, value){
-    if(!value) return list;
-    var normalized=value.replace(/\s+/g,' ').trim();
-    if(!normalized || seen[normalized]) return list;
-    seen[normalized]=true;
-    list.push(normalized);
-    return list;
-  }
-
-  var scope = '';
-  var workIncluded = [];
-  var assumptions = [];
-  var exclusions = Array.isArray(e.exclusions) ? e.exclusions.map(function(ex){return String(ex||'').trim();}).filter(Boolean) : [];
-
-  if(sentences.length){
-    for(var i=0;i<sentences.length;i++){
-      var sentence=sentences[i].replace(/\s+/g,' ').trim();
-      if(!sentence) continue;
-      var lowered=sentence.toLowerCase();
-      if(!scope && !/excluded|exclusions|not included|not included in this estimate|not included/i.test(lowered)){
-        scope = sentence;
-      }
-      if(/excluded|exclusions|not included|not included in this estimate/i.test(lowered)){
-        continue;
-      }
-      if(/assume|assumption|existing|remains|provided|available|if|condition|conditions|weather|site|access|scope/i.test(lowered) && !/excluded|not included|labor|hours|markup|unit cost|material cost|rate/i.test(lowered)){
-        if(!/install|replace|remove|run|repair|upgrade|add|new|remove|pull|mount/i.test(lowered)){
-          addUnique(assumptions, sentence);
-        }
-      }
-      if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch/i.test(lowered)){
-        if(sentence !== scope && !/excluded|not included|exclusions|labor|hours|markup|unit cost|rate|cost/i.test(lowered)){
-          addUnique(workIncluded, sentence);
-        }
-      }
-    }
-  }
-
-  if(!scope){
-    scope = lineItems.length ? (lineItems[0].desc||'Scope of work') : 'Scope of work';
-    scope = scope.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
-  }
-
-  if(!workIncluded.length){
-    lineItems.forEach(function(li){
-      var desc=(li.desc||'').trim();
-      if(!desc) return;
-      var cleaned=desc.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
-      if(!cleaned || cleaned === scope) return;
-      if(/labor|hours|markup|rate|unitcost|unit cost|cost|materials?\s*\$|\$\d+/i.test(cleaned)) return;
-      addUnique(workIncluded, cleaned);
-    });
-  }
-
-  if(workIncluded.length && workIncluded[0] === scope){
-    workIncluded.shift();
-  }
-
-  if(scope && workIncluded.length && workIncluded[0] === scope){
-    workIncluded.shift();
-  }
-
-  var sections=[];
-  var projectScopeValue = scope || 'Residential scope of work';
-  sections.push({label:'PROJECT SCOPE', value: projectScopeValue});
-
-  if(workIncluded.length){
-    var workText = workIncluded.slice(0,3).join(' ');
-    sections.push({label:'WORK INCLUDED', value: workText});
-  }
-
-  if(assumptions.length){
-    sections.push({label:'PROJECT CONDITIONS / ASSUMPTIONS', value: assumptions.slice(0,2).join(' ')});
-  }
-
-  if(exclusions.length){
-    sections.push({label:'EXCLUSIONS', value: exclusions.slice(0,3).join('; ')});
-  }
-
-  var heading = 'Residential';
-  var typeLabel=(e.type||'').toString().trim();
-  if(typeLabel){
-    var bareType=typeLabel.replace(/\bResidential\b/gi,'').trim();
-    if(bareType){
-      heading=bareType.replace(/\s+/g,' ');
-    }
-  }
-
-  return {
-    heading: heading,
-    summary: projectScopeValue,
-    sections: sections,
-    detailText: sections.map(function(section){return section.label + ': ' + section.value;}).join('\n\n')
-  };
-}
-function renderResidentialNarrativeBlock(e, isClientMode){
-  var narrative = buildResidentialEstimateDescription(e);
-  if(!narrative) return '';
-  var html='';
-  html+='<div class="wcard" style="margin-top:14px">';
-  html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Residential')+'</div>';
-  html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+narrative.summary+'</div>';
-  if(Array.isArray(narrative.sections) && narrative.sections.length){
-    narrative.sections.forEach(function(section){
-      if(!section || !section.value) return;
-      html+='<div style="margin-top:10px">';
-      html+='<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">'+(section.label||'Details')+'</div>';
-      html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';
-      html+='</div>';
-    });
-  }
-  html+='</div>';
-  return html;
-}
+function normalizeProjectClass(value){var raw=(value==null?'':String(value)).trim().toLowerCase();if(!raw)return null;if(/^(residential|home|house|condo|townhome|townhouse|apartment|single-family|single family|homeowner|residential remodel|residential renovation)$/.test(raw))return 'residential';if(/^(commercial|tenant improvement|office|retail|industrial|warehouse|multi-family|multi family|buildout|commercial renovation)$/.test(raw))return 'commercial';return null;}
+function resolveEstimateProjectClass(e){if(!e)return null;var explicit=normalizeProjectClass(e.projectClass||e.projectType||e.type);if(explicit)return explicit;var raw=((e.notes||'')+' '+(Array.isArray(e.lineItems)?e.lineItems.map(function(li){return (li&&li.desc)||'';}).join(' '):'')).toLowerCase();if(/residential|home|house|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|remodel|renovation/.test(raw))return 'residential';if(/commercial|tenant improvement|office|retail|industrial|warehouse|buildout|tenant/.test(raw))return 'commercial';return null;}
+function sanitizeScopeText(value){if(value==null)return '';return String(value).replace(/\s+/g,' ').replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();}
+function addUniqueScopeItem(list, value){var normalized=sanitizeScopeText(value);if(!normalized)return list;if(list.indexOf(normalized)!==-1)return list;list.push(normalized);return list;}
+function buildCanonicalCustomerScope(e){var estimate=e||{};var projectClass=resolveEstimateProjectClass(estimate)||'commercial';var lineItems=Array.isArray(estimate.lineItems)?estimate.lineItems.filter(function(li){return li&&(li.desc||'').trim();}):[];var noteText=(typeof estimate.notes==='string'&&estimate.notes.trim())?estimate.notes.trim():'';var sentences=noteText?noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean):lineItems.map(function(li){return sanitizeScopeText(li.desc);}).filter(Boolean);var scope='';var workIncluded=[];var conditions=[];var exclusions=Array.isArray(estimate.exclusions)?estimate.exclusions.map(function(ex){return sanitizeScopeText(ex);}).filter(Boolean):[];sentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!scope&&!/excluded|exclusions|not included|outside of scope|not included in this estimate/i.test(lowered)){scope=sentence;}if(/excluded|exclusions|not included|not included in this estimate|outside of scope/i.test(lowered)){return;}if(/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){addUniqueScopeItem(conditions,sentence);}if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch|demo|finish|hang|route|terminate/i.test(lowered)){addUniqueScopeItem(workIncluded,sentence);}});if(!scope){if(noteText){scope=sanitizeScopeText(noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)[0]||'Scope of work');}else if(lineItems.length){scope=sanitizeScopeText(lineItems[0].desc)||'Scope of work';}else{scope='Scope of work';}}if(!workIncluded.length){lineItems.forEach(function(li){var cleaned=sanitizeScopeText(li.desc);if(!cleaned||cleaned===scope)return;if(/labor|hours|markup|rate|unit cost|unitcost|material cost|cost\s*\$|\$\d+/i.test(cleaned))return;addUniqueScopeItem(workIncluded,cleaned);});}if(workIncluded.length&&workIncluded[0]===scope){workIncluded.shift();}var canonical={projectClass:projectClass,projectScope:scope||'Scope of work',workIncluded:workIncluded.slice(0,4),conditionsAssumptions:conditions.slice(0,3),exclusions:exclusions.slice(0,5)};estimate.customerScope=canonical;return canonical;}
+function getCanonicalCustomerScope(e){if(!e)return null;if(e.customerScope&&e.customerScope.projectScope)return e.customerScope;return buildCanonicalCustomerScope(e);}
+function renderCommercialNarrativeBlock(e, isClientMode){var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return '';var html='';html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Commercial</div>';html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+scope.projectScope+'</div>';html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">SCOPE OF WORK</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.projectScope+'</div></div>';if(scope.workIncluded&&scope.workIncluded.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">WORK INCLUDED</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.workIncluded.join('; ')+'</div></div>';}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">PROJECT CONDITIONS / ASSUMPTIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.conditionsAssumptions.join('; ')+'</div></div>';}if(scope.exclusions&&scope.exclusions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">EXCLUSIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.exclusions.join('; ')+'</div></div>';}html+='</div>';return html;}
+function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";var scope=getCanonicalCustomerScope(e)||{projectScope:(e&&(e.notes||e.type))||'Scope of work',workIncluded:[],conditionsAssumptions:[],exclusions:Array.isArray(e&&e.exclusions)?e.exclusions:[]};var projectClass=resolveEstimateProjectClass(e)||'commercial';var projectScopeText=scope.projectScope||'Scope of work';var workIncludedText=(scope.workIncluded&&scope.workIncluded.length)?scope.workIncluded.join('; '):(e&&e.notes?e.notes:'');var conditionsText=(scope.conditionsAssumptions&&scope.conditionsAssumptions.length)?scope.conditionsAssumptions.join('; '):'';var exclusionsText=(scope.exclusions&&scope.exclusions.length)?scope.exclusions.join('; '):'';var contractBody=co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\n";if(projectClass==='residential'){contractBody += "PROJECT SCOPE:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}else{contractBody += "SCOPE OF WORK:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}contractBody += "CONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";return contractBody;}
+function isResidentialEstimate(e){if(!e)return false;return resolveEstimateProjectClass(e)==='residential' || /residential|house|home|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|renovation|remodel/i.test((e.type||'')+' '+(e.notes||''));}
+function buildResidentialEstimateDescription(e){if(!isResidentialEstimate(e))return null;var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return null;var sections=[];sections.push({label:'PROJECT SCOPE',value:scope.projectScope});if(scope.workIncluded&&scope.workIncluded.length){sections.push({label:'WORK INCLUDED',value:scope.workIncluded.join('; ')});}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){sections.push({label:'PROJECT CONDITIONS / ASSUMPTIONS',value:scope.conditionsAssumptions.join('; ')});}if(scope.exclusions&&scope.exclusions.length){sections.push({label:'EXCLUSIONS',value:scope.exclusions.join('; ')});}var heading=(resolveEstimateProjectClass(e)==='residential'?'Residential':((e.type||'').toString().trim()||'Residential'));return {heading:heading,summary:scope.projectScope,sections:sections,detailText:sections.map(function(section){return section.label+': '+section.value;}).join('\n\n')};}
+function renderResidentialNarrativeBlock(e, isClientMode){var narrative=buildResidentialEstimateDescription(e);if(!narrative)return '';var html='';html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Residential')+'</div>';html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+narrative.summary+'</div>';if(Array.isArray(narrative.sections)&&narrative.sections.length){narrative.sections.forEach(function(section){if(!section||!section.value)return;html+='<div style="margin-top:10px">';html+='<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">'+(section.label||'Details')+'</div>';html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';html+='</div>';});}html+='</div>';return html;}
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
   if(!name||!name.value.trim()){T("Please enter your name.");return;}
@@ -2180,9 +2056,9 @@ function saveEditLineItemPage(){
 function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty").value)||0,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;document.getElementById("eliPreview").textContent="$"+(qty*uc*(1+markup/100)).toLocaleString(undefined,{maximumFractionDigits:0});}
 function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
-function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
-function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
-function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),estNum:estNum,client:client,type:type,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});eCol.doc(id).set(est).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});}
+function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
+function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
+function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),estNum:estNum,client:client,type:type,projectClass:normalizeProjectClass(projectClass)||existing.projectClass||'',address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||'',customerScope: getCanonicalCustomerScope(Object.assign({}, existing, { type:type, notes:document.getElementById("efNotes").value.trim(), lineItems: existing.lineItems||[], exclusions: existing.exclusions||[], projectClass: normalizeProjectClass(projectClass)||existing.projectClass||''}))});eCol.doc(id).set(est).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
@@ -2670,8 +2546,13 @@ function renderClientView(e,wrapper){
   if(e.estNum) html+='<div style="font-size:12px;color:#2B3990;font-weight:700;margin-top:6px">'+e.estNum+'</div>';
   html+='</div>';
 
-  html += renderResidentialNarrativeBlock(e, true);
-  if(!buildResidentialEstimateDescription(e) && e.notes){
+  var resolvedProjectClass = resolveEstimateProjectClass(e);
+  if(resolvedProjectClass === 'commercial'){
+    html += renderCommercialNarrativeBlock(e, true);
+  } else {
+    html += renderResidentialNarrativeBlock(e, true);
+  }
+  if(!getCanonicalCustomerScope(e).projectScope && e.notes){
     html+='<div class="wcard" style="margin-top:14px">';
     html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Scope</div>';
     html+='<div style="font-size:13px;color:#555;line-height:1.7">'+e.notes+'</div>';

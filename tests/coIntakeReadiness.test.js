@@ -1273,6 +1273,66 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(narrative, null);
   });
 
+  it('PROJECT-CLASS A: new estimates expose a dedicated projectClass selector and ask for residential vs commercial', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    assert.ok(html.includes('id="efProjectClass"'));
+    assert.ok(html.includes('Residential'));
+    assert.ok(html.includes('Commercial'));
+  });
+
+  it('PROJECT-CLASS B: projectClass persists and canonical customerScope is built from saved estimate data', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function resolveEstimateProjectClass');
+    const end = html.indexOf('function buildResidentialEstimateDescription', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      type: 'test 1',
+      projectClass: 'residential',
+      notes: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B. Existing panel capacity remains in use.',
+      lineItems: [
+        { desc: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B wire' },
+        { desc: 'Install 8 old-work boxes' }
+      ],
+      exclusions: ['Drywall repair']
+    };
+
+    assert.strictEqual(context.resolveEstimateProjectClass(estimate), 'residential');
+    const scope = context.buildCanonicalCustomerScope(estimate);
+    assert.ok(scope.projectScope.toLowerCase().includes('replace') || scope.projectScope.toLowerCase().includes('wiring'));
+    assert.ok(scope.workIncluded.length >= 1);
+    assert.ok(scope.exclusions.includes('Drywall repair'));
+    assert.ok(!JSON.stringify(scope).toLowerCase().includes('labor rate'));
+  });
+
+  it('PROJECT-CLASS C: contract agreement uses canonical customerScope instead of the generic estimate title', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateContractText');
+    const end = html.indexOf('function isResidentialEstimate', start);
+    const snippet = html.slice(start, end);
+    const context = { DD: { companyName: 'Contractor Desk' }, Date };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Client',
+      type: 'test 1',
+      projectClass: 'residential',
+      notes: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B. Existing panel capacity remains in use.',
+      lineItems: [
+        { desc: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B' },
+        { desc: 'Install old-work boxes' }
+      ],
+      exclusions: ['Drywall repair']
+    };
+
+    const contractText = context.generateContractText(estimate, { grandTotal: 1000 });
+    assert.ok(contractText.toLowerCase().includes('scope of work'));
+    assert.ok(!contractText.toLowerCase().includes('test 1'));
+    assert.ok(contractText.toLowerCase().includes('replace 400 linear feet') || contractText.toLowerCase().includes('12/2'));
+  });
+
   it('CASE H: saved quantities, labor, costs, markup, and final totals are unchanged before vs after rendering', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     const start = html.indexOf('function buildResidentialEstimateDescription');
