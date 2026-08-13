@@ -434,6 +434,42 @@ function applyCOAuthoritativeLabor(parsed, authoritativeLabor){
   return applyAuthoritativeLaborInvariant(parsed, authoritativeLabor);
 }
 
+function alignLineItemQuantityToPrimaryMaterial(lineItem){
+  if (!lineItem || typeof lineItem !== 'object') return lineItem;
+
+  const materials = Array.isArray(lineItem.aiBreakdown && lineItem.aiBreakdown.materials)
+    ? lineItem.aiBreakdown.materials
+    : (Array.isArray(lineItem.materials) ? lineItem.materials : []);
+
+  if (!materials.length) return lineItem;
+
+  const primaryCandidates = materials.filter(function(material){
+    return material && typeof material === 'object' && material.primary === true;
+  });
+
+  const candidate = primaryCandidates.length === 1
+    ? primaryCandidates[0]
+    : (materials.length === 1 ? materials[0] : null);
+
+  if (!candidate || typeof candidate !== 'object') return lineItem;
+
+  const materialQty = Number(candidate.qty);
+  const lineQty = Number(lineItem.qty);
+  const materialUnit = normalizeMaterialUnit(candidate.unit);
+  const lineUnit = normalizeMaterialUnit(lineItem.unit);
+
+  if (!Number.isFinite(materialQty) || materialQty <= 0) return lineItem;
+  if (!materialUnit || !lineUnit) return lineItem;
+  if (materialUnit !== lineUnit) return lineItem;
+  if (!Number.isFinite(lineQty) || lineQty <= 0) return lineItem;
+
+  if (primaryCandidates.length > 1) return lineItem;
+
+  lineItem.qty = materialQty;
+  lineItem.unit = materialUnit;
+  return lineItem;
+}
+
 function normalizeAIGenerated(parsed, laborRate, markup){
   if(!parsed || !Array.isArray(parsed.lineItems)) throw new Error('AI response must contain a lineItems array');
   return parsed.lineItems.map(function(li, idx){
@@ -1170,6 +1206,9 @@ app.post("/api/estimate", async (req, res) => {
             applyAuthoritativeMaterialPricing(parsed);
             if (mode === 'estimate-generate' || mode === 'change-order-generate') {
               applyAuthoritativeLaborInvariant(parsed, authoritativeLabor);
+              parsed.lineItems.forEach(function(li){
+                alignLineItemQuantityToPrimaryMaterial(li);
+              });
             }
             let normalized;
             try{
@@ -1311,6 +1350,7 @@ module.exports = {
   buildAuthoritativeLaborFact,
   applyAuthoritativeLaborInvariant,
   applyCOAuthoritativeLabor,
+  alignLineItemQuantityToPrimaryMaterial,
   buildMaterialCompletenessContractText,
   buildMaterialPricingContractText,
   MATERIAL_PRICE_CATALOG,

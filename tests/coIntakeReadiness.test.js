@@ -1447,6 +1447,170 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(normalized[0].total, baseCost);
   });
 
+  it('QTY CASE A: aligns a single primary material quantity for a 400 ft line item', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 12.64,
+      unit: 'ft',
+      aiBreakdown: {
+        materials: [{ desc: '12/2 NM-B cable', qty: 400, unit: 'ft', unitCost: 0.72, primary: true }]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 400);
+    assert.strictEqual(lineItem.unit, 'ft');
+  });
+
+  it('QTY CASE B: aligns a single primary material quantity for 10 each', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 1.98,
+      unit: 'each',
+      aiBreakdown: {
+        materials: [{ desc: 'Round old work box', qty: 10, unit: 'each', unitCost: 2.25, primary: true }]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 10);
+    assert.strictEqual(lineItem.unit, 'ea');
+  });
+
+  it('QTY CASE C: aligns a single primary material quantity for 8 each', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 1.19,
+      unit: 'each',
+      aiBreakdown: {
+        materials: [{ desc: 'Single gang old work box', qty: 8, unit: 'ea', unitCost: 1.35, primary: true }]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 8);
+    assert.strictEqual(lineItem.unit, 'ea');
+  });
+
+  it('QTY CASE D: aligns a single primary material quantity for 1 each', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 0.19,
+      unit: 'each',
+      aiBreakdown: {
+        materials: [{ desc: 'Double gang old work box', qty: 1, unit: 'each', unitCost: 2.85, primary: true }]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 1);
+    assert.strictEqual(lineItem.unit, 'ea');
+  });
+
+  it('QTY CASE E: leaves a line item unchanged when multiple primary materials exist', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 12.64,
+      unit: 'ft',
+      aiBreakdown: {
+        materials: [
+          { desc: '12/2 NM-B cable', qty: 400, unit: 'ft', unitCost: 0.72, primary: true },
+          { desc: 'Cable staples', qty: 1, unit: 'lot', unitCost: 8, primary: true }
+        ]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 12.64);
+    assert.strictEqual(lineItem.unit, 'ft');
+  });
+
+  it('QTY CASE F: leaves a line item unchanged when the units are incompatible', () => {
+    const { alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const lineItem = {
+      qty: 400,
+      unit: 'ft',
+      aiBreakdown: {
+        materials: [{ desc: '12/2 NM-B cable', qty: 400, unit: 'roll', unitCost: 0.72, primary: true }]
+      }
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.qty, 400);
+    assert.strictEqual(lineItem.unit, 'ft');
+  });
+
+  it('QTY CASE G: authoritative labor stays at 16 hours after quantity reconciliation', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant, alignLineItemQuantityToPrimaryMaterial } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Replace 400 ft of knob and tube. Includes 2 additional days of labor with 1 worker.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+    const lineItem = {
+      qty: 12.64,
+      unit: 'ft',
+      laborHours: 48,
+      equipmentOrSubCost: 0,
+      aiBreakdown: {
+        laborHours: 48,
+        materials: [{ desc: '12/2 NM-B cable', qty: 400, unit: 'ft', unitCost: 0.72, primary: true }],
+        equipmentOrSubCost: 0,
+        assumptions: 'test'
+      }
+    };
+
+    applyAuthoritativeLaborInvariant({ lineItems: [lineItem] }, laborFact);
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(lineItem.laborHours, 16);
+    assert.strictEqual(lineItem.qty, 400);
+  });
+
+  it('QTY CASE H: authoritative material price remains 12/2 NM-B at $0.72/ft', () => {
+    const { alignLineItemQuantityToPrimaryMaterial, applyAuthoritativeMaterialPricing } = require('../server');
+    const lineItem = {
+      qty: 12.64,
+      unit: 'ft',
+      aiBreakdown: {
+        materials: [{ desc: '12/2 Romex', qty: 400, unit: 'ft', unitCost: 1.25, primary: true }]
+      }
+    };
+
+    applyAuthoritativeMaterialPricing({ lineItems: [lineItem] });
+    alignLineItemQuantityToPrimaryMaterial(lineItem);
+
+    assert.strictEqual(lineItem.aiBreakdown.materials[0].unitCost, 0.72);
+    assert.strictEqual(lineItem.aiBreakdown.materials[0].qty, 400);
+  });
+
+  it('QTY CASE I: quantity reconciliation does not change markup or total math', () => {
+    const { alignLineItemQuantityToPrimaryMaterial, normalizeAIGenerated } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Replace 400 feet of knob and tube with 12/2 NM-B wire',
+        qty: 12.64,
+        unit: 'ft',
+        laborHours: 16,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 NM-B cable (Romex or equivalent)', qty: 400, unit: 'ft', unitCost: 0.72, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    alignLineItemQuantityToPrimaryMaterial(parsed.lineItems[0]);
+    const normalized = normalizeAIGenerated(parsed, 85, 40);
+    const expectedBase = Math.round((400 * 0.72 + 16 * 85) * 100) / 100;
+
+    assert.strictEqual(parsed.lineItems[0].qty, 400);
+    assert.strictEqual(normalized[0].markup, 40);
+    assert.strictEqual(normalized[0].total, expectedBase);
+  });
+
   it('CASE J: CO financial accounting and residential description code remain untouched', () => {
     const fs = require('fs');
     const path = require('path');
