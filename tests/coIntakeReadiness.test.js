@@ -988,6 +988,167 @@ describe('coIntakeReadiness', () => {
     assert.ok(JSON.stringify(narrative).includes('12/2') || JSON.stringify(narrative).includes('old-work'));
   });
 
+  it('A. sign once -> one financial entry for the approved CO ID', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
+    const co = { id: 'co-1', title: 'Add lighting', budgetImpact: 250 };
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 1);
+    assert.strictEqual(project.paymentMilestones[0].coId, 'co-1');
+    assert.strictEqual(project.clientTotal, 5250);
+    assert.strictEqual(project.budget, 10250);
+  });
+
+  it('B. sign twice same ID -> still one financial entry', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
+    const co = { id: 'co-2', title: 'Add lighting', budgetImpact: 250 };
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 1);
+    assert.strictEqual(project.paymentMilestones[0].coId, 'co-2');
+    assert.strictEqual(project.clientTotal, 5250);
+    assert.strictEqual(project.budget, 10250);
+  });
+
+  it('C. contractor approve then client sign same ID -> still one financial entry', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
+    const co = { id: 'co-3', title: 'Add lighting', budgetImpact: 250 };
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 1);
+    assert.strictEqual(project.paymentMilestones.filter((m) => m.coId === 'co-3').length, 1);
+    assert.strictEqual(project.clientTotal, 5250);
+    assert.strictEqual(project.budget, 10250);
+  });
+
+  it('D. client sign then contractor approve same ID -> still one financial entry', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
+    const co = { id: 'co-4', title: 'Add lighting', budgetImpact: 250 };
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 1);
+    assert.strictEqual(project.paymentMilestones[0].coId, 'co-4');
+    assert.strictEqual(project.clientTotal, 5250);
+    assert.strictEqual(project.budget, 10250);
+  });
+
+  it('E. two different CO IDs with same title and amount -> two valid entries', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
+    context.ensureApprovedCOFinancialAccounting(project, { id: 'co-5', title: 'Add lighting', budgetImpact: 250 }, 250, { includeBudget: true });
+    context.ensureApprovedCOFinancialAccounting(project, { id: 'co-6', title: 'Add lighting', budgetImpact: 250 }, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 2);
+    assert.deepStrictEqual(project.paymentMilestones.map((m) => m.coId).sort(), ['co-5', 'co-6']);
+    assert.strictEqual(project.clientTotal, 5500);
+    assert.strictEqual(project.budget, 10500);
+  });
+
+  it('F. normal non-CO milestones unchanged', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
+    const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
+    const context = { parseFloat: Number.parseFloat, Date, console };
+    vm.runInNewContext(snippet, context);
+
+    const project = {
+      paymentMilestones: [
+        { name: 'Deposit', amount: 1200, paid: false },
+        { name: 'Progress', amount: 1800, paid: false }
+      ],
+      clientTotal: 5000,
+      budget: 10000
+    };
+    const co = { id: 'co-7', title: 'Add lighting', budgetImpact: 250 };
+    context.ensureApprovedCOFinancialAccounting(project, co, 250, { includeBudget: true });
+
+    assert.strictEqual(project.paymentMilestones.length, 3);
+    assert.strictEqual(project.paymentMilestones.filter((m) => m.coId === 'co-7').length, 1);
+    assert.strictEqual(project.clientTotal, 5250);
+    assert.strictEqual(project.budget, 10250);
+  });
+
+  it('uses the richer residential narrative on the normal Estimate Detail screen without changing pricing fields', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function renderResidentialNarrativeBlock');
+    const end = html.indexOf('function saveContractorSig', start);
+    const snippet = html.slice(start, end);
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      address: '4821 Maple Ridge Dr',
+      estNum: 'EST-104',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Install 10 round old-work boxes, 8 single-gang old-work boxes, and 1 double-gang old-work box. Existing panel capacity remains in use. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: 'Replace 400\' of existing knob and tube wiring with new 12/2 NM-B wire, including installation of 10 round old work boxes, 8 single gang old work boxes, and 1 double gang old work box. Includes all normal materials required for fishing wire and box installation in finished walls/ceilings. No patching/repair included.', qty: 1, unit: 'job', unitCost: 0, total: 1697, markup: 40 },
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40 },
+        { category: 'Electrical', desc: 'Round old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster patching and repair'],
+      markup: 40,
+      tax: 0,
+      status: 'Draft',
+      date: '2026-08-13',
+      validUntil: '2026-08-27'
+    };
+    const context = {
+      DD: { aiProfile: { markup: 40, laborRate: 85 }, companyName: 'Contractor Desk' },
+      fmt: (v) => v || '',
+      calcEstimate: () => ({ grandTotal: 2377, clientTotal: 1697, subtotal: 1697, taxAmt: 0, margin: 40 }),
+      calcLineItemTotal: (li) => Number(li.total || 0),
+      buildResidentialEstimateDescription: null,
+      document: { getElementById: () => null, querySelector: () => null },
+      window: {}
+    };
+    vm.runInNewContext(snippet, context);
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.ok(narrative.summary.toLowerCase().includes('400'));
+    assert.ok(narrative.summary.toLowerCase().includes('12/2'));
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('conditions') || (section.label || '').toLowerCase().includes('exclusions')));
+    assert.strictEqual(estimate.lineItems[1].unitCost, 0.72);
+    assert.strictEqual(estimate.lineItems[1].qty, 400);
+    assert.strictEqual(estimate.markup, 40);
+    assert.strictEqual(estimate.tax, 0);
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('labor rate'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('markup percentage'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('unitcost'));
+    assert.ok(JSON.stringify(narrative).includes('12/2') || JSON.stringify(narrative).includes('old-work'));
+  });
+
   it('CASE A: applies the catalog price when 12/2 Romex is in feet and matches the catalog unit', () => {
     const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG, resolveCanonicalMaterialIdentity } = require('../server');
     const parsed = {

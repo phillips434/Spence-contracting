@@ -1396,8 +1396,9 @@ function renderEstDetailBody(e){
   html+='<div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>';
   if(e.address) html+='<div style="font-size:12px;color:#888;margin-top:8px">&#128205; '+e.address+'</div>';
   if(e.validUntil) html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
-  if(e.notes) html+='<div style="font-size:13px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0">'+e.notes+'</div>';
   html+='</div>';
+
+  html += renderResidentialNarrativeBlock(e, false);
 
   // Action buttons
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
@@ -1674,6 +1675,25 @@ function buildResidentialEstimateDescription(e){
     sections: details,
     detailText: detailText
   };
+}
+function renderResidentialNarrativeBlock(e, isClientMode){
+  var narrative = buildResidentialEstimateDescription(e);
+  if(!narrative) return '';
+  var html='';
+  html+='<div class="wcard" style="margin-top:14px">';
+  html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Scope')+'</div>';
+  html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+narrative.summary+'</div>';
+  if(Array.isArray(narrative.sections) && narrative.sections.length){
+    narrative.sections.forEach(function(section){
+      if(!section || !section.value) return;
+      html+='<div style="margin-top:10px">';
+      html+='<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">'+(section.label||'Details')+'</div>';
+      html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+  return html;
 }
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
@@ -2594,22 +2614,8 @@ function renderClientView(e,wrapper){
   if(e.estNum) html+='<div style="font-size:12px;color:#2B3990;font-weight:700;margin-top:6px">'+e.estNum+'</div>';
   html+='</div>';
 
-  var residentialNarrative = buildResidentialEstimateDescription(e);
-  if(residentialNarrative){
-    html+='<div class="wcard" style="margin-top:14px">';
-    html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(residentialNarrative.heading||'Scope')+'</div>';
-    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+residentialNarrative.summary+'</div>';
-    if(Array.isArray(residentialNarrative.sections) && residentialNarrative.sections.length){
-      residentialNarrative.sections.forEach(function(section){
-        if(!section || !section.value) return;
-        html+='<div style="margin-top:10px">';
-        html+='<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">'+(section.label||'Details')+'</div>';
-        html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';
-        html+='</div>';
-      });
-    }
-    html+='</div>';
-  } else if(e.notes){
+  html += renderResidentialNarrativeBlock(e, true);
+  if(!buildResidentialEstimateDescription(e) && e.notes){
     html+='<div class="wcard" style="margin-top:14px">';
     html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Scope</div>';
     html+='<div style="font-size:13px;color:#555;line-height:1.7">'+e.notes+'</div>';
@@ -3497,6 +3503,34 @@ function clearCOCanvas(idx){
   var c=document.getElementById('coSigCanvas'+idx);
   if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
 }
+function ensureApprovedCOFinancialAccounting(project, co, clientAmt, options){
+  var p=project||{};
+  var coId=(co&&co.id!==undefined&&co.id!==null&&String(co.id).trim())?String(co.id):'';
+  var amount=parseFloat(clientAmt)||0;
+  var opts=options||{};
+  p.paymentMilestones=p.paymentMilestones||[];
+  if(coId){
+    var existingMilestone=p.paymentMilestones.find(function(m){ return m && String(m.coId||'')===coId; });
+    if(existingMilestone){ return false; }
+  }
+  var today=new Date().toISOString().split('T')[0];
+  var milestone={
+    name:'Change Order: '+(co&&co.title?co.title:'Change Order'),
+    amount:amount,
+    pct:null,
+    paid:false,
+    dueDate:today,
+    isCO:true,
+    dueImmediately:true
+  };
+  if(coId) milestone.coId=coId;
+  p.paymentMilestones.push(milestone);
+  if(opts.includeBudget){
+    p.budget=(parseFloat(p.budget)||0)+amount;
+  }
+  p.clientTotal=(parseFloat(p.clientTotal)||0)+amount;
+  return true;
+}
 function renderCOQuestionUI(questions){
   var form=document.getElementById('coForm');
   if(!form)return;
@@ -3785,8 +3819,6 @@ function signCOBtn(btn){
       assignTo:'',assignPhone:'',assignEmail:'',
       category:'Change Order'
     });
-    // AUTO: Increase project budget
-    p.budget=(parseFloat(p.budget)||0)+(parseFloat(co.budgetImpact)||0);
     // AUTO: Log the approval
     p.notesLog=p.notesLog||[];
     p.notesLog.push({
@@ -3796,17 +3828,8 @@ function signCOBtn(btn){
       ts:Date.now()
     });
     // Add payment milestone for CO — budgetImpact IS the client amount (markup already baked in by AI)
-    var today=new Date().toISOString().split('T')[0];
     var clientAmt=parseFloat(co.budgetImpact)||0;
-    p.paymentMilestones=p.paymentMilestones||[];
-    p.paymentMilestones.push({
-      name:'Change Order: '+co.title,
-      amount:clientAmt,
-      pct:null,paid:false,
-      dueDate:today,
-      isCO:true,dueImmediately:true
-    });
-    p.clientTotal=(parseFloat(p.clientTotal)||0)+clientAmt;
+    ensureApprovedCOFinancialAccounting(p, co, clientAmt, { includeBudget: true });
 
     function doSave(){
       col.doc(projectId).set(p).then(function(){
@@ -3884,22 +3907,8 @@ function approveCOContractor(i){
     category:'Change Order'
   });
 
-  // Add client amount to project totals
-  p.budget=(parseFloat(p.budget)||0)+clientAmt;
-  p.clientTotal=(parseFloat(p.clientTotal)||parseFloat(p.estimateTotal)||0)+clientAmt;
-
   // Create payment milestone — amount matches what client sees
-  p.paymentMilestones=p.paymentMilestones||[];
-  var today=new Date().toISOString().split('T')[0];
-  p.paymentMilestones.push({
-    name:'Change Order: '+co.title,
-    amount:clientAmt,
-    pct:null,
-    paid:false,
-    dueDate:today,
-    isCO:true,
-    dueImmediately:true
-  });
+  ensureApprovedCOFinancialAccounting(p, co, clientAmt, { includeBudget: true });
 
   saveP(p,'Change order approved: '+co.title).then(function(){
     var p2=gpr();
@@ -4035,7 +4044,8 @@ function addCO(){
   if(!title){T("Enter a title.");return;}
   var p=gpr();if(!p)return;
   p.changeOrders=p.changeOrders||[];
-  var coData={title:title,
+  var coData={id:("co-"+Date.now()+"-"+Math.random().toString(16).slice(2,8)),
+    title:title,
     type:document.getElementById("coType").value,
     description:document.getElementById("coDesc").value.trim(),
     budgetImpact:parseFloat(document.getElementById("coBudget").value)||0,
