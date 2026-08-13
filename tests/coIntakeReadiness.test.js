@@ -1,4 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
 const http = require('http');
 const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialPricingContractText } = require('../server');
 
@@ -14,6 +17,121 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(result.crewSize, 1);
     assert.strictEqual(result.durationValue, 2);
     assert.strictEqual(result.durationUnit, 'days');
+  });
+
+  it('preserves CO intake history into the final generation request context', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildCOGenerationRequestContext');
+    const end = html.indexOf('function deriveAuthoritativeLaborFromScope', start);
+    const snippet = html.slice(start, end);
+    const context = {
+      window: {
+        _aiCOQuestionState: {
+          active: false,
+          originalPrompt: 'Replace additional knob and tube wiring throughout the property. Work will require 2 additional days of labor.',
+          questions: ['How many workers will be working for those 2 additional days?'],
+          history: [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]
+        }
+      },
+      DD: { aiProfile: { markup: 40, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => 'history',
+      gpr: () => ({ id: 'proj-1' }),
+      document: { querySelector: () => null }
+    };
+    vm.runInNewContext(snippet, context);
+    const result = context.buildCOGenerationRequestContext(
+      'Replace additional knob and tube wiring throughout the property.',
+      'Work will require 2 additional days of labor.',
+      context.window._aiCOQuestionState
+    );
+
+    assert.strictEqual(result.questionContext.history.length, 1);
+    assert.strictEqual(result.questionContext.history[0].answer, '1');
+    assert.strictEqual(result.authoritativeLabor.isResolved, true);
+    assert.strictEqual(result.authoritativeLabor.crewSize, 1);
+    assert.strictEqual(result.authoritativeLabor.durationValue, 2);
+    assert.strictEqual(result.authoritativeLabor.durationUnit, 'days');
+    assert.strictEqual(result.authoritativeLabor.totalHours, 16);
+  });
+
+  it('keeps the prior behavior unchanged when there is no labor follow-up history', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildCOGenerationRequestContext');
+    const end = html.indexOf('function deriveAuthoritativeLaborFromScope', start);
+    const snippet = html.slice(start, end);
+    const context = {
+      window: { _aiCOQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      DD: { aiProfile: { markup: 40, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => '',
+      gpr: () => ({ id: 'proj-1' }),
+      document: { querySelector: () => null }
+    };
+    vm.runInNewContext(snippet, context);
+    const result = context.buildCOGenerationRequestContext(
+      'Replace additional knob and tube wiring throughout the property.',
+      'Work will require 2 additional days of labor.',
+      context.window._aiCOQuestionState
+    );
+
+    assert.strictEqual(result.questionContext.history.length, 0);
+    assert.strictEqual(result.authoritativeLabor.isResolved, false);
+    assert.strictEqual(result.authoritativeLabor.totalHours, 0);
+  });
+
+  it('preserves contractor intake history when the initial intake resolves without asking a follow-up question', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function runCOGenerationRequest');
+    const end = html.indexOf('function signCOBtn', start);
+    const snippet = html.slice(start, end);
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => 'history',
+      parseFloat: Number.parseFloat,
+      gpr: () => ({ id: 'proj-1' }),
+      document: {
+        querySelector: () => null,
+        getElementById: () => null
+      },
+      window: {
+        _aiCOQuestionState: {
+          active: false,
+          originalPrompt: 'Replace additional knob and tube wiring throughout the property.',
+          questions: [],
+          history: [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]
+        }
+      },
+      fetch: function fetchStub(url, options) {
+        const payload = JSON.parse(options.body);
+        calls.push({ kind: 'fetch', url, payload });
+        return Promise.resolve({ json: () => Promise.resolve({ action: 'ready' }) });
+      },
+      AbortController: function AbortControllerStub() {
+        this.abort = () => {};
+      },
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      updateCOPreview: () => {},
+      runCOGenerationRequest: function runCOGenerationRequestStub(title, desc, btnEl, questionState) {
+        calls.push({ kind: 'runCOGenerationRequest', title, desc, questionState });
+      }
+    };
+    vm.runInNewContext(snippet, context);
+    context.generateCOWithAI({ disabled: false, textContent: 'AI Draft' });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const runCall = calls.find((call) => call.kind === 'runCOGenerationRequest');
+    assert.ok(runCall, 'expected the initial intake ready path to call runCOGenerationRequest');
+    assert.ok(runCall.questionState, 'expected the preserved historical context to be passed into the final generation request');
+    assert.strictEqual(runCall.questionState.history.length, 1);
+    assert.strictEqual(runCall.questionState.history[0].answer, '1');
+    assert.strictEqual(runCall.questionState.authoritativeLabor.totalHours, 16);
+    assert.strictEqual(context.window._aiCOQuestionState.history.length, 0);
   });
 
   it('enforces the authoritative 16-hour total when AI item labor duplicates the contractor scope', () => {

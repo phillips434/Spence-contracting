@@ -3425,7 +3425,19 @@ function renderCOQuestionUI(questions){
   html+='</div>';
   form.insertAdjacentHTML('beforeend', html);
 }
-function runCOGenerationRequest(title, desc, btnEl){
+function buildCOGenerationRequestContext(title, desc, questionState){
+  var combined=(title||'')+(desc?((title?' - ':'')+desc):'');
+  var state = questionState || (window._aiCOQuestionState || {active:false,originalPrompt:'',questions:[],history:[]});
+  var questionContext={
+    originalPrompt: (state && state.originalPrompt) || combined,
+    history: Array.isArray(state && state.history) ? state.history.slice() : []
+  };
+  return {
+    questionContext: questionContext,
+    authoritativeLabor: deriveAuthoritativeLaborFromScope(combined, questionContext.history)
+  };
+}
+function runCOGenerationRequest(title, desc, btnEl, questionState){
   var p=gpr();if(!p)return;
   var btn=btnEl||document.querySelector('.co-ai-btn');if(btn){btn.disabled=true;btn.textContent='Drafting...';}
   var profile=DD.aiProfile||{};
@@ -3436,7 +3448,12 @@ function runCOGenerationRequest(title, desc, btnEl){
   var origItems=origEst?(origEst.lineItems||[]).slice(0,6).map(function(li){return (li.category||'')+': '+li.desc+' @$'+li.unitCost+'/'+li.unit;}).join('; '):'';
   var _coCtrl=new AbortController();
   var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
-  var authoritativeLabor=deriveAuthoritativeLaborFromScope(title+' '+desc, (window._aiCOQuestionState && window._aiCOQuestionState.history) || []);
+  var preservedContext=buildCOGenerationRequestContext(title, desc, questionState);
+  if(window && window._aiCOQuestionState){
+    window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+  }
+  var authoritativeLabor=preservedContext.authoritativeLabor;
+  var questionContext=preservedContext.questionContext;
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -3451,6 +3468,7 @@ function runCOGenerationRequest(title, desc, btnEl){
       description:desc,
       originalEstimateContext:origItems,
       histCtx:histCtx2,
+      questionContext:questionContext,
       authoritativeLabor:authoritativeLabor,
       messages:[{role:'user',content:title+(desc?' - '+desc:'')}] 
     }),
@@ -3571,10 +3589,15 @@ function generateCOWithAI(btnEl){
         return;
       }
       if(data && data.action==='ready'){
-        window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+        var preservedQuestionState={
+          active:false,
+          originalPrompt: state.originalPrompt || combined,
+          questions:[],
+          history:(state.history || []).slice()
+        };
         var existingCard=document.getElementById('coQuestionCard');
         if(existingCard)existingCard.parentNode.removeChild(existingCard);
-        runCOGenerationRequest(title, desc, btn);
+        runCOGenerationRequest(title, desc, btn, preservedQuestionState);
         return;
       }
       T('CO intake did not resolve successfully. Please try again.');
@@ -3612,8 +3635,14 @@ function generateCOWithAI(btnEl){
       return;
     }
     if(data && data.action==='ready'){
+      var preservedQuestionState={
+        active:false,
+        originalPrompt: state.originalPrompt || combined,
+        questions:[],
+        history:(state.history || []).slice()
+      };
       window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
-      runCOGenerationRequest(title, desc, btn);
+      runCOGenerationRequest(title, desc, btn, preservedQuestionState);
       return;
     }
     T('CO intake did not resolve successfully. Please try again.');
