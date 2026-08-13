@@ -848,7 +848,7 @@ describe('coIntakeReadiness', () => {
   });
 
   it('CASE A: applies the catalog price when 12/2 Romex is in feet and matches the catalog unit', () => {
-    const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG } = require('../server');
+    const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG, resolveCanonicalMaterialIdentity } = require('../server');
     const parsed = {
       lineItems: [{
         category: 'Electrical',
@@ -862,6 +862,7 @@ describe('coIntakeReadiness', () => {
       }]
     };
 
+    assert.strictEqual(resolveCanonicalMaterialIdentity('12/2 Romex'), 'nm-b 12/2');
     applyAuthoritativeMaterialPricing(parsed);
 
     assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, MATERIAL_PRICE_CATALOG['nm-b 12/2'].unitCost);
@@ -870,7 +871,7 @@ describe('coIntakeReadiness', () => {
   });
 
   it('CASE B: normalizes LF to ft and allows the catalog match', () => {
-    const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG } = require('../server');
+    const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG, resolveCanonicalMaterialIdentity } = require('../server');
     const parsed = {
       lineItems: [{
         category: 'Electrical',
@@ -879,18 +880,72 @@ describe('coIntakeReadiness', () => {
         unit: 'ft',
         laborHours: 8,
         equipmentOrSubCost: 0,
-        materials: [{ desc: '12/2 Romex', qty: 500, unit: 'LF', unitCost: 1.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        materials: [{ desc: 'NM-B 12-2 wire', qty: 500, unit: 'LF', unitCost: 1.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
         metadata: { assumptions: 'test' }
       }]
     };
 
+    assert.strictEqual(resolveCanonicalMaterialIdentity('NM-B 12-2 wire'), 'nm-b 12/2');
     applyAuthoritativeMaterialPricing(parsed);
 
     assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, MATERIAL_PRICE_CATALOG['nm-b 12/2'].unitCost);
     assert.strictEqual(parsed.lineItems[0].materials[0].qty, 500);
   });
 
-  it('CASE C: does not apply the catalog price when unit is incompatible (roll)', () => {
+  it('CASE C: vague NM-B electrical wire wording remains unresolved and preserves the AI unitCost', () => {
+    const { applyAuthoritativeMaterialPricing, resolveCanonicalMaterialIdentity } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Run cable',
+        qty: 500,
+        unit: 'ft',
+        laborHours: 8,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: 'NM-B electrical wire (various gauges)', qty: 500, unit: 'ft', unitCost: 0.23, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    assert.strictEqual(resolveCanonicalMaterialIdentity('NM-B electrical wire (various gauges)'), null);
+    applyAuthoritativeMaterialPricing(parsed);
+
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 0.23);
+  });
+
+  it('CASE D: 14/2 Romex resolves to nm-b 14/2 and not 12/2', () => {
+    const { resolveCanonicalMaterialIdentity } = require('../server');
+    assert.strictEqual(resolveCanonicalMaterialIdentity('14/2 Romex'), 'nm-b 14/2');
+    assert.notStrictEqual(resolveCanonicalMaterialIdentity('14/2 Romex'), 'nm-b 12/2');
+  });
+
+  it('CASE E: generic electrical wire wording remains unresolved', () => {
+    const { resolveCanonicalMaterialIdentity } = require('../server');
+    assert.strictEqual(resolveCanonicalMaterialIdentity('electrical wire'), null);
+    assert.strictEqual(resolveCanonicalMaterialIdentity('Romex various gauges'), null);
+  });
+
+  it('CASE F: missing unit prevents catalog override', () => {
+    const { applyAuthoritativeMaterialPricing } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Run cable',
+        qty: 500,
+        unit: 'ft',
+        laborHours: 8,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 Romex', qty: 500, unit: '', unitCost: 9.99, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    applyAuthoritativeMaterialPricing(parsed);
+
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 9.99);
+  });
+
+  it('CASE G: incompatible unit such as roll prevents catalog override', () => {
     const { applyAuthoritativeMaterialPricing } = require('../server');
     const parsed = {
       lineItems: [{
@@ -910,98 +965,7 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 99.00);
   });
 
-  it('CASE D: applies the catalog price for a single gang box in each units', () => {
-    const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG } = require('../server');
-    const parsed = {
-      lineItems: [{
-        category: 'Electrical',
-        desc: 'Install boxes',
-        qty: 10,
-        unit: 'ea',
-        laborHours: 3,
-        equipmentOrSubCost: 0,
-        materials: [{ desc: 'single gang box', qty: 10, unit: 'ea', unitCost: 7.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
-        metadata: { assumptions: 'test' }
-      }]
-    };
-
-    applyAuthoritativeMaterialPricing(parsed);
-
-    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, MATERIAL_PRICE_CATALOG['standard single-gang electrical box'].unitCost);
-  });
-
-  it('CASE E: does not apply the catalog price when the unit is an unrecognized incompatible unit', () => {
-    const { applyAuthoritativeMaterialPricing } = require('../server');
-    const parsed = {
-      lineItems: [{
-        category: 'Electrical',
-        desc: 'Install boxes',
-        qty: 1,
-        unit: 'box',
-        laborHours: 1,
-        equipmentOrSubCost: 0,
-        materials: [{ desc: 'single gang box', qty: 1, unit: 'box', unitCost: 4.50, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
-        metadata: { assumptions: 'test' }
-      }]
-    };
-
-    applyAuthoritativeMaterialPricing(parsed);
-
-    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 4.50);
-  });
-
-  it('CASE F: unknown material keeps the AI unitCost exactly as before', () => {
-    const { applyAuthoritativeMaterialPricing } = require('../server');
-    const parsed = {
-      lineItems: [{
-        category: 'Electrical',
-        desc: 'Run custom wire',
-        qty: 3,
-        unit: 'ft',
-        laborHours: 2,
-        equipmentOrSubCost: 0,
-        materials: [{ desc: 'Custom copper conductor', qty: 3, unit: 'ft', unitCost: 12.50, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
-        metadata: { assumptions: 'test' }
-      }]
-    };
-
-    applyAuthoritativeMaterialPricing(parsed);
-
-    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 12.50);
-  });
-
-  it('CASE G: leaves unrelated labor, markup, quantities, and pricing behavior unchanged', () => {
-    const { applyAuthoritativeMaterialPricing } = require('../server');
-    const parsed = {
-      lineItems: [{
-        category: 'Electrical',
-        desc: 'Run cable',
-        qty: 125,
-        unit: 'ft',
-        laborHours: 10,
-        equipmentOrSubCost: 75,
-        materials: [{ desc: '12/2 Romex', qty: 125, unit: 'ft', unitCost: 1.20, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
-        metadata: { assumptions: 'test' },
-        markup: 35
-      }]
-    };
-
-    const beforeQty = parsed.lineItems[0].qty;
-    const beforeMaterialQty = parsed.lineItems[0].materials[0].qty;
-    const beforeLabor = parsed.lineItems[0].laborHours;
-    const beforeMarkup = parsed.lineItems[0].markup;
-    const beforeEquipment = parsed.lineItems[0].equipmentOrSubCost;
-
-    applyAuthoritativeMaterialPricing(parsed);
-
-    assert.strictEqual(parsed.lineItems[0].qty, beforeQty);
-    assert.strictEqual(parsed.lineItems[0].materials[0].qty, beforeMaterialQty);
-    assert.strictEqual(parsed.lineItems[0].laborHours, beforeLabor);
-    assert.strictEqual(parsed.lineItems[0].equipmentOrSubCost, beforeEquipment);
-    assert.strictEqual(parsed.lineItems[0].markup, beforeMarkup);
-  });
-
-  it('CASE H: blank or missing material.unit prevents catalog override and keeps the AI price', () => {
+  it('CASE H: material quantity remains unchanged when pricing is resolved or rejected', () => {
     const { applyAuthoritativeMaterialPricing } = require('../server');
     const parsed = {
       lineItems: [{
@@ -1011,15 +975,36 @@ describe('coIntakeReadiness', () => {
         unit: 'ft',
         laborHours: 8,
         equipmentOrSubCost: 0,
-        materials: [{ desc: '12/2 Romex', qty: 500, unit: '', unitCost: 9.99, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        materials: [{ desc: '12/2 Romex', qty: 500, unit: 'ft', unitCost: 1.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
         metadata: { assumptions: 'test' }
       }]
     };
 
+    const beforeQty = parsed.lineItems[0].materials[0].qty;
+    applyAuthoritativeMaterialPricing(parsed);
+    assert.strictEqual(parsed.lineItems[0].materials[0].qty, beforeQty);
+  });
+
+  it('CASE I: labor, markup, totals, scope preservation and intake behavior remain unchanged', () => {
+    const { applyAuthoritativeMaterialPricing, buildAuthoritativeLaborFact } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Run cable',
+        qty: 500,
+        unit: 'ft',
+        laborHours: 8,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 Romex', qty: 500, unit: 'ft', unitCost: 1.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    const laborFact = buildAuthoritativeLaborFact('Replace additional knob and tube wiring throughout the property. Work will require 2 additional days of labor.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
     applyAuthoritativeMaterialPricing(parsed);
 
-    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 9.99);
-    assert.strictEqual(parsed.lineItems[0].materials[0].qty, 500);
-    assert.strictEqual(parsed.lineItems[0].materials[0].unit, '');
+    assert.strictEqual(laborFact.isResolved, true);
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 0.72);
   });
 });

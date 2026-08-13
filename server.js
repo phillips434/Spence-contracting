@@ -20,8 +20,8 @@ function buildMaterialPricingContractText(){
 }
 
 const MATERIAL_PRICE_CATALOG = Object.freeze({
-  'nm-b 12/2': { unit: 'ft', unitCost: 0.72, aliases: ['romex 12/2', 'romex 12-2', 'nm-b 12-2', '12/2 nm-b', '12-2 nm-b', 'nm b 12 2', '12 2 nm-b', '12/2 romex', '12-2 romex', 'romex 12 2', '12 2 romex'] },
-  'nm-b 14/2': { unit: 'ft', unitCost: 0.58, aliases: ['romex 14/2', 'romex 14-2', 'nm-b 14-2', '14/2 nm-b', '14-2 nm-b', 'nm b 14 2', '14 2 nm-b', '14/2 romex', '14-2 romex', 'romex 14 2', '14 2 romex'] },
+  'nm-b 12/2': { unit: 'ft', unitCost: 0.72, aliases: ['romex 12/2', 'romex 12-2', 'nm-b 12-2', '12/2 nm-b', '12-2 nm-b', 'nm b 12 2', '12 2 nm-b', '12/2 romex', '12-2 romex', 'romex 12 2', '12 2 romex', '12 gauge 2 conductor nm-b', '12 gauge 2 conductor nmb', '12 gauge 2 conductor romex', '12-2 wire', '12/2 wire', '12 2 wire'] },
+  'nm-b 14/2': { unit: 'ft', unitCost: 0.58, aliases: ['romex 14/2', 'romex 14-2', 'nm-b 14-2', '14/2 nm-b', '14-2 nm-b', 'nm b 14 2', '14 2 nm-b', '14/2 romex', '14-2 romex', 'romex 14 2', '14 2 romex', '14 gauge 2 conductor nm-b', '14 gauge 2 conductor nmb', '14 gauge 2 conductor romex', '14-2 wire', '14/2 wire', '14 2 wire'] },
   'standard single-gang electrical box': { unit: 'ea', unitCost: 2.35, aliases: ['single-gang electrical box', 'single gang electrical box', 'single gang box', 'single-gang box', 'standard single gang box', 'single gang old work box', 'old work box'] },
   'wire connectors / wire nuts': { unit: 'ea', unitCost: 0.45, aliases: ['wire connectors', 'wire nuts', 'connector', 'wire nut', 'wire connectors / wire nuts', 'wire connectors and wire nuts'] },
   'grounding wire': { unit: 'ft', unitCost: 0.22, aliases: ['grounding wire', 'ground wire', 'equipment grounding conductor', 'egc'] },
@@ -48,7 +48,38 @@ function normalizeMaterialUnit(value){
   return normalized;
 }
 
+function resolveCanonicalMaterialIdentity(description){
+  const normalized = normalizeMaterialDescription(description);
+  if (!normalized) return null;
+
+  const hasVagueGaugeWording = /(various gauge|various gauges|multiple gauges|mixed gauges|average per day|electrical wire|romex various|wire various)/.test(normalized);
+  if (hasVagueGaugeWording) return null;
+
+  const explicit12Gauge2Conductor = /(nm b|romex|wire|electrical).*12.*2|12.*2.*(nm b|romex|wire|electrical)|12.*gauge.*2.*conductor.*(nm b|romex|wire)|12.*gauge.*2.*(nm b|romex|wire)/.test(normalized);
+  const explicit14Gauge2Conductor = /(nm b|romex|wire|electrical).*14.*2|14.*2.*(nm b|romex|wire|electrical)|14.*gauge.*2.*conductor.*(nm b|romex|wire)|14.*gauge.*2.*(nm b|romex|wire)/.test(normalized);
+
+  if (explicit12Gauge2Conductor && !/14/.test(normalized)) return 'nm-b 12/2';
+  if (explicit14Gauge2Conductor && !/12/.test(normalized)) return 'nm-b 14/2';
+
+  const directMatch = Object.keys(MATERIAL_PRICE_CATALOG).find(function(key){
+    return normalizeMaterialDescription(key) === normalized;
+  });
+  if (directMatch) return directMatch;
+
+  for (const [key, entry] of Object.entries(MATERIAL_PRICE_CATALOG)) {
+    const aliases = Array.isArray(entry && entry.aliases) ? entry.aliases : [];
+    if (aliases.some(function(alias){ return normalizeMaterialDescription(alias) === normalized; })) {
+      return key;
+    }
+  }
+
+  return null;
+}
+
 function resolveCatalogMaterialKey(description){
+  const canonicalKey = resolveCanonicalMaterialIdentity(description);
+  if (canonicalKey) return canonicalKey;
+
   const normalized = normalizeMaterialDescription(description);
   if (!normalized) return null;
 
@@ -76,10 +107,17 @@ function applyAuthoritativeMaterialPricing(parsed){
     li.materials.forEach(function(material){
       if (!material || typeof material !== 'object') return;
       const originalUnitCost = Number(material.unitCost);
-      const catalogKey = resolveCatalogMaterialKey(material.desc || '');
+      const rawDescription = material.desc || '';
+      const canonicalKey = resolveCanonicalMaterialIdentity(rawDescription);
+      const catalogKey = canonicalKey || resolveCatalogMaterialKey(rawDescription);
+      const canonicalIdentityResolved = !!canonicalKey;
+
       if (!catalogKey) {
         console.log('MATERIAL_PRICE_DIAGNOSTIC', {
-          description: material.desc || '',
+          rawDescription: rawDescription,
+          canonicalKey: canonicalKey || null,
+          canonicalIdentityResolved: canonicalIdentityResolved,
+          description: rawDescription,
           materialUnit: material.unit || null,
           catalogUnit: null,
           aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
@@ -95,7 +133,10 @@ function applyAuthoritativeMaterialPricing(parsed){
 
       if (!materialUnit) {
         console.log('MATERIAL_PRICE_DIAGNOSTIC', {
-          description: material.desc || '',
+          rawDescription: rawDescription,
+          canonicalKey: canonicalKey || null,
+          canonicalIdentityResolved: canonicalIdentityResolved,
+          description: rawDescription,
           materialUnit: material.unit || null,
           catalogUnit: catalogUnit,
           aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
@@ -107,7 +148,10 @@ function applyAuthoritativeMaterialPricing(parsed){
 
       if (!catalogUnit) {
         console.log('MATERIAL_PRICE_DIAGNOSTIC', {
-          description: material.desc || '',
+          rawDescription: rawDescription,
+          canonicalKey: canonicalKey || null,
+          canonicalIdentityResolved: canonicalIdentityResolved,
+          description: rawDescription,
           materialUnit: material.unit || null,
           catalogUnit: null,
           aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
@@ -119,7 +163,10 @@ function applyAuthoritativeMaterialPricing(parsed){
 
       if (materialUnit !== catalogUnit) {
         console.log('MATERIAL_PRICE_DIAGNOSTIC', {
-          description: material.desc || '',
+          rawDescription: rawDescription,
+          canonicalKey: canonicalKey || null,
+          canonicalIdentityResolved: canonicalIdentityResolved,
+          description: rawDescription,
           materialUnit: material.unit || null,
           catalogUnit: catalogUnit,
           aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
@@ -132,7 +179,10 @@ function applyAuthoritativeMaterialPricing(parsed){
       const finalUnitCost = Number(catalogEntry.unitCost);
       material.unitCost = finalUnitCost;
       console.log('MATERIAL_PRICE_DIAGNOSTIC', {
-        description: material.desc || '',
+        rawDescription: rawDescription,
+        canonicalKey: canonicalKey || null,
+        canonicalIdentityResolved: canonicalIdentityResolved,
+        description: rawDescription,
         materialUnit: material.unit || null,
         catalogUnit: catalogUnit,
         aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
@@ -1296,6 +1346,8 @@ module.exports = {
   buildMaterialPricingContractText,
   MATERIAL_PRICE_CATALOG,
   normalizeMaterialDescription,
+  normalizeMaterialUnit,
+  resolveCanonicalMaterialIdentity,
   resolveCatalogMaterialKey,
   applyAuthoritativeMaterialPricing,
 };
