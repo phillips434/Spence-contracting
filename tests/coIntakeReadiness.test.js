@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const http = require('http');
-const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialPricingContractText } = require('../server');
+const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('../server');
 
 describe('coIntakeReadiness', () => {
   it('builds a contractor authoritative labor fact from a 2-day 1-worker scope', () => {
@@ -538,7 +538,7 @@ describe('coIntakeReadiness', () => {
     }
   });
 
-  it('includes the direct-material unit cost contract in estimate and CO generation prompts', async () => {
+  it('includes the direct-material and completeness contract in estimate and CO generation prompts', async () => {
     const originalFetch = global.fetch;
     process.env.ANTHROPIC_KEY = 'test-key';
     process.env.OPENAI_API_KEY = 'test-key';
@@ -599,12 +599,22 @@ describe('coIntakeReadiness', () => {
       }
 
       assert.ok(calls.length >= 2);
-      for (const body of calls) {
-        const systemText = (body && body.messages && body.messages[0] && body.messages[0].content) || '';
-        assert.ok(systemText.toLowerCase().includes('direct material acquisition cost only'));
-        assert.ok(systemText.toLowerCase().includes('labor'));
-        assert.ok(systemText.toLowerCase().includes('installation'));
-      }
+      const promptText = calls.map((body) => {
+        const messages = Array.isArray(body.messages) ? body.messages : [];
+        return messages.map((message) => (message && message.content) || '').join(' ');
+      }).join(' ');
+
+      const contract = buildMaterialPricingContractText();
+      const completeness = buildMaterialCompletenessContractText();
+      assert.ok(contract.toLowerCase().includes('direct material acquisition cost only'));
+      assert.ok(contract.toLowerCase().includes('complete direct-material package'));
+      assert.ok(contract.toLowerCase().includes('supporting'));
+      assert.ok(contract.toLowerCase().includes('quantity basis'));
+      assert.ok(contract.toLowerCase().includes('labor'));
+      assert.ok(contract.toLowerCase().includes('markup'));
+      assert.ok(completeness.toLowerCase().includes('complete direct-material package'));
+      assert.ok(promptText.toLowerCase().includes('complete direct-material package'));
+      assert.ok(promptText.toLowerCase().includes('supporting'));
     } finally {
       global.fetch = originalFetch;
     }
