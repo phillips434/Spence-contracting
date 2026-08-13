@@ -306,9 +306,10 @@ function parseDurationFromText(text){
   if (!text) return null;
 
   const patterns = [
-    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(?:\d+(?:\.\d+)?)?\s*(?:-|to\s+)?(?:hours?|hrs?|hr)?\s*(day|days|shift|shifts|week|weeks)\b/i,
-    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts|week|weeks)\b/i,
-    /(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i
+    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)(?:\d+(?:\.\d+)?\s*(?:-|to\s+)?\s*(?:hours?|hrs?|hr)\s*)?(day|days|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:\d+(?:\.\d+)?\s*(?:-|to\s+)?\s*(?:hours?|hrs?|hr)\s*)(day|days|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(day|days|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(day|days|shift|shifts|week|weeks)\b/i
   ];
 
   for (let i = 0; i < patterns.length; i++) {
@@ -1410,6 +1411,9 @@ module.exports = {
   validateCOIntakeReadiness,
   hasLaborDurationStatement,
   hasResolvedCrewOrLaborHoursFact,
+  parseCrewSizeFromText,
+  parseDurationFromText,
+  parseTotalLaborHoursFromText,
   buildAuthoritativeLaborFact,
   applyAuthoritativeLaborInvariant,
   applyCOAuthoritativeLabor,
