@@ -1611,6 +1611,91 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(normalized[0].total, expectedBase);
   });
 
+  it('EST-0109 exact wording: 1 worker for 2 additional 8-hour days resolves to 16 hours', () => {
+    const { parseCrewSizeFromText, parseDurationFromText, parseTotalLaborHoursFromText, buildAuthoritativeLaborFact } = require('../server');
+    const text = 'Labor requirement: 1 worker for 2 additional 8-hour days.';
+
+    assert.strictEqual(parseCrewSizeFromText(text), 1);
+    assert.deepStrictEqual(parseDurationFromText(text), { value: 2, unit: 'days' });
+    assert.strictEqual(parseTotalLaborHoursFromText(text), null);
+    const fact = buildAuthoritativeLaborFact(text, []);
+
+    assert.strictEqual(fact.isResolved, true);
+    assert.strictEqual(fact.crewSize, 1);
+    assert.strictEqual(fact.durationValue, 2);
+    assert.strictEqual(fact.durationUnit, 'days');
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE A: 1 worker for 2 days resolves to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('1 worker for 2 days', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE B: 1 worker for 2 additional days resolves to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('1 worker for 2 additional days', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE C: 1 worker for 2 8-hour days resolves to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('1 worker for 2 8-hour days', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE D: 1 worker for 2 additional 8-hour days resolves to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('1 worker for 2 additional 8-hour days', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE E: 2 workers for 3 days resolves to 48', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('2 workers for 3 days', []);
+    assert.strictEqual(fact.totalHours, 48);
+  });
+
+  it('CASE F: 2 men for 3 days resolves to 48', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('2 men for 3 days', []);
+    assert.strictEqual(fact.totalHours, 48);
+  });
+
+  it('CASE G: 16 labor hours resolves directly to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('16 labor hours', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE H: 16 man-hours resolves directly to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('16 man-hours', []);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE I: ambiguous text without valid crew/duration/total hours remains unresolved', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('This is a general labor note and no crew or duration is given', []);
+    assert.strictEqual(fact.isResolved, false);
+    assert.strictEqual(fact.totalHours, 0);
+  });
+
+  it('CASE J: CO authoritative labor regression remains 16 for 1 worker × 2 days', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('Replace 400 feet of knob and tube with 12/2 wire. Includes 2 additional days of labor.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+    assert.strictEqual(fact.isResolved, true);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
+  it('CASE K: estimate authoritative labor regression resolves exact EST-0109 wording to 16', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const fact = buildAuthoritativeLaborFact('Labor requirement: 1 worker for 2 additional 8-hour days.', []);
+    assert.strictEqual(fact.isResolved, true);
+    assert.strictEqual(fact.totalHours, 16);
+  });
+
   it('CASE J: CO financial accounting and residential description code remain untouched', () => {
     const fs = require('fs');
     const path = require('path');

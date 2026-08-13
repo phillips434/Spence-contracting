@@ -291,9 +291,9 @@ function validateCOIntakeReadiness(payload){
 function parseCrewSizeFromText(text){
   if (!text) return null;
   const patterns = [
-    /(\d+(?:\.\d+)?)\s*(?:workers?|people|crew|electricians?|carpenters?|laborers?|plumbers?|painters?|drywallers?)\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:workers?|people|crew|men|man|electricians?|carpenters?|laborers?|plumbers?|painters?|drywallers?)\b/i,
     /(?:crew|team|workforce)\s*(?:of)?\s*(\d+(?:\.\d+)?)\b/i,
-    /(?:workers?|people|crew)\s*[:=]\s*(\d+(?:\.\d+)?)\b/i
+    /(?:workers?|people|crew|men|man)\s*[:=]\s*(\d+(?:\.\d+)?)\b/i
   ];
   for (let i = 0; i < patterns.length; i++) {
     const match = text.match(patterns[i]);
@@ -304,12 +304,25 @@ function parseCrewSizeFromText(text){
 
 function parseDurationFromText(text){
   if (!text) return null;
-  const match = text.match(/(\d+(?:\.\d+)?)\s+(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
-  if (!match) return null;
-  return {
-    value: Number(match[1]),
-    unit: match[2].toLowerCase()
-  };
+
+  const patterns = [
+    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(?:\d+(?:\.\d+)?)?\s*(?:-|to\s+)?(?:hours?|hrs?|hr)?\s*(day|days|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i
+  ];
+
+  for (let i = 0; i < patterns.length; i++) {
+    const match = text.match(patterns[i]);
+    if (match && match[1]) {
+      const value = Number(match[1]);
+      const unit = (match[2] || match[1]).toLowerCase();
+      if (Number.isFinite(value) && value > 0) {
+        return { value: value, unit: unit };
+      }
+    }
+  }
+
+  return null;
 }
 
 function parseTotalLaborHoursFromText(text){
