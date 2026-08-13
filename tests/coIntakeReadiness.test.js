@@ -1309,4 +1309,151 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(laborFact.totalHours, 16);
     assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 0.72);
   });
+
+  it('CASE A: estimate-generate authoritative labor resolves 1 worker × 2 days to 16 hours', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Replace 400 feet of knob and tube with 12/2 wire. Includes 2 additional days of labor.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+    const parsed = { lineItems: [{ category: 'Electrical', desc: 'Run cable', qty: 400, unit: 'ft', laborHours: 48, equipmentOrSubCost: 0, materials: [{ desc: '12/2 Romex', qty: 400, unit: 'ft', unitCost: 0.72, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }], metadata: { assumptions: 'AI generated' } }] };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    assert.strictEqual(laborFact.isResolved, true);
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(parsed.lineItems[0].laborHours, 16);
+  });
+
+  it('CASE B: change-order-generate keeps the same explicit labor authority at 16 hours', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Replace 400 feet of knob and tube with 12/2 wire. Includes 2 additional days of labor.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+    const parsed = { lineItems: [{ category: 'Labor', desc: 'Electrical labor', qty: 48, unit: 'hrs', laborHours: 48, equipmentOrSubCost: 0, materials: [], metadata: { assumptions: 'AI generated' } }] };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    assert.strictEqual(parsed.lineItems[0].laborHours, 16);
+    assert.strictEqual(parsed.lineItems[0].qty, 16);
+  });
+
+  it('CASE C: authoritative labor overrides AI-generated 48 hours and survives normalization', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant, normalizeMaterialDescription } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Replace 400 ft of knob and tube. 2 additional days of labor with 1 worker.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Replace 400 feet of knob and tube with 12/2 NM-B',
+        qty: 400,
+        unit: 'ft',
+        laborHours: 48,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 NM-B cable (Romex or equivalent)', qty: 400, unit: 'ft', unitCost: 0.72, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'AI provided 48 hours' }
+      }]
+    };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    assert.strictEqual(parsed.lineItems[0].laborHours, 16);
+    assert.strictEqual(parsed.lineItems[0].qty, 400);
+    assert.strictEqual(normalizeMaterialDescription(parsed.lineItems[0].materials[0].desc), '12 2 nm b cable romex or equivalent');
+  });
+
+  it('CASE D: multiple labor rows still sum to the authoritative total', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('2 workers for 3 days.', [{ questions: ['How many workers will be working?'], answer: '2' }]);
+    const parsed = {
+      lineItems: [
+        { category: 'Labor', desc: 'Crew 1', qty: 24, unit: 'hrs', laborHours: 24, equipmentOrSubCost: 0, materials: [], metadata: { assumptions: 'AI row 1' } },
+        { category: 'Labor', desc: 'Crew 2', qty: 24, unit: 'hrs', laborHours: 24, equipmentOrSubCost: 0, materials: [], metadata: { assumptions: 'AI row 2' } }
+      ]
+    };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    const total = parsed.lineItems.reduce((sum, li) => sum + Number(li.laborHours || 0), 0);
+    assert.strictEqual(laborFact.totalHours, 48);
+    assert.strictEqual(total, 48);
+  });
+
+  it('CASE E: direct contractor hours statement remains authoritative without recomputation', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Total labor hours are 16.', []);
+    const parsed = { lineItems: [{ category: 'Labor', desc: 'Electrical labor', qty: 48, unit: 'hrs', laborHours: 48, equipmentOrSubCost: 0, materials: [], metadata: { assumptions: 'AI overstatement' } }] };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    assert.strictEqual(laborFact.isResolved, true);
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual(parsed.lineItems[0].laborHours, 16);
+  });
+
+  it('CASE F: unresolved authoritative labor leaves AI labor behavior unchanged', () => {
+    const { buildAuthoritativeLaborFact, applyAuthoritativeLaborInvariant } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('Replace old wiring but no worker count or duration is specified.', []);
+    const parsed = { lineItems: [{ category: 'Labor', desc: 'Electrical labor', qty: 48, unit: 'hrs', laborHours: 48, equipmentOrSubCost: 0, materials: [], metadata: { assumptions: 'AI output' } }] };
+
+    applyAuthoritativeLaborInvariant(parsed, laborFact);
+
+    assert.strictEqual(laborFact.isResolved, false);
+    assert.strictEqual(parsed.lineItems[0].laborHours, 48);
+  });
+
+  it('CASE G: material pricing remains 400 ft 12/2 NM-B at $0.72/ft', () => {
+    const { applyAuthoritativeMaterialPricing, resolveCanonicalMaterialIdentity } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Replace 400 feet of knob and tube with 12/2 NM-B wire',
+        qty: 400,
+        unit: 'ft',
+        laborHours: 16,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 Romex', qty: 400, unit: 'ft', unitCost: 1.25, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+
+    assert.strictEqual(resolveCanonicalMaterialIdentity('12/2 Romex'), 'nm-b 12/2');
+    applyAuthoritativeMaterialPricing(parsed);
+    assert.strictEqual(parsed.lineItems[0].materials[0].unitCost, 0.72);
+    assert.strictEqual(parsed.lineItems[0].materials[0].qty, 400);
+  });
+
+  it('CASE H: labor rate remains $85/hr when authoritative labor is enforced', () => {
+    const { buildAuthoritativeLaborFact } = require('../server');
+    const laborFact = buildAuthoritativeLaborFact('2 additional days of labor for 1 worker.', [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]);
+
+    assert.strictEqual(laborFact.totalHours, 16);
+    assert.strictEqual((laborFact.totalHours * 85), 1360);
+  });
+
+  it('CASE I: markup and final-total logic remain unchanged', () => {
+    const { normalizeAIGenerated } = require('../server');
+    const parsed = {
+      lineItems: [{
+        category: 'Electrical',
+        desc: 'Replace 400 feet of knob and tube with 12/2 NM-B wire',
+        qty: 400,
+        unit: 'ft',
+        laborHours: 16,
+        equipmentOrSubCost: 0,
+        materials: [{ desc: '12/2 NM-B cable (Romex or equivalent)', qty: 400, unit: 'ft', unitCost: 0.72, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+        metadata: { assumptions: 'test' }
+      }]
+    };
+    const normalized = normalizeAIGenerated(parsed, 85, 40);
+    const baseCost = Math.round((400 * 0.72 + 16 * 85) * 100) / 100;
+
+    assert.strictEqual(normalized[0].laborHours, 16);
+    assert.strictEqual(normalized[0].markup, 40);
+    assert.strictEqual(normalized[0].total, baseCost);
+  });
+
+  it('CASE J: CO financial accounting and residential description code remain untouched', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+
+    assert.ok(html.includes('function ensureApprovedCOFinancialAccounting'));
+    assert.ok(html.includes('function buildResidentialEstimateDescription'));
+    assert.ok(html.includes('function approveCOContractor'));
+  });
 });
