@@ -8,6 +8,12 @@ const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' 
 
 function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
 
+function buildMaterialPricingContractText(){
+  return " unitCost means direct material acquisition cost only for one unit of the material before labor, installation, equipment, subcontractor cost, overhead, profit, markup, tax, or delivery unless specifically required separately. " +
+    "The model must not include installed cost, fully burdened market price, contractor margin, labor, or markup in unitCost. " +
+    "This is the approximate cost a contractor would expect to pay to acquire the material itself for the project. The server applies markup/OHP authoritatively after the model returns the direct material unit cost.";
+}
+
 function collectHistoryText(history){
   if (!Array.isArray(history)) return '';
   return history.map(function(entry){
@@ -419,6 +425,7 @@ app.post("/api/estimate", async (req, res) => {
                 " RETURN JSON with this top-level shape: {\"title\":\"...\",\"description\":\"...\",\"geometry\":{...},\"openings\":[{...}],\"noOpeningsEvidence\":string|null,\"lineItems\":[{...}]}." +
                 " Keep the same line-item/material structure as the estimate workflow: {\"category\":\"...\",\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"materials\":[{\"desc\":\"...\",\"qty\":number,\"unit\":\"...\",\"unitCost\":number,\"primary\":true|false,\"quantityBasis\":\"roof-area\"|\"siding-area\"|\"wall-area\"|\"ai-estimated\",\"basisPerUnit\":number|null}],\"laborHours\":number,\"equipmentOrSubCost\":number,\"metadata\":{\"assumptions\":\"...\"}}." +
                 " Geometry and openings are optional but, when used, must include evidence objects consistent with the estimate workflow. Use the same Phase1 material metadata fields. " +
+                " Material unitCost contract: " + buildMaterialPricingContractText() +
                 " Do not bake markup into unit costs. The server will apply markup authoritatively. " +
                 " Do not return authoritative totals, laborCost, materialCost, baseCost, or markup. The model should only determine quantities, material unit prices, labor hours, assumptions, and CO description fields. " +
                 " EXACT RULES: materials must always be an array; laborHours and equipmentOrSubCost must always be numeric; if an opening has one missing dimension, use null for that field; noOpeningsEvidence may be a string or null; geometry and openings may be omitted when not applicable, but when provided they must follow the same evidence pattern as estimate generation. " +
@@ -437,6 +444,7 @@ app.post("/api/estimate", async (req, res) => {
                 " openings must be an array of objects with width_ft:number|null, height_ft:number|null, evidence:string. An opening may have one missing dimension when unresolved; represent it as null. " +
                 " noOpeningsEvidence must be a string or null; server decides openingsStatus. " +
                 " For each material object, include desc, qty, unit, unitCost, primary, quantityBasis, basisPerUnit. " +
+                " Material unitCost contract: " + buildMaterialPricingContractText() +
                 " quantityBasis must be one of: roof-area, siding-area, wall-area, ai-estimated. " +
                 " basisPerUnit must be a number or null. If primary unit is sqft, basisPerUnit must be null. If primary unit is a package unit such as bundle/sheet/carton, basisPerUnit is the sqft covered per unit. " +
                 " Exactly one primary:true material is allowed per applicable line item. Accessories must be primary:false and quantityBasis:\"ai-estimated\" with basisPerUnit:null. " +
@@ -460,7 +468,7 @@ app.post("/api/estimate", async (req, res) => {
               " Start your response with { and end with }." +
               " You are a construction estimator." +
               ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}' +
-              " IMPORTANT: total = qty * unitCost. markup = percentage for client price." +
+              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildMaterialPricingContractText() +
               " Current items: " +
               items +
               " Current exclusions: " +
@@ -664,7 +672,10 @@ app.post("/api/estimate", async (req, res) => {
                               desc: { type: "string" },
                               qty: { type: "number" },
                               unit: { type: "string" },
-                              unitCost: { type: "number" },
+                              unitCost: {
+                                type: "number",
+                                description: "Direct material acquisition cost per unit only. Excludes labor, installation, equipment, subcontractor cost, overhead, profit, markup, tax, and delivery unless separately represented."
+                              },
                               primary: { type: "boolean" },
                               quantityBasis: {
                                 type: "string",
@@ -728,7 +739,10 @@ app.post("/api/estimate", async (req, res) => {
                               desc: { type: "string" },
                               qty: { type: "number" },
                               unit: { type: "string" },
-                              unitCost: { type: "number" },
+                              unitCost: {
+                                type: "number",
+                                description: "Direct material acquisition cost per unit only. Excludes labor, installation, equipment, subcontractor cost, overhead, profit, markup, tax, and delivery unless separately represented."
+                              },
                               primary: { type: "boolean" },
                               quantityBasis: {
                                 type: "string",
@@ -1101,4 +1115,5 @@ module.exports = {
   hasResolvedCrewOrLaborHoursFact,
   buildAuthoritativeLaborFact,
   applyCOAuthoritativeLabor,
+  buildMaterialPricingContractText,
 };

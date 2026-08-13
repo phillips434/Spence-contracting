@@ -1,6 +1,6 @@
 const assert = require('assert');
 const http = require('http');
-const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor } = require('../server');
+const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialPricingContractText } = require('../server');
 
 describe('coIntakeReadiness', () => {
   it('builds a contractor authoritative labor fact from a 2-day 1-worker scope', () => {
@@ -173,6 +173,90 @@ describe('coIntakeReadiness', () => {
     const result = validateCOIntakeReadiness(payload);
 
     assert.strictEqual(result, null);
+  });
+
+  it('defines direct-material unit cost semantics for generated pricing', () => {
+    const text = buildMaterialPricingContractText();
+    const lower = text.toLowerCase();
+
+    assert.ok(lower.includes('direct material acquisition cost only'));
+    assert.ok(lower.includes('labor'));
+    assert.ok(lower.includes('installation'));
+    assert.ok(lower.includes('overhead'));
+    assert.ok(lower.includes('markup'));
+    assert.ok(lower.includes('unitcost'));
+  });
+
+  it('includes the direct-material unit cost contract in estimate and CO generation prompts', async () => {
+    const originalFetch = global.fetch;
+    process.env.ANTHROPIC_KEY = 'test-key';
+    process.env.OPENAI_API_KEY = 'test-key';
+
+    const calls = [];
+    global.fetch = async (_url, options) => {
+      const body = JSON.parse(options.body || '{}');
+      calls.push(body);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          choices: [{ message: { content: JSON.stringify({ action: 'ready', lineItems: [], deleteIndexes: [], updateItems: [], exclusions: [], message: 'ok' }) } }]
+        })
+      };
+    };
+
+    try {
+      const payloads = [
+        { mode: 'estimate-generate', title: 'Estimate test', description: 'Two-room remodel', prompt: 'Remodel two rooms', items: '[]', excls: '[]', markup: 20, laborRate: 85, messages: [{ role: 'user', content: 'Remodel two rooms' }] },
+        { mode: 'change-order-generate', title: 'CO test', description: 'Electrical scope', prompt: 'Add wiring scope', items: '[]', excls: '[]', markup: 20, laborRate: 85, messages: [{ role: 'user', content: 'Add wiring scope' }] }
+      ];
+
+      for (const payload of payloads) {
+        await new Promise((resolve, reject) => {
+          const server = app.listen(0, () => {
+            const port = server.address().port;
+            const req = http.request({
+              host: '127.0.0.1',
+              port,
+              path: '/api/estimate',
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }, (res) => {
+              let body = '';
+              res.on('data', (chunk) => { body += chunk; });
+              res.on('end', () => {
+                try {
+                  JSON.parse(body);
+                  server.close();
+                  resolve();
+                } catch (err) {
+                  server.close();
+                  reject(err);
+                }
+              });
+            });
+
+            req.on('error', (err) => {
+              server.close();
+              reject(err);
+            });
+
+            req.write(JSON.stringify(payload));
+            req.end();
+          });
+        });
+      }
+
+      assert.ok(calls.length >= 2);
+      for (const body of calls) {
+        const systemText = (body && body.messages && body.messages[0] && body.messages[0].content) || '';
+        assert.ok(systemText.toLowerCase().includes('direct material acquisition cost only'));
+        assert.ok(systemText.toLowerCase().includes('labor'));
+        assert.ok(systemText.toLowerCase().includes('installation'));
+      }
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   it('returns a valid provider intake response without failing on parse after a valid OpenAI question payload', async () => {
