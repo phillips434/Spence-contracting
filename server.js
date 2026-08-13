@@ -1200,17 +1200,6 @@ app.post("/api/estimate", async (req, res) => {
             const inputTextForLabor = (body.title || '') + ' ' + (body.description || '') + ' ' + (body.prompt || '') + ' ' + (body.originalEstimateContext || '');
             const questionHistoryForLabor = body.questionContext && Array.isArray(body.questionContext.history) ? body.questionContext.history : [];
             const authoritativeLabor = buildAuthoritativeLaborFact(inputTextForLabor, questionHistoryForLabor);
-            console.log('LABOR_AUTHORITY_DIAGNOSTIC ' + JSON.stringify({
-              mode: mode,
-              inputText: inputTextForLabor,
-              questionHistory: questionHistoryForLabor,
-              isResolved: !!(authoritativeLabor && authoritativeLabor.isResolved),
-              crewSize: authoritativeLabor && authoritativeLabor.crewSize,
-              durationValue: authoritativeLabor && authoritativeLabor.durationValue,
-              durationUnit: authoritativeLabor && authoritativeLabor.durationUnit,
-              totalHours: authoritativeLabor && authoritativeLabor.totalHours,
-              source: authoritativeLabor && authoritativeLabor.source
-            }, null, 0));
             if (mode === "change-order-generate") {
               const aiParsedBeforeNormalize = JSON.parse(JSON.stringify(parsed));
               console.log('CO_PRICING_DIAGNOSTIC ' + JSON.stringify({
@@ -1229,52 +1218,12 @@ app.post("/api/estimate", async (req, res) => {
             }
             applyAuthoritativeMaterialPricing(parsed);
             if (mode === 'estimate-generate' || mode === 'change-order-generate') {
-              const laborBefore = parsed.lineItems.map(function(li){
-                return {
-                  description: li && li.desc,
-                  laborHours: Number(li && li.laborHours || 0)
-                };
-              });
-              const summedBefore = laborBefore.reduce(function(total, row){ return total + Number(row.laborHours || 0); }, 0);
-              console.log('LABOR_INVARIANT_BEFORE ' + JSON.stringify({
-                mode: mode,
-                authoritativeTotalHours: authoritativeLabor && authoritativeLabor.totalHours,
-                rows: laborBefore,
-                summedLaborHours: summedBefore
-              }, null, 0));
               applyAuthoritativeLaborInvariant(parsed, authoritativeLabor);
-              const laborAfter = parsed.lineItems.map(function(li){
-                return {
-                  description: li && li.desc,
-                  laborHours: Number(li && li.laborHours || 0)
-                };
-              });
-              const summedAfter = laborAfter.reduce(function(total, row){ return total + Number(row.laborHours || 0); }, 0);
-              console.log('LABOR_INVARIANT_AFTER ' + JSON.stringify({
-                mode: mode,
-                authoritativeTotalHours: authoritativeLabor && authoritativeLabor.totalHours,
-                rows: laborAfter,
-                summedLaborHours: summedAfter
-              }, null, 0));
               parsed.lineItems.forEach(function(li){
                 alignLineItemQuantityToPrimaryMaterial(li);
               });
             }
             let normalized;
-            if (mode === 'estimate-generate' || mode === 'change-order-generate') {
-              const laborPreNormalize = parsed.lineItems.map(function(li){
-                return {
-                  description: li && li.desc,
-                  laborHours: Number(li && li.laborHours || 0)
-                };
-              });
-              const summedPreNormalize = laborPreNormalize.reduce(function(total, row){ return total + Number(row.laborHours || 0); }, 0);
-              console.log('LABOR_PRE_NORMALIZE ' + JSON.stringify({
-                mode: mode,
-                rows: laborPreNormalize,
-                summedLaborHours: summedPreNormalize
-              }, null, 0));
-            }
             try{
               normalized = normalizeAIGenerated(parsed, Number(body.laborRate ?? 85), Number(body.markup ?? 20));
             }catch(err){
