@@ -187,6 +187,217 @@ describe('coIntakeReadiness', () => {
     assert.ok(lower.includes('unitcost'));
   });
 
+  it('zeroes all non-authoritative AI labor rows when authoritative labor is resolved', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Electrical', desc: 'Install boxes', qty: 8, unit: 'ea', materials: [], laborHours: 4, equipmentOrSubCost: 0, metadata: { assumptions: 'AI component labor' } },
+        { category: 'Labor', desc: 'Additional labor for wiring replacement', qty: 10, unit: 'hrs', materials: [], laborHours: 10, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor row' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: true, totalHours: 16, crewSize: 1, durationValue: 2, durationUnit: 'days', source: 'contractor' });
+
+    const totalLabor = parsed.lineItems.reduce((sum, li) => sum + Number(li.laborHours || 0), 0);
+    const positiveRows = parsed.lineItems.filter((li) => Number(li.laborHours || 0) > 0);
+
+    assert.strictEqual(totalLabor, 16);
+    assert.strictEqual(positiveRows.length, 1);
+    assert.strictEqual(positiveRows[0].laborHours, 16);
+  });
+
+  it('keeps only one authoritative labor allocation when the model already created multiple labor-bearing rows', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Electrical', desc: 'Run cable', qty: 120, unit: 'lf', materials: [], laborHours: 8, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor' } },
+        { category: 'Labor', desc: 'Additional labor for wiring replacement', qty: 12, unit: 'hrs', materials: [], laborHours: 12, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor row' } },
+        { category: 'Electrical', desc: 'Install boxes', qty: 10, unit: 'ea', materials: [], laborHours: 6, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: true, totalHours: 16, crewSize: 1, durationValue: 2, durationUnit: 'days', source: 'contractor' });
+
+    const totalLabor = parsed.lineItems.reduce((sum, li) => sum + Number(li.laborHours || 0), 0);
+    const positiveRows = parsed.lineItems.filter((li) => Number(li.laborHours || 0) > 0);
+
+    assert.strictEqual(totalLabor, 16);
+    assert.strictEqual(positiveRows.length, 1);
+    assert.strictEqual(positiveRows[0].laborHours, 16);
+  });
+
+  it('enforces the authoritative labor total when several rows carry AI labor hours', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Electrical', desc: 'Pull wire', qty: 500, unit: 'lf', materials: [], laborHours: 9, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor' } },
+        { category: 'Electrical', desc: 'Cut and terminate', qty: 12, unit: 'ea', materials: [], laborHours: 5, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor' } },
+        { category: 'Labor', desc: 'Crew labor', qty: 4, unit: 'hrs', materials: [], laborHours: 4, equipmentOrSubCost: 0, metadata: { assumptions: 'AI labor row' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: true, totalHours: 16, crewSize: 1, durationValue: 2, durationUnit: 'days', source: 'contractor' });
+
+    const totalLabor = parsed.lineItems.reduce((sum, li) => sum + Number(li.laborHours || 0), 0);
+    assert.strictEqual(totalLabor, 16);
+  });
+
+  it('leaves labor handling unchanged when authoritative labor is not resolved', () => {
+    const parsed = {
+      lineItems: [
+        { category: 'Electrical', desc: 'Install boxes', qty: 1, unit: 'ea', materials: [], laborHours: 10, equipmentOrSubCost: 0, metadata: { assumptions: 'AI estimate' } }
+      ]
+    };
+
+    applyCOAuthoritativeLabor(parsed, { isResolved: false, totalHours: 0, crewSize: null, durationValue: null, durationUnit: null, source: 'contractor' });
+
+    assert.strictEqual(parsed.lineItems[0].laborHours, 10);
+  });
+
+  it('keeps the authoritative 16-hour labor total through the real CO normalization path', async () => {
+    const originalFetch = global.fetch;
+    const previousExperiment = process.env.AI_BREAKDOWN_EXPERIMENT;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+
+    process.env.ANTHROPIC_KEY = 'test-key';
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.AI_BREAKDOWN_EXPERIMENT = 'true';
+    delete require.cache[require.resolve('../server')];
+
+    const serverModule = require('../server');
+    const serverApp = serverModule.app;
+
+    const providerResponse = {
+      action: 'add',
+      lineItems: [
+        {
+          category: 'Electrical',
+          desc: 'Install boxes',
+          qty: 8,
+          unit: 'ea',
+          materials: [{ desc: 'Boxes', qty: 8, unit: 'ea', unitCost: 12.5, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+          laborHours: 4,
+          equipmentOrSubCost: 0,
+          metadata: { assumptions: 'AI component labor' }
+        },
+        {
+          category: 'Labor',
+          desc: 'Additional labor for wiring replacement',
+          qty: 10,
+          unit: 'hrs',
+          materials: [],
+          laborHours: 10,
+          equipmentOrSubCost: 0,
+          metadata: { assumptions: 'AI labor row' }
+        },
+        {
+          category: 'Electrical',
+          desc: 'Install conduit',
+          qty: 12,
+          unit: 'lf',
+          materials: [{ desc: 'Conduit', qty: 12, unit: 'lf', unitCost: 7.5, primary: true, quantityBasis: 'ai-estimated', basisPerUnit: null }],
+          laborHours: 2,
+          equipmentOrSubCost: 75,
+          metadata: { assumptions: 'AI labor' }
+        }
+      ],
+      message: 'ok'
+    };
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(providerResponse) } }]
+      })
+    });
+
+    try {
+      const responseBody = await new Promise((resolve, reject) => {
+        const server = serverApp.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve(JSON.parse(body));
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'change-order-generate',
+            title: 'Replace additional knob and tube wiring throughout the property.',
+            description: 'Work will require 2 additional days of labor.',
+            prompt: 'Replace additional knob and tube wiring throughout the property. Work will require 2 additional days of labor.',
+            items: '[]',
+            excls: '[]',
+            markup: 40,
+            laborRate: 85,
+            questionContext: {
+              originalPrompt: 'Replace additional knob and tube wiring throughout the property. Work will require 2 additional days of labor.',
+              history: [{ questions: ['How many workers will be working for those 2 additional days?'], answer: '1' }]
+            },
+            messages: [{ role: 'user', content: 'Replace additional knob and tube wiring throughout the property. Work will require 2 additional days of labor.' }]
+          }));
+          req.end();
+        });
+      });
+
+      const totalLaborHours = responseBody.lineItems.reduce((sum, li) => sum + (Number(li.aiBreakdown && li.aiBreakdown.laborHours) || 0), 0);
+      const positiveRows = responseBody.lineItems.filter((li) => Number(li.aiBreakdown && li.aiBreakdown.laborHours) > 0);
+      const laborCost = responseBody.lineItems.reduce((sum, li) => {
+        return sum + ((Number(li.aiBreakdown && li.aiBreakdown.laborHours) || 0) * 85);
+      }, 0);
+      const materialSnapshot = responseBody.lineItems.map((li) => ({
+        desc: li.desc,
+        materials: li.materials ? li.materials.map((m) => ({ qty: Number(m.qty), unitCost: Number(m.unitCost) })) : [],
+        equipmentOrSubCost: Number(li.aiBreakdown && li.aiBreakdown.equipmentOrSubCost || 0)
+      }));
+
+      assert.strictEqual(totalLaborHours, 16);
+      assert.strictEqual(positiveRows.length, 1);
+      assert.strictEqual(positiveRows[0].aiBreakdown.laborHours, 16);
+      assert.strictEqual(laborCost, 1360);
+      assert.ok(materialSnapshot.every((entry) => entry.materials.length >= 0));
+      assert.strictEqual(responseBody.lineItems[0].aiBreakdown.materials[0].qty, 8);
+      assert.strictEqual(responseBody.lineItems[2].aiBreakdown.materials[0].qty, 12);
+      assert.strictEqual(responseBody.lineItems[2].aiBreakdown.equipmentOrSubCost, 75);
+    } finally {
+      global.fetch = originalFetch;
+      if (previousExperiment === undefined) {
+        delete process.env.AI_BREAKDOWN_EXPERIMENT;
+      } else {
+        process.env.AI_BREAKDOWN_EXPERIMENT = previousExperiment;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      delete require.cache[require.resolve('../server')];
+    }
+  });
+
   it('includes the direct-material unit cost contract in estimate and CO generation prompts', async () => {
     const originalFetch = global.fetch;
     process.env.ANTHROPIC_KEY = 'test-key';

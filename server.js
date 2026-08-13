@@ -49,7 +49,7 @@ function hasAnswerToQuestion(history, matcher){
 
 function hasLaborDurationStatement(text){
   if (!text) return false;
-  return /(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts)\b/i.test(text);
+  return /(\d+(?:\.\d+)?)\s+(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts)\b/i.test(text);
 }
 
 function hasResolvedCrewOrLaborHoursFact(text, history){
@@ -97,7 +97,7 @@ function validateCOIntakeReadiness(payload){
     return null;
   }
 
-  const durationMatch = promptText.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts)\b/i);
+  const durationMatch = promptText.match(/(\d+(?:\.\d+)?)\s+(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts)\b/i);
   const durationText = durationMatch ? durationMatch[1] + ' ' + durationMatch[2] : 'that duration';
   return {
     action: 'questions',
@@ -123,7 +123,7 @@ function parseCrewSizeFromText(text){
 
 function parseDurationFromText(text){
   if (!text) return null;
-  const match = text.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
+  const match = text.match(/(\d+(?:\.\d+)?)\s+(?:additional\s+|more\s+)?(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
   if (!match) return null;
   return {
     value: Number(match[1]),
@@ -210,6 +210,12 @@ function applyCOAuthoritativeLabor(parsed, authoritativeLabor){
     return /labor|crew|man-hours|work hours|additional labor/i.test(text);
   });
 
+  const laborRows = parsed.lineItems.map(function(li, index){
+    return { index, li };
+  }).filter(function(entry){
+    return entry.li && Number(entry.li.laborHours || 0) > 0;
+  });
+
   if (dedicatedIndex >= 0) {
     parsed.lineItems[dedicatedIndex].category = parsed.lineItems[dedicatedIndex].category || 'Labor';
     parsed.lineItems[dedicatedIndex].desc = parsed.lineItems[dedicatedIndex].desc || 'Contractor-authoritative labor';
@@ -237,6 +243,40 @@ function applyCOAuthoritativeLabor(parsed, authoritativeLabor){
     if (i === dedicatedIndex) continue;
     if (parsed.lineItems[i] && Number(parsed.lineItems[i].laborHours) > 0) {
       parsed.lineItems[i].laborHours = 0;
+    }
+  }
+
+  const positiveIndexes = parsed.lineItems
+    .map(function(li, index){ return { li, index }; })
+    .filter(function(entry){ return entry.li && Number(entry.li.laborHours || 0) > 0; })
+    .map(function(entry){ return entry.index; });
+
+  if (positiveIndexes.length > 1) {
+    const authoritativeRowIndex = positiveIndexes[0];
+    for (let i = 0; i < parsed.lineItems.length; i++) {
+      if (i === authoritativeRowIndex) {
+        parsed.lineItems[i].laborHours = targetHours;
+      } else if (parsed.lineItems[i] && Number(parsed.lineItems[i].laborHours || 0) > 0) {
+        parsed.lineItems[i].laborHours = 0;
+      }
+    }
+  }
+
+  const totalLaborHours = parsed.lineItems.reduce(function(sum, li){
+    return sum + (Number(li && li.laborHours) || 0);
+  }, 0);
+
+  if (totalLaborHours !== targetHours) {
+    const authoritativeRowIndex = parsed.lineItems.findIndex(function(li){
+      return li && Number(li.laborHours || 0) > 0;
+    });
+    if (authoritativeRowIndex >= 0) {
+      parsed.lineItems[authoritativeRowIndex].laborHours = targetHours;
+      for (let i = 0; i < parsed.lineItems.length; i++) {
+        if (i !== authoritativeRowIndex && parsed.lineItems[i] && Number(parsed.lineItems[i].laborHours || 0) > 0) {
+          parsed.lineItems[i].laborHours = 0;
+        }
+      }
     }
   }
 
