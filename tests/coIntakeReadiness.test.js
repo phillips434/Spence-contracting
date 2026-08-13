@@ -1333,6 +1333,127 @@ describe('coIntakeReadiness', () => {
     assert.ok(contractText.toLowerCase().includes('replace 400 linear feet') || contractText.toLowerCase().includes('12/2'));
   });
 
+  it('PROJECT-CLASS D: blank projectClass is rejected on a new estimate and does not save', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function saveEstimate');
+    const end = html.indexOf('function updateEstStatus', start);
+    const snippet = html.slice(start, end);
+    const alerts = [];
+    const saved = [];
+    const context = {
+      window: { _aiEstimateQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      DD: { aiProfile: { markup: 20 }, logoData: '', companyName: 'Test Co' },
+      currentUser: { uid: 'u-1' },
+      document: {
+        getElementById: (id) => {
+          const values = {
+            efClient: 'Client',
+            efType: 'Test Project',
+            efProjectClass: '',
+            efAddress: '123 Main',
+            efNotes: 'Residential remodel',
+            efClientEmail: '',
+            efClientPhone: '',
+            efMarkup: '20',
+            efTax: '0',
+            efStatus: 'Draft',
+            efDate: '2026-08-13',
+            efValidUntil: '2026-09-12'
+          };
+          return { value: values[id] || '' };
+        }
+      },
+      alert: (msg) => alerts.push(msg),
+      T: () => {},
+      ger: () => ({ id: 'est-1', lineItems: [], exclusions: [], projectClass: '' }),
+      gpr: () => ({ id: 'est-1' }),
+      nextEstNumber: () => 'EST-999',
+      eCol: {
+        doc: () => ({
+          set: (value) => { saved.push(value); return Promise.resolve(); }
+        })
+      },
+      normalizeProjectClass: (v) => ((v || '').trim().toLowerCase() === 'residential' ? 'residential' : ((v || '').trim().toLowerCase() === 'commercial' ? 'commercial' : '')),
+      getCanonicalCustomerScope: (e) => ({ projectClass: e.projectClass || 'commercial', projectScope: 'Scope of work', workIncluded: [], conditionsAssumptions: [], exclusions: e.exclusions || [] })
+    };
+    vm.runInNewContext(snippet, context);
+    context.saveEstimate();
+    assert.strictEqual(alerts.length, 1);
+    assert.strictEqual(saved.length, 0);
+    assert.ok(alerts[0].toLowerCase().includes('project class'));
+  });
+
+  it('PROJECT-CLASS E: residential and commercial projectClass values persist and customerScope is rebuilt from final AI data', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function applyEstimateChanges');
+    const end = html.indexOf('function handleAIError', start);
+    const snippet = html.slice(start, end);
+    const saved = [];
+    const context = {
+      ger: () => ({
+        id: 'est-2',
+        status: 'Draft',
+        client: 'Client',
+        projectClass: 'residential',
+        notes: 'Replace wiring',
+        lineItems: [{ category: 'Electrical', desc: 'Old item', qty: 1, unit: 'job', unitCost: 10, total: 10, markup: 20 }],
+        exclusions: ['Old exclusion'],
+        markup: 20
+      }),
+      eCol: {
+        doc: () => ({
+          set: (value) => { saved.push(value); return Promise.resolve(); }
+        })
+      },
+      T: () => {},
+      renderEstDetailBody: () => {},
+      document: { getElementById: () => ({ value: '' }) },
+      buildCanonicalCustomerScope: (estimate) => ({
+        projectClass: estimate.projectClass,
+        projectScope: 'Replace 400 linear feet of old wiring with new 12/2 NM-B wire in the home.',
+        workIncluded: ['Replace 400 linear feet of old wiring', 'Install old-work boxes'],
+        conditionsAssumptions: ['Existing panel capacity remains in use.'],
+        exclusions: estimate.exclusions || []
+      })
+    };
+    vm.runInNewContext(snippet, context);
+    const finalEstimate = {
+      projectClass: 'residential',
+      notes: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B.',
+      exclusions: ['Drywall repair'],
+      lineItems: [
+        { category: 'Electrical', desc: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B wire', qty: 1, unit: 'job', unitCost: 100, total: 100, markup: 20 },
+        { category: 'Electrical', desc: 'Install old-work boxes', qty: 1, unit: 'job', unitCost: 50, total: 50, markup: 20 }
+      ]
+    };
+    const result = context.applyEstimateChanges({ lineItems: finalEstimate.lineItems, exclusions: finalEstimate.exclusions, message: 'Done' });
+    assert.ok(saved.length >= 1);
+    const persisted = saved[0];
+    assert.strictEqual(persisted.projectClass, 'residential');
+    assert.ok(persisted.customerScope.projectScope.toLowerCase().includes('replace'));
+    assert.ok(persisted.customerScope.workIncluded.length >= 2);
+    assert.ok(persisted.customerScope.exclusions.includes('Drywall repair'));
+    assert.ok(result === undefined || result === null);
+  });
+
+  it('PROJECT-CLASS F: legacy estimates without projectClass still use fallback behavior', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function resolveEstimateProjectClass');
+    const end = html.indexOf('function buildCanonicalCustomerScope', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      type: 'test 1',
+      notes: 'Replace 400 linear feet of knob and tube wiring in a house.',
+      lineItems: [{ desc: 'Install new wiring in a home' }],
+      exclusions: []
+    };
+
+    assert.strictEqual(context.resolveEstimateProjectClass(estimate), 'residential');
+  });
+
   it('CASE H: saved quantities, labor, costs, markup, and final totals are unchanged before vs after rendering', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     const start = html.indexOf('function buildResidentialEstimateDescription');
