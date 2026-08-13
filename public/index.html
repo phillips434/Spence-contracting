@@ -3495,7 +3495,13 @@ function runCOGenerationRequest(title, desc, btnEl, questionState){
       }
     }
     if(document.getElementById('coTitle')) document.getElementById('coTitle').value=parsed.title||title;
-    if(document.getElementById('coBudget')) document.getElementById('coBudget').value=parsed.budgetImpact||0;
+    var clientTotal = Number(parsed.finalTotal ?? parsed.clientTotal ?? parsed.budgetImpact ?? 0);
+    if (document.getElementById('coBudget')) document.getElementById('coBudget').value = clientTotal;
+    parsed.budgetImpact = clientTotal;
+    parsed.clientTotal = clientTotal;
+    if (parsed.finalTotal === undefined || parsed.finalTotal === null) {
+      parsed.finalTotal = clientTotal;
+    }
     var detailDesc=(parsed.description||'')+'\n\nLine Item Summary';
     if(parsed.lineItems&&parsed.lineItems.length){
       parsed.lineItems.forEach(function(li){

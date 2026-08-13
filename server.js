@@ -1094,7 +1094,12 @@ app.post("/api/estimate", async (req, res) => {
                   title: parsed.title || title || '',
                   description: parsed.description || description || '',
                   lineItems: normalized,
-                  budgetImpact: Number(normalizedBudgetImpact.toFixed(2)),
+                  baseCost: Number(normalizedBudgetImpact.toFixed(2)),
+                  markupPct: markupPct,
+                  markupAmount: Number(markupAmount.toFixed(2)),
+                  budgetImpact: Number(finalTotal.toFixed(2)),
+                  clientTotal: Number(finalTotal.toFixed(2)),
+                  finalTotal: Number(finalTotal.toFixed(2)),
                   message: parsed.message || ''
                 }
               : {

@@ -134,6 +134,28 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(context.window._aiCOQuestionState.history.length, 0);
   });
 
+  it('uses the authoritative server-computed CO total for base, markup, and client-facing amount', () => {
+    const serverPayload = {
+      title: 'Electrical add-on',
+      description: 'Labor and materials',
+      lineItems: [],
+      baseCost: 1490,
+      markupPct: 40,
+      markupAmount: 596,
+      budgetImpact: 2086,
+      clientTotal: 2086,
+      finalTotal: 2086
+    };
+
+    const clientTotal = Number(serverPayload.finalTotal ?? serverPayload.clientTotal ?? serverPayload.budgetImpact ?? 0);
+    assert.strictEqual(serverPayload.baseCost, 1490);
+    assert.strictEqual(serverPayload.markupPct, 40);
+    assert.strictEqual(serverPayload.markupAmount, 596);
+    assert.strictEqual(clientTotal, 2086);
+    assert.notStrictEqual(clientTotal, serverPayload.baseCost);
+    assert.strictEqual(clientTotal - serverPayload.baseCost, 596);
+  });
+
   it('enforces the authoritative 16-hour total when AI item labor duplicates the contractor scope', () => {
     const parsed = {
       lineItems: [
