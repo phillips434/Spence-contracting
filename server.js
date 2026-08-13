@@ -19,6 +19,132 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+const MATERIAL_PRICE_CATALOG = Object.freeze({
+  'nm-b 12/2': { unit: 'ft', unitCost: 0.72, aliases: ['romex 12/2', 'romex 12-2', 'nm-b 12-2', '12/2 nm-b', '12-2 nm-b', 'nm b 12 2', '12 2 nm-b', '12/2 romex', '12-2 romex', 'romex 12 2', '12 2 romex'] },
+  'nm-b 14/2': { unit: 'ft', unitCost: 0.58, aliases: ['romex 14/2', 'romex 14-2', 'nm-b 14-2', '14/2 nm-b', '14-2 nm-b', 'nm b 14 2', '14 2 nm-b', '14/2 romex', '14-2 romex', 'romex 14 2', '14 2 romex'] },
+  'standard single-gang electrical box': { unit: 'ea', unitCost: 2.35, aliases: ['single-gang electrical box', 'single gang electrical box', 'single gang box', 'single-gang box', 'standard single gang box', 'single gang old work box', 'old work box'] },
+  'wire connectors / wire nuts': { unit: 'ea', unitCost: 0.45, aliases: ['wire connectors', 'wire nuts', 'connector', 'wire nut', 'wire connectors / wire nuts', 'wire connectors and wire nuts'] },
+  'grounding wire': { unit: 'ft', unitCost: 0.22, aliases: ['grounding wire', 'ground wire', 'equipment grounding conductor', 'egc'] },
+  'electrical staples/clamps': { unit: 'ea', unitCost: 0.18, aliases: ['electrical staples', 'staples', 'electrical clamps', 'clamps', 'staple', 'clamp'] }
+});
+
+function normalizeMaterialDescription(value){
+  if (typeof value !== 'string') return '';
+  return value
+    .toLowerCase()
+    .replace(/[-–—]/g, '-')
+    .replace(/[\/]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeMaterialUnit(value){
+  if (typeof value !== 'string') return '';
+  const normalized = value.toLowerCase().trim();
+  if (!normalized) return '';
+  if (['ft', 'foot', 'feet', 'lf', 'linear foot', 'linear feet'].includes(normalized)) return 'ft';
+  if (['ea', 'each', 'piece', 'pc'].includes(normalized)) return 'ea';
+  return normalized;
+}
+
+function resolveCatalogMaterialKey(description){
+  const normalized = normalizeMaterialDescription(description);
+  if (!normalized) return null;
+
+  const directMatch = Object.keys(MATERIAL_PRICE_CATALOG).find(function(key){
+    return normalizeMaterialDescription(key) === normalized;
+  });
+  if (directMatch) return directMatch;
+
+  for (const [key, entry] of Object.entries(MATERIAL_PRICE_CATALOG)) {
+    const aliases = Array.isArray(entry && entry.aliases) ? entry.aliases : [];
+    if (aliases.some(function(alias){ return normalizeMaterialDescription(alias) === normalized; })) {
+      return key;
+    }
+  }
+
+  return null;
+}
+
+function applyAuthoritativeMaterialPricing(parsed){
+  if (!parsed || !Array.isArray(parsed.lineItems)) return parsed;
+
+  parsed.lineItems.forEach(function(li){
+    if (!li || !Array.isArray(li.materials)) return;
+
+    li.materials.forEach(function(material){
+      if (!material || typeof material !== 'object') return;
+      const originalUnitCost = Number(material.unitCost);
+      const catalogKey = resolveCatalogMaterialKey(material.desc || '');
+      if (!catalogKey) {
+        console.log('MATERIAL_PRICE_DIAGNOSTIC', {
+          description: material.desc || '',
+          materialUnit: material.unit || null,
+          catalogUnit: null,
+          aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          finalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          source: 'ai-fallback'
+        });
+        return;
+      }
+
+      const catalogEntry = MATERIAL_PRICE_CATALOG[catalogKey];
+      const materialUnit = normalizeMaterialUnit(material.unit);
+      const catalogUnit = normalizeMaterialUnit(catalogEntry.unit);
+
+      if (!materialUnit) {
+        console.log('MATERIAL_PRICE_DIAGNOSTIC', {
+          description: material.desc || '',
+          materialUnit: material.unit || null,
+          catalogUnit: catalogUnit,
+          aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          finalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          source: 'ai-fallback-unit-missing'
+        });
+        return;
+      }
+
+      if (!catalogUnit) {
+        console.log('MATERIAL_PRICE_DIAGNOSTIC', {
+          description: material.desc || '',
+          materialUnit: material.unit || null,
+          catalogUnit: null,
+          aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          finalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          source: 'ai-fallback'
+        });
+        return;
+      }
+
+      if (materialUnit !== catalogUnit) {
+        console.log('MATERIAL_PRICE_DIAGNOSTIC', {
+          description: material.desc || '',
+          materialUnit: material.unit || null,
+          catalogUnit: catalogUnit,
+          aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          finalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+          source: 'ai-fallback-unit-mismatch'
+        });
+        return;
+      }
+
+      const finalUnitCost = Number(catalogEntry.unitCost);
+      material.unitCost = finalUnitCost;
+      console.log('MATERIAL_PRICE_DIAGNOSTIC', {
+        description: material.desc || '',
+        materialUnit: material.unit || null,
+        catalogUnit: catalogUnit,
+        aiOriginalUnitCost: Number.isFinite(originalUnitCost) ? originalUnitCost : null,
+        finalUnitCost: finalUnitCost,
+        source: 'catalog'
+      });
+    });
+  });
+
+  return parsed;
+}
+
 function collectHistoryText(history){
   if (!Array.isArray(history)) return '';
   return history.map(function(entry){
@@ -1023,6 +1149,7 @@ app.post("/api/estimate", async (req, res) => {
             } catch (phase1Err) {
               console.warn("AI BREAKDOWN PHASE1 GEOMETRY WARNING:", phase1Err && phase1Err.message ? phase1Err.message : phase1Err);
             }
+            applyAuthoritativeMaterialPricing(parsed);
             if (mode === 'change-order-generate') {
               applyCOAuthoritativeLabor(parsed, authoritativeLabor);
             }
@@ -1167,4 +1294,8 @@ module.exports = {
   applyCOAuthoritativeLabor,
   buildMaterialCompletenessContractText,
   buildMaterialPricingContractText,
+  MATERIAL_PRICE_CATALOG,
+  normalizeMaterialDescription,
+  resolveCatalogMaterialKey,
+  applyAuthoritativeMaterialPricing,
 };
