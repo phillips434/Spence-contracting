@@ -620,6 +620,72 @@ describe('coIntakeReadiness', () => {
     }
   });
 
+  it('shows item-level material, labor, base, markup, and final total details without offering the pre-markup total as the client total', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function formatMoney');
+    const end = html.indexOf('function addCO', start);
+    const snippet = html.slice(start, end);
+    const card = { style: {}, innerHTML: '' };
+    const title = { value: 'Replace knob and tube wiring' };
+    const desc = { value: 'Remove and replace additional knob and tube wiring throughout property\n\nLine Item Summary\n• Run cable — 500 LF × $0.62 = $310.00' };
+    const budget = { value: '2287.60' };
+    const status = { value: 'Draft' };
+    const context = {
+      window: {
+        _coDraftItems: [{
+          desc: 'Run cable',
+          qty: 500,
+          unit: 'LF',
+          unitCost: 0.62,
+          total: 310,
+          markup: 40,
+          aiBreakdown: {
+            materials: [{ desc: '12-2 Romex', qty: 500, unit: 'LF', unitCost: 0.62 }],
+            laborHours: 16,
+            equipmentOrSubCost: 0,
+            assumptions: 'CO scope'
+          }
+        }, {
+          desc: 'Install boxes',
+          qty: 10,
+          unit: 'ea',
+          unitCost: 132.4,
+          total: 1324,
+          markup: 40,
+          aiBreakdown: {
+            materials: [{ desc: 'Old work boxes', qty: 10, unit: 'ea', unitCost: 32.4 }],
+            laborHours: 0,
+            equipmentOrSubCost: 0,
+            assumptions: 'CO scope'
+          }
+        }],
+        _coDraftItemsStale: false
+      },
+      DD: { aiProfile: { laborRate: 85, markup: 40 } },
+      document: {
+        getElementById: (id) => {
+          if (id === 'coPreviewCard') return card;
+          if (id === 'coTitle') return title;
+          if (id === 'coDesc') return desc;
+          if (id === 'coBudget') return budget;
+          if (id === 'coStatus') return status;
+          return null;
+        }
+      }
+    };
+    vm.runInNewContext(snippet, context);
+    context.updateCOPreview();
+
+    assert.ok(card.innerHTML.includes('12-2 Romex'));
+    assert.ok(card.innerHTML.includes('Material Subtotal'));
+    assert.ok(card.innerHTML.includes('Labor: 16 hrs'));
+    assert.ok(card.innerHTML.includes('Base Cost'));
+    assert.ok(card.innerHTML.includes('Markup (40%)'));
+    assert.ok(card.innerHTML.includes('$2,287.60'));
+    assert.ok(card.innerHTML.includes('Base Cost Before Markup'));
+    assert.ok(!card.innerHTML.includes('Use This Total'));
+  });
+
   it('returns a valid provider intake response without failing on parse after a valid OpenAI question payload', async () => {
     const originalFetch = global.fetch;
     process.env.ANTHROPIC_KEY = 'test-key';

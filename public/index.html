@@ -3813,6 +3813,42 @@ function addPunchItem(text,cat){addPunch();}
 function addPunch(){var text=document.getElementById("plText").value.trim();if(!text){alert("Enter an item.");return;}var p=gpr();p.punchList=p.punchList||[];p.punchList.push({text:text,category:document.getElementById("plCat").value,done:false});saveP(p);}
 function delPunch(i){if(!confirm("Delete?"))return;var p=gpr();p.punchList.splice(i,1);saveP(p);}
 function togglePunch(i){var p=gpr();p.punchList[i].done=!p.punchList[i].done;saveP(p,p.punchList[i].done?"Punch item completed on "+p.client:null);}
+function formatMoney(value){
+  return (Number(value)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function renderCOItemPricingBreakdown(li, laborRate){
+  var materials=(Array.isArray(li && li.aiBreakdown && li.aiBreakdown.materials)?li.aiBreakdown.materials:(Array.isArray(li && li.materials)?li.materials:[]));
+  var materialSubtotal=0;
+  var materialsHtml='';
+  materials.forEach(function(m){
+    var qty=Number(m && m.qty) || 0;
+    var unitCost=Number(m && m.unitCost) || 0;
+    var ext=qty*unitCost;
+    materialSubtotal+=ext;
+    materialsHtml+='<div style="padding:2px 0;color:#4E5B7A">• '+(m&&m.desc?m.desc:'Material')+' — '+qty+' '+(m&&m.unit?m.unit:'')+' × $'+formatMoney(unitCost)+' = $'+formatMoney(ext)+'</div>';
+  });
+  var laborHours=Number(li && li.aiBreakdown && li.aiBreakdown.laborHours) || Number(li && li.laborHours) || 0;
+  var laborValue=Number(laborRate || (DD && DD.aiProfile && DD.aiProfile.laborRate) || 85) || 0;
+  var laborCost=laborHours*laborValue;
+  var equipmentCost=Number(li && li.aiBreakdown && li.aiBreakdown.equipmentOrSubCost) || Number(li && li.equipmentOrSubCost) || 0;
+  var baseCost=Number(li && li.total) || Number(li && li.qty && li.unitCost ? (li.qty*li.unitCost) : 0) || 0;
+  var out='<div style="margin-top:8px;padding-left:10px;border-left:2px solid #DDE5FF;background:#F7F9FF;border-radius:6px;padding-top:4px;padding-bottom:4px">';
+  if(materialsHtml){
+    out+=materialsHtml;
+    out+='<div style="margin-top:4px;padding-top:4px;border-top:1px solid #E7EDFF;font-weight:600;color:#1A1A2E">Material Subtotal: $'+formatMoney(materialSubtotal)+'</div>';
+  }
+  if(laborHours>0){
+    out+='<div style="margin-top:4px;color:#1A1A2E">Labor: '+laborHours+' hrs × $'+formatMoney(laborValue)+'/hr = $'+formatMoney(laborCost)+'</div>';
+  }
+  if(equipmentCost>0){
+    out+='<div style="margin-top:4px;color:#1A1A2E">Equipment/Subcontractor: $'+formatMoney(equipmentCost)+'</div>';
+  }
+  if(baseCost>0){
+    out+='<div style="margin-top:4px;color:#1A1A2E;font-weight:600">Base Cost: $'+formatMoney(baseCost)+'</div>';
+  }
+  out+='</div>';
+  return out;
+}
 function updateCOPreview(){
   var card=document.getElementById('coPreviewCard');if(!card)return;
   var title=document.getElementById('coTitle')?document.getElementById('coTitle').value.trim():'';
@@ -3827,12 +3863,19 @@ function updateCOPreview(){
   // Line items: use _coDraftItems unless manually edited (stale flag set)
   var itemsHtml='';
   var items=(window._coDraftItemsStale?[]:window._coDraftItems)||[];
+  var baseCostFromItems=0;
+  var laborRate=Number((DD && DD.aiProfile && DD.aiProfile.laborRate) || 85) || 85;
   if(items.length){
     items.forEach(function(li){
-      var total=li.total||(li.qty*li.unitCost)||0;
-      itemsHtml+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #E8EEFF">'
-        +'<span style="color:#333">'+li.desc+'</span>'
-        +'<span style="font-weight:600">$'+Math.round(total).toLocaleString()+'</span></div>';
+      var total=Number(li && li.total) || 0;
+      baseCostFromItems+=total;
+      itemsHtml+='<div style="padding:6px 0;border-bottom:1px solid #E8EEFF">'
+        +'<div style="display:flex;justify-content:space-between;gap:12px">'
+        +'<span style="color:#333;flex:1">'+(li && li.desc ? li.desc : 'Line item')+'</span>'
+        +'<span style="font-weight:600;color:#1A1A2E">$'+formatMoney(total)+'</span>'
+        +'</div>'
+        +renderCOItemPricingBreakdown(li, laborRate)
+        +'</div>';
     });
   } else {
     var lines=desc.split('\n');
@@ -3850,23 +3893,36 @@ function updateCOPreview(){
     out+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Line Items</div>';
     out+=itemsHtml;
   }
+  var markupPct=0;
+  var markupAmount=0;
+  if(items.length){
+    markupPct = Number((items[0] && items[0].markup) || (DD && DD.aiProfile && DD.aiProfile.markup) || 0) || 0;
+    markupAmount = Math.max((budget || 0) - baseCostFromItems, 0);
+  }
+  if(baseCostFromItems>0){
+    out+='<div style="margin-top:10px;padding:8px 10px;background:#EEF3FF;border-radius:8px;font-size:12px;color:#1A1A2E;border:1px solid #D9E4FF">'
+      +'<div style="display:flex;justify-content:space-between;gap:12px"><span>Base Cost</span><span><strong>$'+formatMoney(baseCostFromItems)+'</strong></span></div>';
+    if(markupAmount>0){
+      out+='<div style="display:flex;justify-content:space-between;gap:12px;margin-top:4px"><span>Markup ('+markupPct+'%)</span><span><strong>$'+formatMoney(markupAmount)+'</strong></span></div>';
+    }
+    out+='</div>';
+  }
   if(budget>0){
     out+='<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:#2B3990;border-top:2px solid #C8D4FF;padding-top:8px;margin-top:8px">'
       +'<span>Change Order Total</span><span>$'+budget.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
   }
-  // Parse bullet-line amounts from live description for auto-total suggestion
+  // Show the base cost only when it differs from the client total because of markup, without allowing it to replace the final total.
   var calcTotal=0;
   var lineRe=/[\u2022\-]\s*.+?\u2014\s*(-?\$[\d,]+)/g;
   var lineMatch;
   while((lineMatch=lineRe.exec(desc))!==null){
     calcTotal+=parseFloat(lineMatch[1].replace(/[\$,]/g,''));
   }
-  if(calcTotal!==0&&Math.round(calcTotal*100)!==Math.round(budget*100)){
-    var calcFmt='$'+Math.abs(calcTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    if(calcTotal<0) calcFmt='-'+calcFmt;
-    out+='<div style="margin-top:10px;padding:10px;background:#FFF3CD;border-radius:8px;font-size:12px;color:#856404;display:flex;justify-content:space-between;align-items:center">';
-    out+='<span>Calculated from line items: <strong>'+calcFmt+'</strong></span>';
-    out+='<button onclick="document.getElementById(\'coBudget\').value='+calcTotal.toFixed(2)+';updateCOPreview();" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;margin-left:8px">Use This Total</button>';
+  if(baseCostFromItems>0 && budget>0 && Math.abs(budget - baseCostFromItems) > 0.01 && !(Math.round(calcTotal*100)===Math.round(budget*100) || Math.round(calcTotal*100)===Math.round(baseCostFromItems*100))){
+    var warningFmt='$'+Math.abs(baseCostFromItems).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    out+='<div style="margin-top:10px;padding:10px;background:#FFF3CD;border-radius:8px;font-size:12px;color:#856404;border:1px solid #F4D07B;line-height:1.5">';
+    out+='<div><strong>Base Cost Before Markup:</strong> '+warningFmt+'</div>';
+    out+='<div style="margin-top:3px">Client-facing total remains the marked-up total shown above.</div>';
     out+='</div>';
   }
   card.innerHTML=out;
