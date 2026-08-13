@@ -3426,10 +3426,11 @@ function renderCOQuestionUI(questions){
   form.insertAdjacentHTML('beforeend', html);
 }
 function buildCOGenerationRequestContext(title, desc, questionState){
-  var combined=(title||'')+(desc?((title?' - ':'')+desc):'');
   var state = questionState || (window._aiCOQuestionState || {active:false,originalPrompt:'',questions:[],history:[]});
+  var immutableOriginalScope = (state && typeof state.originalPrompt === 'string' && state.originalPrompt.trim()) ? state.originalPrompt.trim() : ((title||'')+(desc?((title?' - ':'')+desc):''));
+  var combined = immutableOriginalScope;
   var questionContext={
-    originalPrompt: (state && state.originalPrompt) || combined,
+    originalPrompt: immutableOriginalScope,
     history: Array.isArray(state && state.history) ? state.history.slice() : []
   };
   return {
@@ -3449,8 +3450,9 @@ function runCOGenerationRequest(title, desc, btnEl, questionState){
   var _coCtrl=new AbortController();
   var _coTimeout=setTimeout(function(){_coCtrl.abort();},25000);
   var preservedContext=buildCOGenerationRequestContext(title, desc, questionState);
+  var immutableOriginalScope = preservedContext.questionContext.originalPrompt || ((title||'')+(desc?((title?' - ':'')+desc):''));
   if(window && window._aiCOQuestionState){
-    window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+    window._aiCOQuestionState={active:false,originalPrompt:immutableOriginalScope,questions:[],history:(questionState && Array.isArray(questionState.history) ? questionState.history.slice() : [])};
   }
   var authoritativeLabor=preservedContext.authoritativeLabor;
   var questionContext=preservedContext.questionContext;
@@ -3465,12 +3467,12 @@ function runCOGenerationRequest(title, desc, btnEl, questionState){
       markup:markup,
       location:profile.location||'',
       title:title,
-      description:desc,
+      description:immutableOriginalScope,
       originalEstimateContext:origItems,
       histCtx:histCtx2,
       questionContext:questionContext,
       authoritativeLabor:authoritativeLabor,
-      messages:[{role:'user',content:title+(desc?' - '+desc:'')}] 
+      messages:[{role:'user',content:immutableOriginalScope}] 
     }),
     signal:_coCtrl.signal
   }).then(function(r){clearTimeout(_coTimeout);return r.json();})
@@ -3603,6 +3605,12 @@ function generateCOWithAI(btnEl){
         };
         var existingCard=document.getElementById('coQuestionCard');
         if(existingCard)existingCard.parentNode.removeChild(existingCard);
+        window._aiCOQuestionState={
+          active:false,
+          originalPrompt: preservedQuestionState.originalPrompt || combined,
+          questions:[],
+          history:(preservedQuestionState.history || []).slice()
+        };
         runCOGenerationRequest(title, desc, btn, preservedQuestionState);
         return;
       }
@@ -3647,7 +3655,12 @@ function generateCOWithAI(btnEl){
         questions:[],
         history:(state.history || []).slice()
       };
-      window._aiCOQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
+      window._aiCOQuestionState={
+        active:false,
+        originalPrompt: preservedQuestionState.originalPrompt || combined,
+        questions:[],
+        history:(preservedQuestionState.history || []).slice()
+      };
       runCOGenerationRequest(title, desc, btn, preservedQuestionState);
       return;
     }

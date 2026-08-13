@@ -227,6 +227,95 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(result.isResolved, false);
   });
 
+  it('CASE A: final generation uses the original contractor scope as the authoritative base scope after follow-up answers', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildCOGenerationRequestContext');
+    const end = html.indexOf('function deriveAuthoritativeLaborFromScope', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'Replace additional knob and tube wiring throughout the property.';
+    const followUpAnswer = '1 worker for 2 days';
+    const context = {
+      window: {
+        _aiCOQuestionState: {
+          active: false,
+          originalPrompt: originalScope,
+          questions: [],
+          history: [{ questions: ['How many workers will be working for those 2 additional days?'], answer: followUpAnswer }]
+        }
+      },
+      DD: { aiProfile: { markup: 40, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => 'historical context',
+      gpr: () => ({ id: 'proj-1' }),
+      document: { querySelector: () => null },
+      fetch: function fetchStub(url, options) {
+        const payload = JSON.parse(options.body);
+        assert.strictEqual(payload.description, originalScope);
+        assert.strictEqual(payload.questionContext.originalPrompt, originalScope);
+        assert.strictEqual(payload.questionContext.history[0].answer, followUpAnswer);
+        return Promise.resolve({ json: () => Promise.resolve({ lineItems: [] }) });
+      },
+      AbortController: function AbortControllerStub() { this.abort = () => {}; },
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      updateCOPreview: () => {},
+      T: () => {}
+    };
+
+    vm.runInNewContext(snippet, context);
+    const result = context.buildCOGenerationRequestContext('CO title', 'AI generated expanded description', context.window._aiCOQuestionState);
+    assert.strictEqual(result.questionContext.originalPrompt, originalScope);
+    assert.strictEqual(result.questionContext.history[0].answer, followUpAnswer);
+    assert.notStrictEqual(result.questionContext.originalPrompt, 'AI generated expanded description');
+  });
+
+  it('CASE B: AI-generated review wording does not replace originalPrompt', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildCOGenerationRequestContext');
+    const end = html.indexOf('function deriveAuthoritativeLaborFromScope', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'Replace additional knob and tube wiring throughout the property.';
+    const generatedReview = 'Replace additional knob and tube wiring throughout the property, including 2 additional days of labor for 1 worker. Scope includes removal of old wiring and installation of new NM-B (Romex) wiring...';
+    const context = {
+      window: { _aiCOQuestionState: { active: false, originalPrompt: originalScope, questions: [], history: [] } },
+      DD: { aiProfile: { markup: 40, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => '',
+      gpr: () => ({ id: 'proj-1' }),
+      document: { querySelector: () => null }
+    };
+
+    vm.runInNewContext(snippet, context);
+    const result = context.buildCOGenerationRequestContext('CO title', generatedReview, context.window._aiCOQuestionState);
+    assert.strictEqual(result.questionContext.originalPrompt, originalScope);
+    assert.notStrictEqual(result.questionContext.originalPrompt, generatedReview);
+  });
+
+  it('CASE C: a second generation attempt still uses original contractor scope plus Q/A history, not the prior AI-generated description', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildCOGenerationRequestContext');
+    const end = html.indexOf('function deriveAuthoritativeLaborFromScope', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'Replace additional knob and tube wiring throughout the property.';
+    const priorGeneratedDescription = 'Replace additional knob and tube wiring throughout the property, including 2 additional days of labor for 1 worker.';
+    const historyEntry = { questions: ['How many workers will be working for those 2 additional days?'], answer: '1' };
+    const context = {
+      window: { _aiCOQuestionState: { active: false, originalPrompt: originalScope, questions: [], history: [historyEntry] } },
+      DD: { aiProfile: { markup: 40, laborRate: 85 } },
+      estimates: [],
+      buildHistoricalContext: () => 'historical context',
+      gpr: () => ({ id: 'proj-1' }),
+      document: { querySelector: () => null }
+    };
+
+    vm.runInNewContext(snippet, context);
+    const result = context.buildCOGenerationRequestContext('CO title', priorGeneratedDescription, context.window._aiCOQuestionState);
+    assert.strictEqual(result.questionContext.originalPrompt, originalScope);
+    assert.strictEqual(result.questionContext.history.length, 1);
+    assert.strictEqual(result.questionContext.history[0].answer, '1');
+    assert.notStrictEqual(result.questionContext.originalPrompt, priorGeneratedDescription);
+  });
+
   it('resolves 3 workers for 1 day to 24 hours', () => {
     const result = buildAuthoritativeLaborFact(
       'Framing crew. 3 workers for 1 day.',
