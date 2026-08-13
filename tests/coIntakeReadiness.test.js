@@ -939,6 +939,55 @@ describe('coIntakeReadiness', () => {
     assert.ok(!candidateScope.toLowerCase().includes('various'));
   });
 
+  it('keeps the residential client description structured without exposing internal pricing details', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function isResidentialEstimate');
+    const end = html.indexOf('function saveContractorSig', start);
+    const snippet = html.slice(start, end);
+    const context = {
+      DD: { aiProfile: { markup: 40, laborRate: 85 }, companyName: 'Contractor Desk' },
+      calcEstimate: () => ({ grandTotal: 2375, clientTotal: 1697, subtotal: 1697, taxAmt: 0, margin: 40 }),
+      calcLineItemTotal: (li) => (Number(li.total) || 0),
+      isResidentialEstimate: null,
+      buildResidentialEstimateDescription: null,
+      window: {}
+    };
+    vm.runInNewContext(snippet, context);
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      address: '4821 Maple Ridge Dr',
+      estNum: 'EST-104',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Install 10 round old-work boxes, 8 single-gang old-work boxes, and 1 double-gang old-work box. Existing panel capacity remains in use. Drywall repair excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40 },
+        { category: 'Electrical', desc: 'Round old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 },
+        { category: 'Electrical', desc: 'Single-gang old-work boxes', qty: 8, unit: 'ea', unitCost: 18, total: 144, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster repair', 'Panel upgrade or new breakers'],
+      markup: 40,
+      tax: 0,
+      status: 'Draft'
+    };
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.ok(narrative.heading.includes('Wiring') || narrative.heading.includes('Residential') || narrative.heading.includes('Replacement'));
+    assert.ok(narrative.summary.toLowerCase().includes('400') || narrative.summary.toLowerCase().includes('12/2') || narrative.summary.toLowerCase().includes('knob'));
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('conditions') || (section.label || '').toLowerCase().includes('included') || (section.label || '').toLowerCase().includes('exclusions')));
+    assert.ok(narrative.summary.toLowerCase().includes('12/2'));
+    assert.ok(estimate.lineItems[0].qty === 400);
+    assert.ok(estimate.lineItems[0].unitCost === 0.72);
+    assert.ok(estimate.exclusions.some((ex) => ex.includes('Drywall')));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('labor rate'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('markup'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('unitcost'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('base cost'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('85'));
+    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('40%'));
+    assert.ok(JSON.stringify(narrative).includes('Drywall') || JSON.stringify(narrative).includes('Exclusions'));
+    assert.ok(JSON.stringify(narrative).includes('12/2') || JSON.stringify(narrative).includes('old-work'));
+  });
+
   it('CASE A: applies the catalog price when 12/2 Romex is in feet and matches the catalog unit', () => {
     const { applyAuthoritativeMaterialPricing, MATERIAL_PRICE_CATALOG, resolveCanonicalMaterialIdentity } = require('../server');
     const parsed = {

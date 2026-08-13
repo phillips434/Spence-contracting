@@ -1609,6 +1609,72 @@ function calcMilestoneAmt(){ calcMsAmt(document.getElementById('msPct')?document
 
 
 function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";return co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\nSCOPE OF WORK:\n"+e.type+(e.notes?"\n\n"+e.notes:"")+"\n\nCONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";}
+function isResidentialEstimate(e){
+  if(!e)return false;
+  var type=(e.type||'').toString().toLowerCase();
+  if(/residential|house|home|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|renovation|remodel/i.test(type)) return true;
+  var lineItems=Array.isArray(e.lineItems)?e.lineItems:[];
+  return lineItems.some(function(li){
+    var text=((li&&li.desc)||'')+' '+((li&&li.category)||'')+' '+((li&&li.unit)||'');
+    return /knob|tube|old-work|old work|nm-b|romex|single-gang|single gang|double-gang|double gang|electrical|plumbing|lighting|roofing|hvac/i.test(text);
+  });
+}
+function buildResidentialEstimateDescription(e){
+  if(!isResidentialEstimate(e)) return null;
+  var lineItems=Array.isArray(e.lineItems)?e.lineItems.filter(function(li){return li && (li.desc||'').trim();}):[];
+  var noteText=(typeof e.notes === 'string' && e.notes.trim()) ? e.notes.trim() : '';
+  var sentences=[];
+  if(noteText){
+    sentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])/).map(function(s){return s.trim();}).filter(Boolean);
+  } else {
+    sentences=lineItems.map(function(li){
+      var qty=Number(li.qty);
+      var unit=(li.unit||'').trim();
+      var desc=(li.desc||'').trim();
+      if(!desc)return '';
+      if(qty && unit && !/hrs|hr|day|days|week|weeks|labor|markup|cost|rate/i.test(unit) && !/labor|hours|markup|rate|cost|unitcost/i.test(desc.toLowerCase())){
+        return desc + ' — ' + qty + ' ' + unit;
+      }
+      return desc;
+    }).filter(Boolean);
+  }
+  var summary = sentences.length ? sentences[0] : (lineItems.length ? (lineItems[0].desc||'Scope of work') : 'Scope of work');
+  var details = [];
+  if(sentences.length > 1){
+    var remaining = sentences.slice(1);
+    if(remaining.length){
+      details.push({label:'Conditions',value:remaining.join(' ')});
+    }
+  }
+  var included = [];
+  if(noteText){
+    noteText.split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(function(s){
+      if(/include|includes|included|required|normal materials|with new|will be/i.test(s)) included.push(s.trim());
+    });
+  }
+  if(included.length){
+    details.push({label:'Included',value:included.slice(0,2).join(' ')});
+  }
+  var exclusions = Array.isArray(e.exclusions) ? e.exclusions.map(function(ex){return String(ex||'').trim();}).filter(Boolean) : [];
+  if(exclusions.length){
+    details.push({label:'Exclusions',value:exclusions.slice(0,2).join('; ')});
+  }
+  var heading = 'Residential';
+  var typeLabel=(e.type||'').toString().trim();
+  if(typeLabel){
+    var bareType=typeLabel.replace(/\bResidential\b/gi,'').trim();
+    if(bareType){
+      heading=bareType.replace(/\s+/g,' ');
+    }
+  }
+  var detailText = details.map(function(section){return section.label + ': ' + section.value;}).join('\n\n');
+  return {
+    heading: heading,
+    summary: summary,
+    sections: details,
+    detailText: detailText
+  };
+}
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
   if(!name||!name.value.trim()){T("Please enter your name.");return;}
@@ -2526,8 +2592,29 @@ function renderClientView(e,wrapper){
   html+='<div style="font-size:20px;font-weight:700;color:#1A1A2E;margin-bottom:4px">'+e.client+'</div>';
   html+='<div style="font-size:14px;color:#888">'+e.type+(e.address?' &middot; '+e.address:'')+'</div>';
   if(e.estNum) html+='<div style="font-size:12px;color:#2B3990;font-weight:700;margin-top:6px">'+e.estNum+'</div>';
-  if(e.notes) html+='<div style="font-size:13px;color:#555;margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0">'+e.notes+'</div>';
   html+='</div>';
+
+  var residentialNarrative = buildResidentialEstimateDescription(e);
+  if(residentialNarrative){
+    html+='<div class="wcard" style="margin-top:14px">';
+    html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(residentialNarrative.heading||'Scope')+'</div>';
+    html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+residentialNarrative.summary+'</div>';
+    if(Array.isArray(residentialNarrative.sections) && residentialNarrative.sections.length){
+      residentialNarrative.sections.forEach(function(section){
+        if(!section || !section.value) return;
+        html+='<div style="margin-top:10px">';
+        html+='<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">'+(section.label||'Details')+'</div>';
+        html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  } else if(e.notes){
+    html+='<div class="wcard" style="margin-top:14px">';
+    html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Scope</div>';
+    html+='<div style="font-size:13px;color:#555;line-height:1.7">'+e.notes+'</div>';
+    html+='</div>';
+  }
 
   // Line items (client sees totals only, no cost/markup breakdown)
   if((e.lineItems||[]).length){
