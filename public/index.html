@@ -1622,6 +1622,7 @@ function isResidentialEstimate(e){
 }
 function buildResidentialEstimateDescription(e){
   if(!isResidentialEstimate(e)) return null;
+
   var lineItems=Array.isArray(e.lineItems)?e.lineItems.filter(function(li){return li && (li.desc||'').trim();}):[];
   var noteText=(typeof e.notes === 'string' && e.notes.trim()) ? e.notes.trim() : '';
   var sentences=[];
@@ -1629,37 +1630,92 @@ function buildResidentialEstimateDescription(e){
     sentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])/).map(function(s){return s.trim();}).filter(Boolean);
   } else {
     sentences=lineItems.map(function(li){
-      var qty=Number(li.qty);
-      var unit=(li.unit||'').trim();
       var desc=(li.desc||'').trim();
       if(!desc)return '';
-      if(qty && unit && !/hrs|hr|day|days|week|weeks|labor|markup|cost|rate/i.test(unit) && !/labor|hours|markup|rate|cost|unitcost/i.test(desc.toLowerCase())){
-        return desc + ' — ' + qty + ' ' + unit;
-      }
-      return desc;
+      return desc.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
     }).filter(Boolean);
   }
-  var summary = sentences.length ? sentences[0] : (lineItems.length ? (lineItems[0].desc||'Scope of work') : 'Scope of work');
-  var details = [];
-  if(sentences.length > 1){
-    var remaining = sentences.slice(1);
-    if(remaining.length){
-      details.push({label:'Conditions',value:remaining.join(' ')});
+
+  var seen={};
+  function addUnique(list, value){
+    if(!value) return list;
+    var normalized=value.replace(/\s+/g,' ').trim();
+    if(!normalized || seen[normalized]) return list;
+    seen[normalized]=true;
+    list.push(normalized);
+    return list;
+  }
+
+  var scope = '';
+  var workIncluded = [];
+  var assumptions = [];
+  var exclusions = Array.isArray(e.exclusions) ? e.exclusions.map(function(ex){return String(ex||'').trim();}).filter(Boolean) : [];
+
+  if(sentences.length){
+    for(var i=0;i<sentences.length;i++){
+      var sentence=sentences[i].replace(/\s+/g,' ').trim();
+      if(!sentence) continue;
+      var lowered=sentence.toLowerCase();
+      if(!scope && !/excluded|exclusions|not included|not included in this estimate|not included/i.test(lowered)){
+        scope = sentence;
+      }
+      if(/excluded|exclusions|not included|not included in this estimate/i.test(lowered)){
+        continue;
+      }
+      if(/assume|assumption|existing|remains|provided|available|if|condition|conditions|weather|site|access|scope/i.test(lowered) && !/excluded|not included|labor|hours|markup|unit cost|material cost|rate/i.test(lowered)){
+        if(!/install|replace|remove|run|repair|upgrade|add|new|remove|pull|mount/i.test(lowered)){
+          addUnique(assumptions, sentence);
+        }
+      }
+      if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch/i.test(lowered)){
+        if(sentence !== scope && !/excluded|not included|exclusions|labor|hours|markup|unit cost|rate|cost/i.test(lowered)){
+          addUnique(workIncluded, sentence);
+        }
+      }
     }
   }
-  var included = [];
-  if(noteText){
-    noteText.split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(function(s){
-      if(/include|includes|included|required|normal materials|with new|will be/i.test(s)) included.push(s.trim());
+
+  if(!scope){
+    scope = lineItems.length ? (lineItems[0].desc||'Scope of work') : 'Scope of work';
+    scope = scope.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
+  }
+
+  if(!workIncluded.length){
+    lineItems.forEach(function(li){
+      var desc=(li.desc||'').trim();
+      if(!desc) return;
+      var cleaned=desc.replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();
+      if(!cleaned || cleaned === scope) return;
+      if(/labor|hours|markup|rate|unitcost|unit cost|cost|materials?\s*\$|\$\d+/i.test(cleaned)) return;
+      addUnique(workIncluded, cleaned);
     });
   }
-  if(included.length){
-    details.push({label:'Included',value:included.slice(0,2).join(' ')});
+
+  if(workIncluded.length && workIncluded[0] === scope){
+    workIncluded.shift();
   }
-  var exclusions = Array.isArray(e.exclusions) ? e.exclusions.map(function(ex){return String(ex||'').trim();}).filter(Boolean) : [];
+
+  if(scope && workIncluded.length && workIncluded[0] === scope){
+    workIncluded.shift();
+  }
+
+  var sections=[];
+  var projectScopeValue = scope || 'Residential scope of work';
+  sections.push({label:'PROJECT SCOPE', value: projectScopeValue});
+
+  if(workIncluded.length){
+    var workText = workIncluded.slice(0,3).join(' ');
+    sections.push({label:'WORK INCLUDED', value: workText});
+  }
+
+  if(assumptions.length){
+    sections.push({label:'PROJECT CONDITIONS / ASSUMPTIONS', value: assumptions.slice(0,2).join(' ')});
+  }
+
   if(exclusions.length){
-    details.push({label:'Exclusions',value:exclusions.slice(0,2).join('; ')});
+    sections.push({label:'EXCLUSIONS', value: exclusions.slice(0,3).join('; ')});
   }
+
   var heading = 'Residential';
   var typeLabel=(e.type||'').toString().trim();
   if(typeLabel){
@@ -1668,12 +1724,12 @@ function buildResidentialEstimateDescription(e){
       heading=bareType.replace(/\s+/g,' ');
     }
   }
-  var detailText = details.map(function(section){return section.label + ': ' + section.value;}).join('\n\n');
+
   return {
     heading: heading,
-    summary: summary,
-    sections: details,
-    detailText: detailText
+    summary: projectScopeValue,
+    sections: sections,
+    detailText: sections.map(function(section){return section.label + ': ' + section.value;}).join('\n\n')
   };
 }
 function renderResidentialNarrativeBlock(e, isClientMode){
@@ -1681,7 +1737,7 @@ function renderResidentialNarrativeBlock(e, isClientMode){
   if(!narrative) return '';
   var html='';
   html+='<div class="wcard" style="margin-top:14px">';
-  html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Scope')+'</div>';
+  html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Residential')+'</div>';
   html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+narrative.summary+'</div>';
   if(Array.isArray(narrative.sections) && narrative.sections.length){
     narrative.sections.forEach(function(section){

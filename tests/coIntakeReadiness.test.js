@@ -1100,53 +1100,210 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(project.budget, 10250);
   });
 
-  it('uses the richer residential narrative on the normal Estimate Detail screen without changing pricing fields', () => {
+  it('CASE A: residential estimate renders PROJECT SCOPE', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function renderResidentialNarrativeBlock');
-    const end = html.indexOf('function saveContractorSig', start);
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
     const estimate = {
       client: 'Hargrove Residence',
       type: 'Residential Wiring Replacement',
-      address: '4821 Maple Ridge Dr',
-      estNum: 'EST-104',
       notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Install 10 round old-work boxes, 8 single-gang old-work boxes, and 1 double-gang old-work box. Existing panel capacity remains in use. Drywall repair is excluded.',
       lineItems: [
-        { category: 'Electrical', desc: 'Replace 400\' of existing knob and tube wiring with new 12/2 NM-B wire, including installation of 10 round old work boxes, 8 single gang old work boxes, and 1 double gang old work box. Includes all normal materials required for fishing wire and box installation in finished walls/ceilings. No patching/repair included.', qty: 1, unit: 'job', unitCost: 0, total: 1697, markup: 40 },
         { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40 },
-        { category: 'Electrical', desc: 'Round old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 }
+        { category: 'Electrical', desc: 'Old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 }
       ],
-      exclusions: ['Drywall or plaster patching and repair'],
-      markup: 40,
-      tax: 0,
-      status: 'Draft',
-      date: '2026-08-13',
-      validUntil: '2026-08-27'
+      exclusions: ['Drywall or plaster repair']
     };
-    const context = {
-      DD: { aiProfile: { markup: 40, laborRate: 85 }, companyName: 'Contractor Desk' },
-      fmt: (v) => v || '',
-      calcEstimate: () => ({ grandTotal: 2377, clientTotal: 1697, subtotal: 1697, taxAmt: 0, margin: 40 }),
-      calcLineItemTotal: (li) => Number(li.total || 0),
-      buildResidentialEstimateDescription: null,
-      document: { getElementById: () => null, querySelector: () => null },
-      window: {}
-    };
-    vm.runInNewContext(snippet, context);
 
     const narrative = context.buildResidentialEstimateDescription(estimate);
     assert.ok(narrative);
-    assert.ok(narrative.summary.toLowerCase().includes('400'));
-    assert.ok(narrative.summary.toLowerCase().includes('12/2'));
-    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('conditions') || (section.label || '').toLowerCase().includes('exclusions')));
-    assert.strictEqual(estimate.lineItems[1].unitCost, 0.72);
-    assert.strictEqual(estimate.lineItems[1].qty, 400);
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('project scope')));
+    assert.ok((narrative.summary || '').toLowerCase().includes('replace') || (narrative.summary || '').toLowerCase().includes('wiring'));
+  });
+
+  it('CASE B: residential estimate renders WORK INCLUDED', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Install 10 round old-work boxes and 8 single-gang old-work boxes. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire', qty: 1, unit: 'job', unitCost: 0, total: 900, markup: 40 },
+        { category: 'Electrical', desc: 'Install old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster repair']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('work included')));
+    assert.ok(JSON.stringify(narrative).toLowerCase().includes('install') || JSON.stringify(narrative).toLowerCase().includes('replace'));
+  });
+
+  it('CASE C: known assumptions render under PROJECT CONDITIONS / ASSUMPTIONS', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Existing panel capacity remains in use. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster repair']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('conditions')));
+    assert.ok(JSON.stringify(narrative).toLowerCase().includes('existing panel capacity remains in use'));
+  });
+
+  it('CASE D: known exclusions render under EXCLUSIONS', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster repair', 'Panel upgrade or new breakers']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.ok(narrative.sections.some((section) => (section.label || '').toLowerCase().includes('exclusions')));
+    assert.ok(JSON.stringify(narrative).toLowerCase().includes('drywall') || JSON.stringify(narrative).toLowerCase().includes('panel'));
+  });
+
+  it('CASE E: no internal labor/material/markup values appear in the narrative', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40, laborHours: 16 },
+        { category: 'Electrical', desc: 'Old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40, laborHours: 5 }
+      ],
+      exclusions: ['Drywall or plaster repair']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    const narrativeText = JSON.stringify(narrative).toLowerCase();
+    assert.ok(!narrativeText.includes('labor'));
+    assert.ok(!narrativeText.includes('markup'));
+    assert.ok(!narrativeText.includes('unitcost'));
+    assert.ok(!narrativeText.includes('hours'));
+    assert.ok(!narrativeText.includes('0.72'));
+  });
+
+  it('CASE F: narrative does not duplicate the same scope sentence across sections', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Install 10 old-work boxes. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire', qty: 1, unit: 'job', unitCost: 0, total: 900, markup: 40 },
+        { category: 'Electrical', desc: 'Install 10 old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40 }
+      ],
+      exclusions: ['Drywall or plaster repair']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    const combined = (narrative.summary || '') + ' ' + (narrative.sections || []).map((section) => section.value || '').join(' ');
+    const occurrences = (combined.match(/replace 400 linear feet of existing knob and tube wiring with new 12\/2 nm-b wire/gi) || []).length;
+    assert.strictEqual(occurrences, 1);
+  });
+
+  it('CASE G: commercial estimate output remains unchanged', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function saveContractorSig', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Commercial Client',
+      type: 'Commercial Tenant Improvement',
+      notes: 'Interior work for tenant improvement project.',
+      lineItems: [
+        { category: 'General', desc: 'Demo existing finishes', qty: 1, unit: 'job', unitCost: 2500, total: 2500, markup: 20 }
+      ],
+      exclusions: ['Painting']
+    };
+
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.strictEqual(narrative, null);
+  });
+
+  it('CASE H: saved quantities, labor, costs, markup, and final totals are unchanged before vs after rendering', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      client: 'Hargrove Residence',
+      type: 'Residential Wiring Replacement',
+      notes: 'Replace 400 linear feet of existing knob and tube wiring with new 12/2 NM-B wire. Existing panel capacity remains in use. Drywall repair is excluded.',
+      lineItems: [
+        { category: 'Electrical', desc: '12/2 NM-B wire', qty: 400, unit: 'LF', unitCost: 0.72, total: 288, markup: 40, laborHours: 16 },
+        { category: 'Electrical', desc: 'Old-work boxes', qty: 10, unit: 'ea', unitCost: 24, total: 240, markup: 40, laborHours: 5 }
+      ],
+      exclusions: ['Drywall or plaster repair'],
+      markup: 40,
+      tax: 0,
+      status: 'Draft'
+    };
+
+    const before = JSON.stringify(estimate);
+    const narrative = context.buildResidentialEstimateDescription(estimate);
+    assert.ok(narrative);
+    assert.strictEqual(JSON.stringify(estimate), before);
+    assert.strictEqual(estimate.lineItems[0].qty, 400);
+    assert.strictEqual(estimate.lineItems[0].unitCost, 0.72);
+    assert.strictEqual(estimate.lineItems[0].laborHours, 16);
     assert.strictEqual(estimate.markup, 40);
     assert.strictEqual(estimate.tax, 0);
-    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('labor rate'));
-    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('markup percentage'));
-    assert.ok(!JSON.stringify(narrative).toLowerCase().includes('unitcost'));
-    assert.ok(JSON.stringify(narrative).includes('12/2') || JSON.stringify(narrative).includes('old-work'));
   });
 
   it('CASE A: applies the catalog price when 12/2 Romex is in feet and matches the catalog unit', () => {
