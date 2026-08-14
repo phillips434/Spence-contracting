@@ -1905,6 +1905,20 @@ function generateAIEstimate(){
     prompt=document.getElementById('aiPrompt').value.trim();
     if(!prompt){T('Enter a command or job description first.');return;}
     e=ger();if(!e){T('No estimate loaded.');return;}
+    var explicitProjectClass=normalizeProjectClass(e.projectClass||'');
+    if(!explicitProjectClass){
+      var projectSelector=document.getElementById('efProjectClass');
+      var estimateForm=document.getElementById('estFormPage');
+      if(estimateForm&&estimateForm.classList&&estimateForm.classList.add){estimateForm.classList.add('show');}
+      if(projectSelector){
+        if(projectSelector.focus) projectSelector.focus();
+        if(projectSelector.scrollIntoView) projectSelector.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      _aiDone();
+      T('Please choose Residential or Commercial before generating an estimate.');
+      return;
+    }
+    e.projectClass=explicitProjectClass;
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
     _aiStatus('⏳ Button clicked — preparing request...');
     profile=DD.aiProfile||{};
