@@ -1787,6 +1787,8 @@ function generateAIEstimate(){
     var _aiController=new AbortController();
     var _aiStart=Date.now();
     var _aiTimeout=setTimeout(function(){
+      var elapsed=Date.now()-_aiStart;
+      console.log('[AI ESTIMATE] abort timeout fired', { elapsedMs: elapsed, timeoutMs: 30000, aborted: _aiController.signal.aborted, origin: window.location && window.location.origin ? window.location.origin : 'unknown' });
       _aiStatus('⏱ 30s timeout — aborting...','#E8B43A');
       _aiController.abort();
     },30000);
@@ -1798,6 +1800,13 @@ function generateAIEstimate(){
     },10000);
 
     _aiStatus('📡 Sending request...');
+    var payloadJsonLength = JSON.stringify(payload).length;
+    console.log('[AI ESTIMATE] fetch start', {
+      ts: new Date().toISOString(),
+      payloadJsonLength: payloadJsonLength,
+      timeoutMs: 30000,
+      origin: window.location && window.location.origin ? window.location.origin : 'unknown'
+    });
 
     return fetch('/api/estimate',{
       method:'POST',
@@ -1805,11 +1814,30 @@ function generateAIEstimate(){
       body:JSON.stringify(payload),
       signal:_aiController.signal
     }).then(function(r){
+      var elapsed=Date.now()-_aiStart;
+      console.log('[AI ESTIMATE] fetch response', {
+        elapsedMs: elapsed,
+        status: r && r.status,
+        ok: r && r.ok,
+        ts: new Date().toISOString()
+      });
       clearTimeout(_aiTimeout);
       if(!r.ok){
         return r.text().then(function(t){throw new Error('Server error '+r.status+': '+t.slice(0,100));});
       }
       return r.json();
+    }).catch(function(err){
+      var elapsed=Date.now()-_aiStart;
+      console.log('[AI ESTIMATE] fetch catch', {
+        elapsedMs: elapsed,
+        errName: err && err.name,
+        errMessage: err && err.message,
+        signalAborted: !!(_aiController && _aiController.signal && _aiController.signal.aborted),
+        ts: new Date().toISOString()
+      });
+      err._aiElapsed = elapsed;
+      err._aiAborted = !!(_aiController && _aiController.signal && _aiController.signal.aborted);
+      throw err;
     }).finally(function(){
       clearTimeout(_slowWarn);
       clearTimeout(_aiTimeout);
@@ -1897,8 +1925,12 @@ function generateAIEstimate(){
 
   function handleAIError(err){
     _aiDone();
-    T('❌ AI error: '+(err.message||'Unknown error')+' — check Settings → Test Connection');
-    console.error('[AI] Request failed:',err.name,err.message);
+    var elapsed = (err && typeof err._aiElapsed === 'number') ? err._aiElapsed : null;
+    var aborted = (err && typeof err._aiAborted === 'boolean') ? err._aiAborted : false;
+    var message = (err && err.message) || 'Unknown error';
+    var type = (err && err.name) || 'unknown';
+    T('AI error: ' + message + ' | type: ' + type + ' | aborted: ' + String(Boolean(aborted)) + ' | elapsed: ' + (elapsed !== null ? elapsed + 'ms' : 'n/a'));
+    console.error('[AI] Request failed:', type, message, { elapsedMs: elapsed, signalAborted: aborted });
   }
 
   try {

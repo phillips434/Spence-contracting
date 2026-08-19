@@ -568,7 +568,15 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.post("/api/estimate", async (req, res) => {
-  console.log("STEP 1 - Request received", new Date().toISOString());
+  const routeStart = Date.now();
+  const contentLength = req.headers && req.headers['content-length'] ? req.headers['content-length'] : null;
+  const messageCount = Array.isArray(req.body && req.body.messages) ? req.body.messages.length : 0;
+  console.log("[AI ESTIMATE SERVER] request received", {
+    ts: new Date().toISOString(),
+    contentLength: contentLength,
+    messageCount: messageCount,
+    bodySizeBytes: req.body && typeof req.body === 'object' ? JSON.stringify(req.body).length : (typeof req.body === 'string' ? Buffer.byteLength(req.body) : 0)
+  });
   try {
     const apiKey = process.env.ANTHROPIC_KEY;
     if (!apiKey) {
@@ -1089,6 +1097,8 @@ app.post("/api/estimate", async (req, res) => {
           }
         } else {
           // Default: Anthropic
+          console.log("[AI ESTIMATE SERVER] anthropic start", { ts: new Date().toISOString(), mode: mode });
+          const anthropicStart = Date.now();
           response = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
@@ -1097,6 +1107,12 @@ app.post("/api/estimate", async (req, res) => {
               "anthropic-version": "2023-06-01",
             },
             body: JSON.stringify(anthropicBody),
+          });
+          console.log("[AI ESTIMATE SERVER] anthropic response", {
+            elapsedMs: Date.now() - anthropicStart,
+            status: response && response.status,
+            ok: response && response.ok,
+            ts: new Date().toISOString()
           });
           console.log("STEP 6 - Anthropic response received", { status: response.status, ok: response.ok });
           responseText = await response.text();
@@ -1337,6 +1353,12 @@ app.post("/api/estimate", async (req, res) => {
       throw err;
     }
   } catch (err) {
+    console.log("[AI ESTIMATE SERVER] error", {
+      elapsedMs: Date.now() - routeStart,
+      errName: err && err.name,
+      errMessage: err && err.message,
+      ts: new Date().toISOString()
+    });
     console.error("[/api/estimate] route error", err);
     if (err && err.stack) {
       console.error(err.stack);
