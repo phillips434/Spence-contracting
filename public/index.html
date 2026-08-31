@@ -1501,7 +1501,7 @@ function renderEstDetailBody(e){
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   html+='<div style="font-size:13px;color:#888">Auto-generated from your estimate. Edit as needed.</div>';
   html+='<button class="btn-sm" style="background:#2B3990" onclick="printContract()">&#128438; Print</button></div>';
-  var contractText=generateContractText(e,calc);
+  var contractText=(e&&e.contractText&&String(e.contractText).trim())?String(e.contractText):generateContractText(e,calc);
   html+='<div style="display:flex;gap:8px;margin-bottom:10px">';
   html+='<button class="btn-sm" style="background:#2B3990;flex:1" onclick="printContract()">&#128438; Print</button>';
   html+='<button class="btn-sm" style="background:#888;flex:1" onclick="resetContract()">&#8635; Regenerate</button>';
@@ -1661,17 +1661,33 @@ function clearContractorCanvas(){
 }
 function saveContract(){
   var e=ger();if(!e)return;
-  e.contractText=document.getElementById("contractTA").value;
-  eCol.doc(e.id).set(e).then(function(){T("Contract saved!");});
+  var text=document.getElementById("contractTA").value;
+  e.contractText=text;
+  eCol.doc(e.id).set({contractText:text}, {merge:true}).then(function(){
+    var idx=estimates.findIndex(function(x){return x.id===e.id;});
+    if(idx>=0) estimates[idx].contractText=text;
+    T("Contract saved!");
+  }).catch(function(err){
+    console.error('Contract save failed', err);
+    alert('Failed to save contract: '+(err&&err.message?err.message:'Unknown error'));
+  });
 }
 function resetContract(){
   var e=ger();if(!e)return;
+  if(!confirm("Regenerate the contract text? This will replace the saved contract text."))return;
   var calc=calcEstimate(e);
   var fresh=generateContractText(e,calc);
   var ta=document.getElementById("contractTA");
   if(ta) ta.value=fresh;
   e.contractText=fresh;
-  eCol.doc(e.id).set(e).then(function(){T("Contract regenerated!");});
+  eCol.doc(e.id).set({contractText:fresh}, {merge:true}).then(function(){
+    var idx=estimates.findIndex(function(x){return x.id===e.id;});
+    if(idx>=0) estimates[idx].contractText=fresh;
+    T("Contract regenerated!");
+  }).catch(function(err){
+    console.error('Contract regenerate failed', err);
+    alert('Failed to regenerate contract: '+(err&&err.message?err.message:'Unknown error'));
+  });
 }
 function printInvoice(){
   var e=ger();if(!e)return;
@@ -2634,7 +2650,7 @@ function renderClientView(e,wrapper){
   }
 
   // Contract terms (full text client must read before signing)
-  var contractText=e.contractText||generateContractText(e,calc);
+  var contractText=(e&&e.contractText&&String(e.contractText).trim())?String(e.contractText):generateContractText(e,calc);
   // Exclusions
   var excls2=e.exclusions||[];
   if(excls2.length){
