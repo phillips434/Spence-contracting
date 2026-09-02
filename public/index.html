@@ -930,16 +930,19 @@ function clearBellBadge(){document.getElementById("bellBadge").style.display="no
 function loadSettings(cb){
   var uid=currentUser?currentUser.uid:null;
   if(!uid){if(cb)cb();return;} // Never fall back to owner settings if uid missing
-  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  sCol.doc(isOwner?'dropdowns':uid).get().then(function(d){
-    if(d.exists) DD=Object.assign({},DD,d.data());
-    // Apply saved logo to topbar if it exists, else use CD_LOGO default
-    var tl=document.getElementById('topbarLogo');
-    if(tl){
-      tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;
-      tl.style.display='block';
-    }
-    if(cb)cb();
+  resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
+    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+    var settingsDoc = isOwner ? 'dropdowns' : (workspaceUid || uid || 'dropdowns');
+    sCol.doc(settingsDoc).get().then(function(d){
+      if(d.exists) DD=Object.assign({},DD,d.data());
+      // Apply saved logo to topbar if it exists, else use CD_LOGO default
+      var tl=document.getElementById('topbarLogo');
+      if(tl){
+        tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;
+        tl.style.display='block';
+      }
+      if(cb)cb();
+    }).catch(function(){if(cb)cb();});
   }).catch(function(){if(cb)cb();});
 }
 var TRADE_TEMPLATES={
@@ -970,9 +973,16 @@ function applyTradeTemplate(trade){
 }
 function saveSettings(){
   var uid=currentUser?currentUser.uid:null;
-  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var doc=isOwner?'dropdowns':(uid||'dropdowns');
-  sCol.doc(doc).set(DD).then(function(){T('Saved!');});
+  if(!uid){return;}
+  resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
+    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+    var doc=isOwner?'dropdowns':(workspaceUid || uid || 'dropdowns');
+    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
+  }).catch(function(){
+    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+    var doc=isOwner?'dropdowns':(uid||'dropdowns');
+    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
+  });
 }
 function testAIConnection(){
   var el=document.getElementById('aiTestResult');
@@ -1056,6 +1066,20 @@ function resolveCurrentOwnerUid(){
     return (data && data.ownerUid) || uid;
   }).catch(function(){
     return uid;
+  });
+}
+function resolveWorkspaceUidForSession(uid){
+  var activeUid = uid || (currentUser && currentUser.uid) || null;
+  if(!activeUid){return Promise.resolve(null);}
+  if(activeUid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(activeUid);}
+  return db.collection('userProfiles').doc(activeUid).get().then(function(doc){
+    var data = doc.exists ? (doc.data() || {}) : {};
+    if(data && data.plan === 'team' && data.ownerUid && data.ownerUid !== activeUid){
+      return data.ownerUid;
+    }
+    return activeUid;
+  }).catch(function(){
+    return activeUid;
   });
 }
 function normalizeInviteEmail(email){
@@ -4268,23 +4292,26 @@ function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   var _uid=currentUser?currentUser.uid:null;
-  var _isOwner=_uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  var _settingsDoc=_isOwner?'dropdowns':(_uid||'dropdowns');
-  sCol.doc(_settingsDoc).get().then(function(d){
-    if(d.exists){
-      var data=d.data();
-      if(data.team!==undefined) DD.team=data.team;
-      if(data.companyName) DD.companyName=data.companyName;
-      if(data.aiProfile) DD.aiProfile=data.aiProfile;
-      if(data.projectStatuses) DD.projectStatuses=data.projectStatuses;
-      if(data.phaseTypes) DD.phaseTypes=data.phaseTypes;
-      if(data.choiceStatuses) DD.choiceStatuses=data.choiceStatuses;
-      if(data.costCategories) DD.costCategories=data.costCategories;
-      if(data.changeOrderTypes) DD.changeOrderTypes=data.changeOrderTypes;
-      if(data.punchCategories) DD.punchCategories=data.punchCategories;
-      if(data.estCategories) DD.estCategories=data.estCategories;
-    }
-    renderSettingsForm();
+  if(!_uid){renderSettingsForm();return;}
+  resolveWorkspaceUidForSession(_uid).then(function(workspaceUid){
+    var _isOwner=_uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
+    var _settingsDoc=_isOwner?'dropdowns':(workspaceUid || _uid || 'dropdowns');
+    sCol.doc(_settingsDoc).get().then(function(d){
+      if(d.exists){
+        var data=d.data();
+        if(data.team!==undefined) DD.team=data.team;
+        if(data.companyName) DD.companyName=data.companyName;
+        if(data.aiProfile) DD.aiProfile=data.aiProfile;
+        if(data.projectStatuses) DD.projectStatuses=data.projectStatuses;
+        if(data.phaseTypes) DD.phaseTypes=data.phaseTypes;
+        if(data.choiceStatuses) DD.choiceStatuses=data.choiceStatuses;
+        if(data.costCategories) DD.costCategories=data.costCategories;
+        if(data.changeOrderTypes) DD.changeOrderTypes=data.changeOrderTypes;
+        if(data.punchCategories) DD.punchCategories=data.punchCategories;
+        if(data.estCategories) DD.estCategories=data.estCategories;
+      }
+      renderSettingsForm();
+    }).catch(function(){ renderSettingsForm(); });
   }).catch(function(){ renderSettingsForm(); });
 }
 
@@ -4376,12 +4403,23 @@ auth.onAuthStateChanged(function(user){
   if(_activeUid===user.uid) return;
   _activeUid=user.uid;
   currentUser = user;
+  window._sessionWorkspaceType = 'owner';
   // Clear per-session localStorage state for this new user
   localStorage.removeItem('onboardingDismissed');
   // Reset DD before loading new user's settings — prevents prior session bleed
   DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
   projects=[];estimates=[];notifications=[];unreadCount=0;
   initUserCollections(user.uid);
+  db.collection('userProfiles').doc(user.uid).get().then(function(doc){
+    var data = doc.exists ? (doc.data() || {}) : {};
+    if(data.plan === 'team' && data.ownerUid && data.ownerUid !== user.uid){
+      window._sessionWorkspaceType = 'team';
+    } else {
+      window._sessionWorkspaceType = 'owner';
+    }
+  }).catch(function(){
+    window._sessionWorkspaceType = 'owner';
+  });
 
   resolvePendingTeamInviteForUser(user.uid, user.email).then(function(inviteResult){
     if(inviteResult && inviteResult.resolved && inviteResult.reason !== 'already-linked'){
@@ -4957,7 +4995,34 @@ function contactForSubscription(){
 }
 
 function getUserMeta(uid){
-  db.collection('userProfiles').doc(uid).get().then(function(doc){
+  var targetUid = uid;
+  if(currentUser && currentUser.uid && currentUser.uid !== 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){
+    return resolveWorkspaceUidForSession(currentUser.uid).then(function(workspaceUid){
+      targetUid = workspaceUid || uid || currentUser.uid;
+      return db.collection('userProfiles').doc(targetUid).get().then(function(doc){
+        if(doc.exists){
+          var data=doc.data();
+          if(data.company && (!DD.companyName||DD.companyName==='Contractor Desk')){
+            DD.companyName=data.company;
+            var cn=document.getElementById('companyName');
+            if(cn) cn.value=data.company;
+          }
+        }
+      });
+    }).catch(function(){
+      return db.collection('userProfiles').doc(targetUid).get().then(function(doc){
+        if(doc.exists){
+          var data=doc.data();
+          if(data.company && (!DD.companyName||DD.companyName==='Contractor Desk')){
+            DD.companyName=data.company;
+            var cn=document.getElementById('companyName');
+            if(cn) cn.value=data.company;
+          }
+        }
+      });
+    });
+  }
+  return db.collection('userProfiles').doc(targetUid).get().then(function(doc){
     if(doc.exists){
       var data=doc.data();
       if(data.company && (!DD.companyName||DD.companyName==='Contractor Desk')){
@@ -5216,6 +5281,9 @@ function tagMyProjects(){
 
 
 function renderOnboarding(){
+  if(window._sessionWorkspaceType === 'team'){
+    return '';
+  }
   var hasLogo = DD.logoData && DD.logoData.length > 10;
   var hasCompany = DD.companyName && DD.companyName !== 'Contractor Desk' && DD.companyName.trim() !== '';
   var hasTeam = DD.team && DD.team.length > 0;
