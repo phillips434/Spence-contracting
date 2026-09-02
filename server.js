@@ -4,6 +4,14 @@ const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
 const app = express();
 const PORT = process.env.PORT || 5000;
+const APP_BUILD_INFO = {
+  environment: process.env.APP_ENVIRONMENT || process.env.NODE_ENV || 'local',
+  branch: process.env.RAILWAY_GIT_BRANCH || process.env.GIT_BRANCH || 'staging',
+  commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'local-dev',
+  buildId: process.env.APP_BUILD_ID || process.env.RAILWAY_SERVICE_ID || 'local-build',
+  generatedAt: new Date().toISOString(),
+  source: 'runtime-env'
+};
 const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' || process.env.AI_BREAKDOWN_EXPERIMENT === '1');
 
 function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
@@ -45,7 +53,442 @@ function normalizeMaterialUnit(value){
   if (!normalized) return '';
   if (['ft', 'foot', 'feet', 'lf', 'linear foot', 'linear feet'].includes(normalized)) return 'ft';
   if (['ea', 'each', 'piece', 'pc'].includes(normalized)) return 'ea';
+  if (['sqft', 'square foot', 'square feet', 'sf', 'ft2', 'sq ft'].includes(normalized)) return 'sqft';
   return normalized;
+}
+
+function inferRepairCategoryFromDescription(desc){
+  if (!desc) return null;
+  const text = String(desc).toLowerCase();
+  if (/(paint|repaint|stain block|stain-block|ceiling).*paint|paint.*ceiling|ceiling.*paint/.test(text)) return 'paint';
+  if (/caulk|re-caulk|grout|sealant/.test(text)) return 'caulk';
+  if (/drywall|sheetrock|plaster|patch|repair.*drywall|drywall.*repair/.test(text)) return 'drywall';
+  if (/soffit|f channel|vinyl soffit|insulation|re-insulate|reinsulate/.test(text)) return 'soffit';
+  if (/trim|casing|molding|baseboard/.test(text)) return 'trim';
+  return null;
+}
+
+const RESIDENTIAL_REPAIR_PRODUCTION_STANDARDS = Object.freeze({
+  paint: {
+    category: 'paint',
+    operation: 'paint / stain block',
+    unit: 'sqft',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'sqft/hr',
+    minimumTaskHours: 0.5,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  },
+  drywall: {
+    category: 'drywall',
+    operation: 'drywall repair',
+    unit: 'sqft',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'sqft/hr',
+    minimumTaskHours: 0.5,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  },
+  caulk: {
+    category: 'caulk',
+    operation: 'caulk / grout cleanup',
+    unit: 'lf',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'lf/hr',
+    minimumTaskHours: 0.5,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  },
+  soffit: {
+    category: 'soffit',
+    operation: 'soffit / f-channel / insulation',
+    unit: 'lf',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'lf/hr',
+    minimumTaskHours: 0.5,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  },
+  trim: {
+    category: 'trim',
+    operation: 'trim / casing / baseboard',
+    unit: 'lf',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'lf/hr',
+    minimumTaskHours: 0.5,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  }
+});
+
+const RESIDENTIAL_REPAIR_MINIMUM_PROJECT_LABOR_HOURS = 2;
+
+function normalizeWorkAreaCategory(item){
+  if (!item || typeof item !== 'object') return 'general';
+  const direct = item.category || item.operation || inferRepairCategoryFromDescription(item.desc || '') || 'general';
+  return String(direct).toLowerCase().trim() || 'general';
+}
+
+function getCompanyLaborRate(companyLaborRate){
+  const numericValue = Number(companyLaborRate ?? 85);
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : 85;
+}
+
+function getResidentialRepairProductionStandard(category){
+  const normalizedKey = normalizeWorkAreaCategory({ category: category || '' });
+  const standard = RESIDENTIAL_REPAIR_PRODUCTION_STANDARDS[normalizedKey];
+  if (standard) return { ...standard };
+  return {
+    category: String(category || 'general').toLowerCase(),
+    operation: String(category || 'general').toLowerCase(),
+    unit: 'ea',
+    setupHours: 0,
+    productionRate: null,
+    productionRateUnit: 'unit/hr',
+    minimumTaskHours: 0,
+    materialAllowanceMethod: 'none',
+    notes: 'Requires approved company production standard before estimating.',
+    version: 'pending-company-rate',
+    source: 'pending_company_rate',
+    status: 'needs_company_rate'
+  };
+}
+
+function calculateResidentialRepairLabor(item, companyLaborRate){
+  const rate = getCompanyLaborRate(companyLaborRate);
+  const productionStandard = item && item.productionStandard ? { ...item.productionStandard } : getResidentialRepairProductionStandard(item && item.category);
+  const quantity = Number(item && (item.quantity ?? item.qty ?? 0));
+
+  if (!productionStandard || productionStandard.status === 'needs_company_rate' || !Number.isFinite(quantity) || quantity <= 0) {
+    return {
+      quantity: Number.isFinite(quantity) ? quantity : 0,
+      unit: item && item.unit ? normalizeMaterialUnit(String(item.unit)) || item.unit : '',
+      laborHours: 0,
+      laborCost: 0,
+      companyLaborRate: rate,
+      status: productionStandard && productionStandard.status === 'needs_company_rate' ? 'needs_company_rate' : 'no_quantity',
+      productionStandard: productionStandard || getResidentialRepairProductionStandard(item && item.category)
+    };
+  }
+
+  const setupHours = Number(productionStandard.setupHours || 0);
+  const productionRate = Number(productionStandard.productionRate);
+  const minimumTaskHours = Number(productionStandard.minimumTaskHours || 0);
+  const baseLaborHours = Number.isFinite(productionRate) && productionRate > 0
+    ? setupHours + (quantity / productionRate)
+    : setupHours;
+
+  const laborHours = Math.max(baseLaborHours, minimumTaskHours);
+  const laborCost = Number((laborHours * rate).toFixed(2));
+
+  return {
+    quantity: quantity,
+    unit: item && item.unit ? normalizeMaterialUnit(String(item.unit)) || item.unit : '',
+    laborHours: Number(laborHours.toFixed(2)),
+    laborCost: laborCost,
+    companyLaborRate: rate,
+    status: 'approved',
+    productionStandard: productionStandard
+  };
+}
+
+function calculateResidentialRepairProjectMinimum(lineItems, companyLaborRate, minimumProjectHours){
+  const items = Array.isArray(lineItems) ? lineItems.map(function(item){ return { ...item }; }) : [];
+  const minHours = Number(minimumProjectHours ?? RESIDENTIAL_REPAIR_MINIMUM_PROJECT_LABOR_HOURS);
+  const totalCalculatedLaborHours = items.reduce(function(sum, item){
+    return sum + Number(item && item.laborHours ? item.laborHours : 0);
+  }, 0);
+
+  const projectLaborHours = totalCalculatedLaborHours < minHours ? minHours : totalCalculatedLaborHours;
+
+  return {
+    totalCalculatedLaborHours: Number(totalCalculatedLaborHours.toFixed(2)),
+    projectLaborHours: Number(projectLaborHours.toFixed(2)),
+    minimumApplied: totalCalculatedLaborHours < minHours,
+    laborCost: Number((projectLaborHours * getCompanyLaborRate(companyLaborRate)).toFixed(2)),
+    minHours: Number(minHours.toFixed(2)),
+    lineItems: items
+  };
+}
+
+function calculateResidentialRepairPricing(item, companyLaborRate, markupPercent){
+  const rate = getCompanyLaborRate(companyLaborRate);
+  const markup = Number(markupPercent ?? 0);
+  const standard = item && item.productionStandard ? { ...item.productionStandard } : getResidentialRepairProductionStandard(item && item.category);
+
+  if (!item || typeof item !== 'object') {
+    return { status: 'needs_company_rate', laborHours: 0, laborCost: 0, materialCost: 0, baseCost: 0, markupAmount: 0, finalTotal: 0, productionStandard: standard };
+  }
+
+  if (standard.status === 'needs_company_rate') {
+    return {
+      status: 'needs_company_rate',
+      reason: 'requires approved company production rate',
+      laborHours: 0,
+      laborCost: 0,
+      materialCost: Number((Array.isArray(item.materials) ? item.materials.reduce(function(sum, material){ return sum + (Number(material.qty || 0) * Number(material.unitCost || 0)); }, 0) : 0).toFixed(2)),
+      baseCost: 0,
+      markupPct: markup,
+      markupAmount: 0,
+      finalTotal: 0,
+      companyLaborRate: rate,
+      productionStandard: standard
+    };
+  }
+
+  const labor = calculateResidentialRepairLabor(item, rate);
+  const materialCost = Array.isArray(item.materials)
+    ? item.materials.reduce(function(sum, material){
+        return sum + (Number(material.qty || 0) * Number(material.unitCost || 0));
+      }, 0)
+    : 0;
+  const baseCost = Number((materialCost + labor.laborCost).toFixed(2));
+  const markupAmount = Number((baseCost * (markup / 100)).toFixed(2));
+  const finalTotal = Number((baseCost + markupAmount).toFixed(2));
+
+  return {
+    status: 'approved',
+    quantity: Number(item.quantity ?? item.qty ?? 0),
+    unit: item.unit || '',
+    laborHours: labor.laborHours,
+    laborCost: labor.laborCost,
+    materialCost: Number(materialCost.toFixed(2)),
+    baseCost: baseCost,
+    markupPct: markup,
+    markupAmount: markupAmount,
+    finalTotal: finalTotal,
+    companyLaborRate: rate,
+    productionStandard: standard
+  };
+}
+
+function applyResidentialRepairQuantityProvenance(items){
+  if (!Array.isArray(items)) return items;
+
+  return items.map(function(item){
+    if (!item || typeof item !== 'object') return item;
+
+    const explicitSource = String(item.source || '').toLowerCase();
+    const authoritativeQty = Number(item.authoritativeQty ?? item.metadata?.authoritativeQty ?? 0);
+    const authoritySource = String(item.metadata?.authoritativeQuantitySource || item.authoritativeQuantitySource || '').toLowerCase();
+
+    if (explicitSource === 'customer' || explicitSource === 'derived' || explicitSource === 'ai_assumption') {
+      item.source = explicitSource;
+    } else if (authoritySource === 'customer') {
+      item.source = 'customer';
+    } else if (authoritySource === 'derived') {
+      item.source = 'derived';
+    } else {
+      item.source = 'ai_assumption';
+    }
+
+    const shouldUseCustomerQuantity = (item.source === 'customer' || authoritySource === 'customer') && Number.isFinite(authoritativeQty) && authoritativeQty > 0;
+
+    if (shouldUseCustomerQuantity) {
+      item.qty = Number(authoritativeQty.toFixed(2));
+      const authoritativeUnit = normalizeMaterialUnit(String(item.authoritativeUnit || item.metadata?.authoritativeUnit || item.unit || ''));
+      if (authoritativeUnit) item.unit = authoritativeUnit;
+      item.metadata = item.metadata || {};
+      item.metadata.authoritativeQuantitySource = 'customer';
+    }
+
+    if (Array.isArray(item.materials)) {
+      item.materials = item.materials.map(function(material){
+        if (!material || typeof material !== 'object') return material;
+        if (shouldUseCustomerQuantity) {
+          material.qty = Number(authoritativeQty.toFixed(2));
+          const authoritativeUnit = normalizeMaterialUnit(String(item.authoritativeUnit || item.metadata?.authoritativeUnit || item.unit || ''));
+          if (authoritativeUnit) material.unit = authoritativeUnit;
+        }
+        return material;
+      });
+    }
+
+    return item;
+  });
+}
+
+function buildResidentialRepairProjectSummary(items){
+  if (!Array.isArray(items)) return '';
+  const workAreaSummary = items.map(function(item){
+    if (!item || typeof item !== 'object') return null;
+    const location = String(item.location || item.room || item.area || 'General').trim() || 'General';
+    const operation = String(item.operation || inferRepairCategoryFromDescription(item.desc || '') || item.category || 'Repair').trim() || 'Repair';
+    return location + ' - ' + operation;
+  }).filter(Boolean);
+
+  const unique = Array.from(new Set(workAreaSummary));
+  return unique.join('; ');
+}
+
+function canonicalRepairPriceForItem(item){
+  if (!item || typeof item !== 'object') return null;
+  return null;
+}
+
+function parseExplicitMeasurementValue(value, fallbackUnit){
+  if (value === null || value === undefined || value === '') return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+
+  const patterns = [
+    /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')\s*(?:x|by)\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')/gi,
+    /(\d+(?:\.\d+)?)\s*(?:in|inch|inches|")\s*(?:x|by)\s*(\d+(?:\.\d+)?)\s*(?:in|inch|inches|")/gi,
+    /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')/gi
+  ];
+
+  for (let i = 0; i < patterns.length; i++) {
+    const match = normalized.match(patterns[i]);
+    if (!match || !match[0]) continue;
+    const parts = match[0].match(/\d+(?:\.\d+)?/g) || [];
+    if (!parts.length) continue;
+    if (parts.length >= 2) {
+      const left = Number(parts[0]);
+      const right = Number(parts[1]);
+      const isInches = /in|inch|"/.test(match[0]);
+      const width = isInches ? (left / 12) : left;
+      const height = isInches ? (right / 12) : right;
+      return { qty: Number((width * height).toFixed(2)), unit: 'sqft', source: 'measurement' };
+    }
+    const single = Number(parts[0]);
+    return { qty: Number(single.toFixed(2)), unit: fallbackUnit || 'lf', source: 'measurement' };
+  }
+
+  return null;
+}
+
+function buildNormalizedWorkAreaIdentity(item){
+  if (!item || typeof item !== 'object') return 'unknown';
+  const desc = (item.desc || '').trim();
+  const location = (item.location || item.room || item.area || item.zone || item.category || 'general').toString().trim() || 'general';
+  const operation = inferRepairCategoryFromDescription(desc) || (item.operation || item.category || 'general').toString().trim() || 'general';
+  const qty = Number(item.authoritativeQty ?? item.metadata?.authoritativeQty ?? item.qty ?? 0);
+  const unit = normalizeMaterialUnit(String(item.authoritativeUnit || item.unit || '')) || 'ea';
+  return [location.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(), operation.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(), Number.isFinite(qty) ? String(Number(qty.toFixed(2))) : '0', unit.toLowerCase()].join('|');
+}
+
+function applyAuthoritativeQuantityProtection(items, sourceText){
+  if (!Array.isArray(items)) return items;
+
+  items.forEach(function(item){
+    if (!item || typeof item !== 'object') return;
+    const desc = (item.desc || '').toString();
+    const explicitMeasurement = parseExplicitMeasurementValue(desc + ' ' + (sourceText || ''), 'lf');
+    const authoritativeQty = Number(item.authoritativeQty ?? item.metadata?.authoritativeQty ?? (explicitMeasurement && explicitMeasurement.qty) ?? item.qty ?? 0);
+    const authoritativeUnit = String(item.authoritativeUnit || item.metadata?.authoritativeUnit || (explicitMeasurement && explicitMeasurement.unit) || item.unit || '');
+
+    if (!Number.isFinite(authoritativeQty) || authoritativeQty <= 0) return;
+
+    item.metadata = item.metadata || {};
+    item.metadata.authoritativeQty = Number(authoritativeQty.toFixed(2));
+    item.metadata.authoritativeUnit = normalizeMaterialUnit(authoritativeUnit) || normalizeMaterialUnit(item.unit) || 'ea';
+    item.metadata.authoritativeQuantitySource = item.metadata.authoritativeQuantitySource || 'customer-or-measurement';
+
+    const currentQty = Number(item.qty || 0);
+    if (Number.isFinite(currentQty) && currentQty > 0 && Math.abs(currentQty - authoritativeQty) > 0.001) {
+      console.warn('AUTHORITATIVE_QUANTITY_PROTECTION', {
+        desc: desc,
+        authoritativeQty: Number(authoritativeQty.toFixed(2)),
+        currentQty: Number(currentQty.toFixed(2)),
+        unit: item.metadata.authoritativeUnit,
+        source: 'customer-or-measurement'
+      });
+      item.qty = Number(authoritativeQty.toFixed(2));
+      item.unit = item.metadata.authoritativeUnit;
+    }
+  });
+
+  return items;
+}
+
+function generateBaselineExclusionsForScope(scopeText){
+  if (!scopeText) return [];
+  const text = String(scopeText).toLowerCase();
+  const exclusions = [];
+
+  const addIf = function(value, matcher){
+    if (matcher && matcher.test(text)) {
+      exclusions.push(value);
+    }
+  };
+
+  addIf('Concealed framing, substrate damage, or hidden structural issues beyond the visible repair area.', /repair|drywall|patch|soffit|ceiling|paint|caulk|insulation|water spot|stain block|grout|seam/);
+  addIf('Mold remediation or moisture/water-source correction beyond the identified visible scope.', /mold|water|moisture|stain|caulk|soffit|insulation|bathroom|wet|leak/);
+  addIf('Repair of the underlying water source, plumbing, or leak condition unless specifically included in the scope.', /water|plumbing|leak|moisture|bathroom|shower|tub|caulk|insulation/);
+  addIf('Specialty paint, color matching, or finish upgrades beyond normal matching and standard repaint work.', /paint|repaint|ceiling|color|finish/);
+  addIf('Concealed damage discovered behind soffit, insulation, or wall/ceiling assemblies during removal or repair.', /soffit|insulation|ceiling|drywall|hidden|concealed|repair/);
+  addIf('Abnormal or hazardous material disposal, including asbestos, lead paint, or other regulated material handling.', /asbestos|lead|hazardous|dispose|disposal|remediation|mold/);
+
+  return Array.from(new Set(exclusions));
+}
+
+function normalizeBrianTillerFixture(){
+  const scope = [
+    { location: 'Laundry Room', desc: 'Stain block approximately 2\' x 2\' water spot and repaint entire 15\' x 12\' ceiling', qty: 180, unit: 'sqft', operation: 'paint', authoritativeQty: 180, authoritativeUnit: 'sqft' },
+    { location: 'Bay Window / Soffit', desc: 'Install F channel and vinyl soffit underneath bay window, remove existing insulation, re-insulate', qty: 18, unit: 'lf', operation: 'soffit', authoritativeQty: 18, authoritativeUnit: 'lf' },
+    { location: 'Bathroom', desc: 'Remove/clean old grout/caulk around bathtub/shower fixtures, re-caulk', qty: 20, unit: 'lf', operation: 'caulk', authoritativeQty: 20, authoritativeUnit: 'lf' },
+    { location: 'Bathroom', desc: 'Repair drywall approximately 6\' x 10\'', qty: 60, unit: 'sqft', operation: 'drywall', authoritativeQty: 60, authoritativeUnit: 'sqft' },
+    { location: 'Bathroom', desc: 'Repaint strip approximately 8\' x 6\" wide', qty: 4, unit: 'sqft', operation: 'paint', authoritativeQty: 4, authoritativeUnit: 'sqft' },
+    { location: 'Master Closet', desc: 'Repair seam approximately 3\' x 3\', stain block repaired area, repaint entire 12\' x 15\' ceiling', qty: 180, unit: 'sqft', operation: 'paint', authoritativeQty: 180, authoritativeUnit: 'sqft' }
+  ];
+
+  const normalized = scope.map(function(item){
+    return {
+      location: item.location,
+      desc: item.desc,
+      qty: Number(item.qty),
+      unit: item.unit,
+      operation: item.operation,
+      metadata: {
+        authoritativeQty: Number(item.authoritativeQty),
+        authoritativeUnit: item.authoritativeUnit,
+        authoritativeQuantitySource: 'customer'
+      }
+    };
+  });
+
+  const workAreaIds = normalized.map(function(item){ return buildNormalizedWorkAreaIdentity(item); });
+  const exclusions = generateBaselineExclusionsForScope(normalized.map(function(item){ return item.desc; }).join(' '));
+  const summary = normalized.map(function(item){ return item.location + ' ' + item.operation; }).join('; ');
+
+  return {
+    workAreas: normalized,
+    workAreaIds: workAreaIds,
+    exclusions: exclusions,
+    summary: summary,
+    quantities: {
+      laundryCeiling: 180,
+      soffit: 18,
+      bathroomCaulk: 20,
+      bathroomDrywallRepair: 60,
+      masterClosetCeiling: 180
+    },
+    locations: normalized.map(function(item){ return item.location; })
+  };
+}
+
+function makeBrianTillerRegressionFixture(){
+  return normalizeBrianTillerFixture().workAreas.map(function(item){ return { ...item, materials: [], equipmentOrSubCost: 0, laborHours: 0, category: item.operation }; });
 }
 
 function resolveCanonicalMaterialIdentity(description){
@@ -102,7 +545,37 @@ function applyAuthoritativeMaterialPricing(parsed){
   if (!parsed || !Array.isArray(parsed.lineItems)) return parsed;
 
   parsed.lineItems.forEach(function(li){
-    if (!li || !Array.isArray(li.materials)) return;
+    if (!li) return;
+    const materialList = Array.isArray(li.materials)
+      ? li.materials
+      : (li.aiBreakdown && Array.isArray(li.aiBreakdown.materials) ? li.aiBreakdown.materials : null);
+    if (!materialList) return;
+
+    if (!Array.isArray(li.materials) && materialList) {
+      li.materials = materialList;
+    }
+
+    const repairFallback = canonicalRepairPriceForItem(li);
+    if (repairFallback && !li.metadata?.authoritativeQty) {
+      li.materials = li.materials.length ? li.materials : [{
+        desc: li.desc || 'Repair material',
+        qty: Number(li.qty || 0),
+        unit: repairFallback.unit,
+        unitCost: repairFallback.unitCost,
+        primary: true,
+        quantityBasis: 'ai-estimated',
+        basisPerUnit: null
+      }];
+      li.materials.forEach(function(material){
+        if (!material || typeof material !== 'object') return;
+        material.unitCost = repairFallback.unitCost;
+        if (material.qty === undefined || material.qty === null || Number(material.qty) <= 0) {
+          material.qty = Number(li.qty || 0);
+        }
+        material.unit = normalizeMaterialUnit(material.unit) || repairFallback.unit;
+      });
+      return;
+    }
 
     li.materials.forEach(function(material){
       if (!material || typeof material !== 'object') return;
@@ -329,6 +802,8 @@ function parseDurationFromText(text){
 function parseTotalLaborHoursFromText(text){
   if (!text) return null;
   const patterns = [
+    /(?:total\s+)?labor\s*hours?\s*(?:are|is|equals|=|:)\s*(\d+(?:\.\d+)?)\b/i,
+    /(?:total\s+)?man-hours?\s*(?:are|is|equals|=|:)\s*(\d+(?:\.\d+)?)\b/i,
     /(\d+(?:\.\d+)?)\s*(?:total\s+)?labor\s*hours?\b/i,
     /(\d+(?:\.\d+)?)\s*(?:total\s+)?man-hours?\b/i,
     /(\d+(?:\.\d+)?)\s*(?:labor\s*hours?|man-hours?)\b/i,
@@ -451,6 +926,15 @@ function applyCOAuthoritativeLabor(parsed, authoritativeLabor){
 function alignLineItemQuantityToPrimaryMaterial(lineItem){
   if (!lineItem || typeof lineItem !== 'object') return lineItem;
 
+  const authoritativeQty = Number(lineItem.authoritativeQty ?? lineItem.metadata?.authoritativeQty ?? 0);
+  if (Number.isFinite(authoritativeQty) && authoritativeQty > 0) {
+    lineItem.qty = Number(authoritativeQty.toFixed(2));
+    if (lineItem.metadata && lineItem.metadata.authoritativeUnit) {
+      lineItem.unit = normalizeMaterialUnit(lineItem.metadata.authoritativeUnit) || lineItem.unit;
+    }
+    return lineItem;
+  }
+
   const materials = Array.isArray(lineItem.aiBreakdown && lineItem.aiBreakdown.materials)
     ? lineItem.aiBreakdown.materials
     : (Array.isArray(lineItem.materials) ? lineItem.materials : []);
@@ -487,23 +971,24 @@ function alignLineItemQuantityToPrimaryMaterial(lineItem){
 function normalizeAIGenerated(parsed, laborRate, markup){
   if(!parsed || !Array.isArray(parsed.lineItems)) throw new Error('AI response must contain a lineItems array');
   return parsed.lineItems.map(function(li, idx){
-    // materials must be present and an array
+    const authoritativeQty = Number(li.authoritativeQty ?? li.metadata?.authoritativeQty ?? 0);
+    if (Number.isFinite(authoritativeQty) && authoritativeQty > 0) {
+      li.qty = Number(authoritativeQty.toFixed(2));
+      li.unit = normalizeMaterialUnit(String(li.authoritativeUnit || li.metadata?.authoritativeUnit || li.unit || '')) || li.unit;
+    }
+
     if(!li.hasOwnProperty('materials') || !Array.isArray(li.materials)){
       throw new Error('lineItems['+idx+'] missing required "materials" array (use [] when no materials apply)');
     }
-    // qty must be present and a finite number
     if(!li.hasOwnProperty('qty') || !Number.isFinite(Number(li.qty))){
       throw new Error('lineItems['+idx+'] missing or invalid numeric "qty"');
     }
-    // laborHours must be present and a finite number
     if(!li.hasOwnProperty('laborHours') || !Number.isFinite(Number(li.laborHours))){
       throw new Error('lineItems['+idx+'] missing or invalid numeric "laborHours" (use 0 when none)');
     }
-    // equipmentOrSubCost must be present and a finite number
     if(!li.hasOwnProperty('equipmentOrSubCost') || !Number.isFinite(Number(li.equipmentOrSubCost))){
       throw new Error('lineItems['+idx+'] missing or invalid numeric "equipmentOrSubCost" (use 0 when none)');
     }
-    // Validate materials entries
     var materials = li.materials;
     for(var mi=0; mi<materials.length; mi++){
       var m = materials[mi];
@@ -516,19 +1001,25 @@ function normalizeAIGenerated(parsed, laborRate, markup){
       if(!m.hasOwnProperty('unitCost') || !Number.isFinite(Number(m.unitCost))){
         throw new Error('lineItems['+idx+'].materials['+mi+'] missing or invalid numeric "unitCost"');
       }
+      if (Number.isFinite(authoritativeQty) && authoritativeQty > 0 && Number(m.qty) !== authoritativeQty) {
+        console.warn('AUTHORITATIVE_QUANTITY_PROTECTION::material_conflict', {
+          lineItem: li.desc,
+          authoritativeQty: authoritativeQty,
+          materialQty: Number(m.qty),
+          materialDesc: m.desc
+        });
+        m.qty = Number(authoritativeQty.toFixed(2));
+      }
     }
-    // Compute material cost from materials array
     var materialCost = materials.reduce(function(s,m){
       return s + (Number(m.qty) * Number(m.unitCost));
     },0);
     var laborHours = Number(li.laborHours);
     var laborCost = _round2(laborHours * (Number(laborRate)||0));
     var equipmentOrSubCost = Number(li.equipmentOrSubCost);
-    // Authoritative baseCost is computed by server
     var baseCost = _round2(materialCost + laborCost + equipmentOrSubCost);
     var qty = Number(li.qty);
     var unitCost = qty>0? _round2(baseCost/qty) : _round2(baseCost);
-    // IMPORTANT: total must be the authoritative baseCost (do NOT recompute from rounded unitCost)
     var total = baseCost;
     return {
       category: li.category || '',
@@ -566,6 +1057,19 @@ app.options(/.*/, cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/api/build-info", function (req, res) {
+  res.json({
+    app: "Contractor Desk",
+    environment: APP_BUILD_INFO.environment,
+    branch: APP_BUILD_INFO.branch,
+    commit: APP_BUILD_INFO.commit,
+    buildId: APP_BUILD_INFO.buildId,
+    generatedAt: APP_BUILD_INFO.generatedAt,
+    source: APP_BUILD_INFO.source,
+    host: req.headers.host || "unknown"
+  });
+});
 
 app.post("/api/estimate", async (req, res) => {
   const routeStart = Date.now();
@@ -1397,4 +1901,19 @@ module.exports = {
   resolveCanonicalMaterialIdentity,
   resolveCatalogMaterialKey,
   applyAuthoritativeMaterialPricing,
+  applyAuthoritativeQuantityProtection,
+  buildNormalizedWorkAreaIdentity,
+  generateBaselineExclusionsForScope,
+  normalizeBrianTillerFixture,
+  makeBrianTillerRegressionFixture,
+  normalizeAIGenerated,
+  RESIDENTIAL_REPAIR_PRODUCTION_STANDARDS,
+  RESIDENTIAL_REPAIR_MINIMUM_PROJECT_LABOR_HOURS,
+  getResidentialRepairProductionStandard,
+  calculateResidentialRepairLabor,
+  calculateResidentialRepairProjectMinimum,
+  calculateResidentialRepairPricing,
+  applyResidentialRepairQuantityProvenance,
+  buildResidentialRepairProjectSummary,
+  getCompanyLaborRate,
 };

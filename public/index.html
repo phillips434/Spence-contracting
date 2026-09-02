@@ -718,6 +718,7 @@ function closePage(id) { document.getElementById(id).classList.remove('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 var db=firebase.firestore(),auth=firebase.auth();
+db.settings({experimentalAutoDetectLongPolling: true});
 var col,sCol,nCol,eCol,currentUser=null;
 var unsubProjects=null,unsubEstimates=null,unsubNotifs=null;
 var _activeUid=null; // UID guard — prevent duplicate listener init
@@ -1047,60 +1048,171 @@ function saveCompanyInfo(){
   T('Company info saved!');
 }
 function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocation").value.trim(),markup:parseFloat(document.getElementById("aiMarkup").value)||20,laborRate:parseFloat(document.getElementById("aiLaborRate").value)||85,instructions:document.getElementById("aiInstructions").value.trim()};saveSettings();T("AI profile saved!");}
+function resolveCurrentOwnerUid(){
+  var uid=currentUser&&currentUser.uid?currentUser.uid:null;
+  if(!uid){return Promise.resolve(null);}
+  return db.collection('userProfiles').doc(uid).get().then(function(doc){
+    var data=doc.exists?doc.data():{};
+    return (data && data.ownerUid) || uid;
+  }).catch(function(){
+    return uid;
+  });
+}
+function normalizeInviteEmail(email){
+  return (email || '').trim().toLowerCase();
+}
+
+function resolvePendingTeamInviteForUser(uid, email, profileOverrides){
+  var normalizedEmail = normalizeInviteEmail(email);
+  if(!uid || !normalizedEmail){
+    return Promise.resolve({ resolved: false, reason: 'missing-user-or-email' });
+  }
+
+  return db.collection('userProfiles').doc(uid).get().then(function(profileDoc){
+    var profile = profileDoc.exists ? (profileDoc.data() || {}) : {};
+    return db.collection('teamInvites').doc(normalizedEmail).get().then(function(inviteDoc){
+      if(!inviteDoc.exists){
+        return { resolved: false, reason: 'no-invite', profile: profile };
+      }
+      var inviteData = inviteDoc.data() || {};
+      var ownerUid = inviteData.ownerUid || null;
+      if(!ownerUid){
+        return { resolved: false, reason: 'missing-ownerUid', invite: inviteData, profile: profile };
+      }
+
+      var alreadyLinked = !!(profile.ownerUid && profile.ownerUid === ownerUid && profile.plan === 'team');
+      if(alreadyLinked){
+        return { resolved: true, reason: 'already-linked', invite: inviteData, profile: profile };
+      }
+
+      var nextProfile = Object.assign({}, profile, profileOverrides || {}, {
+        email: normalizedEmail,
+        ownerUid: ownerUid,
+        plan: 'team',
+        updatedAt: Date.now()
+      });
+
+      return db.collection('userProfiles').doc(uid).set(nextProfile, {merge: true}).then(function(){
+        return inviteDoc.ref.set(Object.assign({}, inviteData, {
+          status: 'accepted',
+          acceptedAt: Date.now(),
+          acceptedByUid: uid
+        }), {merge: true}).then(function(){
+          return { resolved: true, reason: 'invite-bound', invite: inviteData, profile: nextProfile };
+        });
+      });
+    });
+  }).catch(function(){
+    return { resolved: false, reason: 'invite-check-failed' };
+  });
+}
+
+function applyInviteOwnerLink(uid, email){
+  var normalizedEmail = normalizeInviteEmail(email);
+  if(!uid||!normalizedEmail){return Promise.resolve(null);}
+  return db.collection('teamInvites').doc(normalizedEmail).get().then(function(inviteDoc){
+    if(!inviteDoc.exists){return null;}
+    var inviteData=inviteDoc.data()||{};
+    var ownerUid=inviteData.ownerUid||null;
+    if(!ownerUid){return null;}
+    return db.collection('userProfiles').doc(uid).get().then(function(profileDoc){
+      var profile=profileDoc.exists?profileDoc.data():{};
+      var alreadyLinked = !!(profile.ownerUid && profile.ownerUid === ownerUid && profile.plan === 'team');
+      if(alreadyLinked){
+        return inviteDoc.ref.set(Object.assign({}, inviteData, {
+          status: 'accepted',
+          acceptedAt: Date.now(),
+          acceptedByUid: uid
+        }), {merge: true});
+      }
+      var nextProfile=Object.assign({}, profile, {
+        email: profile.email || normalizedEmail,
+        ownerUid: ownerUid,
+        plan: 'team',
+        updatedAt: Date.now()
+      });
+      return db.collection('userProfiles').doc(uid).set(nextProfile, {merge: true}).then(function(){
+        return inviteDoc.ref.set(Object.assign({}, inviteData, {
+          status: 'accepted',
+          acceptedAt: Date.now(),
+          acceptedByUid: uid
+        }), {merge: true});
+      });
+    });
+  }).catch(function(){
+    return null;
+  });
+}
+function withSharedOwnerMetadata(record){
+  var uid=currentUser&&currentUser.uid?currentUser.uid:null;
+  var nextRecord=Object.assign({}, record||{});
+  if(!uid){return Promise.resolve(nextRecord);}
+  return resolveCurrentOwnerUid().then(function(resolvedOwnerUid){
+    var effectiveOwnerUid = nextRecord.ownerUid || nextRecord.userId || resolvedOwnerUid || uid;
+    nextRecord.userId = effectiveOwnerUid;
+    nextRecord.ownerUid = effectiveOwnerUid;
+    if(!nextRecord.createdByUid){nextRecord.createdByUid = uid;}
+    nextRecord.updatedByUid = uid;
+    if(!nextRecord.createdAt){nextRecord.createdAt = Date.now();}
+    nextRecord.updatedAt = Date.now();
+    return nextRecord;
+  });
+}
 function saveP(p,notifText){
   setSS("saving");
-  // Check document size — Firestore limit is 1MB
-  var testStr=JSON.stringify(p);
-  var tooLarge=false;
+  return withSharedOwnerMetadata(p).then(function(record){
+    var testStr=JSON.stringify(record);
+    var tooLarge=false;
 
-  // Step 1: over 700KB — strip daily log photos from older entries (keep last 3)
-  if(testStr.length>700000 && p.dailyLogs && p.dailyLogs.length>0){
-    var logs=p.dailyLogs;
-    var keepPhotos=3;
-    for(var i=0;i<logs.length-keepPhotos;i++){
-      if(logs[i].photos && logs[i].photos.length>0){
-        logs[i].photos=[];
+    // Step 1: over 700KB — strip daily log photos from older entries (keep last 3)
+    if(testStr.length>700000 && record.dailyLogs && record.dailyLogs.length>0){
+      var logs=record.dailyLogs;
+      var keepPhotos=3;
+      for(var i=0;i<logs.length-keepPhotos;i++){
+        if(logs[i].photos && logs[i].photos.length>0){
+          logs[i].photos=[];
+        }
       }
+      testStr=JSON.stringify(record);
     }
-    testStr=JSON.stringify(p);
-  }
 
-  // Step 2: still over 850KB — strip ALL daily log photos
-  if(testStr.length>850000 && p.dailyLogs){
-    for(var j=0;j<p.dailyLogs.length;j++){
-      p.dailyLogs[j].photos=[];
+    // Step 2: still over 850KB — strip ALL daily log photos
+    if(testStr.length>850000 && record.dailyLogs){
+      for(var j=0;j<record.dailyLogs.length;j++){
+        if(record.dailyLogs[j]) record.dailyLogs[j].photos=[];
+      }
+      testStr=JSON.stringify(record);
     }
-    testStr=JSON.stringify(p);
-  }
 
-  // Step 3: warn when the project is too large to save with all comms attachments
-  if(testStr.length>950000){
-    tooLarge=true;
-  }
-  if(tooLarge){
-    T("Project too large to save with all attachments. Remove or shrink some images and try again.");
-    setSS("error");
-    return Promise.reject(new Error("Project too large to save with all attachments."));
-  }
-  return col.doc(p.id).set(p).then(function(){
-    T("Saved!");
-    if(notifText){pushNotification(notifText,p.client);showBanner(notifText);}
-    setSS("live");
-  }).catch(function(err){
-    // Retry once after 2s on network errors — set() is idempotent, no duplicates
-    if(err.code==='unavailable'||err.message.indexOf('network')!==-1||err.message.indexOf('Network')!==-1){
-      setSS('error');
-      setTimeout(function(){
-        col.doc(p.id).set(p).then(function(){
-          T('Saved.');setSS('live');
-        }).catch(function(){
-          T('Save failed — check your connection.');setSS('error');
-        });
-      },2000);
-    } else {
-      T('Error saving: '+err.message);
-      setSS('error');
+    // Step 3: warn when the project is too large to save with all comms attachments
+    if(testStr.length>950000){
+      tooLarge=true;
     }
+    if(tooLarge){
+      T("Project too large to save with all attachments. Remove or shrink some images and try again.");
+      setSS("error");
+      return Promise.reject(new Error("Project too large to save with all attachments."));
+    }
+    return col.doc(record.id).set(record).then(function(){
+      T("Saved!");
+      if(notifText){pushNotification(notifText,record.client);showBanner(notifText);}
+      setSS("live");
+    }).catch(function(err){
+      // Retry once after 2s on network errors — set() is idempotent, no duplicates
+      if(err.code==='unavailable'||err.message.indexOf('network')!==-1||err.message.indexOf('Network')!==-1){
+        setSS('error');
+        setTimeout(function(){
+          col.doc(record.id).set(record).then(function(){
+            T('Saved.');setSS('live');
+          }).catch(function(){
+            T('Save failed — check your connection.');setSS('error');
+          });
+        },2000);
+      } else {
+        T('Error saving: '+err.message);
+        setSS('error');
+      }
+    });
   });
 }
 function addTeamMember(){var type=document.getElementById("tmType").value,trade=document.getElementById("tmTrade").value.trim(),name=document.getElementById("tmName").value.trim(),company=document.getElementById("tmCompany").value.trim(),phone=document.getElementById("tmPhone").value.trim(),email=document.getElementById("tmEmail").value.trim();if(!name){alert("Please enter a name.");return;}DD.team=DD.team||[];DD.team.push({type:type,trade:trade,name:name,company:company,phone:phone,email:email});["tmTrade","tmName","tmCompany","tmPhone","tmEmail"].forEach(function(id){document.getElementById(id).value="";});renderTeamList();saveSettings();}
@@ -1777,13 +1889,15 @@ function saveEstimate(e, msg){
   if(DD.logoData&&DD.logoData.length>10) e.logoData=DD.logoData;
   if(DD.companyName) e.companyName=DD.companyName;
   setSS('saving');
-  return eCol.doc(e.id).set(e).then(function(){
-    setSS('live');
-    if(msg) T(msg);
-  }).catch(function(err){
-    setSS('error');
-    T('Save failed: '+err.message);
-    throw err;
+  return withSharedOwnerMetadata(e).then(function(record){
+    return eCol.doc(record.id).set(record).then(function(){
+      setSS('live');
+      if(msg) T(msg);
+    }).catch(function(err){
+      setSS('error');
+      T('Save failed: '+err.message);
+      throw err;
+    });
   });
 }
 function shouldUseIntakeGate(prompt){
@@ -2065,14 +2179,14 @@ function openEditLineItem(i){
   editLineItemIdx=i;
   var e=ger();if(!e)return;
   var li=e.lineItems[i];if(!li)return;
-  document.getElementById("eliPageCat").innerHTML=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");
-  document.getElementById("eliPageDesc").value=li.desc||"";
-  document.getElementById("eliPageQty").value=li.qty||1;
-  document.getElementById("eliPageUnit").value=li.unit||"";
-  document.getElementById("eliPageUnitCost").value=li.unitCost||0;
-  document.getElementById("eliPageMarkup").value=li.markup||0;
-  updateEliPagePreview();
-  var pg=document.getElementById("editLineItemPage");
+  document.getElementById("eliCat").innerHTML=(DD.estCategories||[]).map(function(s){return'<option'+(s===li.category?" selected":"")+'>'+s+'</option>';}).join("");
+  document.getElementById("eliDesc").value=li.desc||"";
+  document.getElementById("eliQty").value=li.qty||1;
+  document.getElementById("eliUnit").value=li.unit||"";
+  document.getElementById("eliUnitCost").value=li.unitCost||0;
+  document.getElementById("eliMarkup").value=li.markup||0;
+  updateEliPreview();
+  var pg=document.getElementById("editLineItemModal");
   pg.classList.add("show");pg.scrollTop=0;
 }
 function updateEliPagePreview(){
@@ -2100,7 +2214,10 @@ function closeEditLineItem(){document.getElementById("editLineItemModal").classL
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
 function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
 function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
-function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});eCol.doc(id).set(est).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{var e=ger();if(e)renderEstDetailBody(e);}});}
+function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});withSharedOwnerMetadata(est).then(function(record){
+  record.userId = record.ownerUid;
+  return eCol.doc(record.id).set(record).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
+}).catch(function(err){console.error('Estimate save error:', err);T('Error saving estimate: '+(err&&err.message?err.message:err));});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
@@ -2134,14 +2251,15 @@ function convertToProject(){
 
   var jobNum=nextJobNumber();
   var uid=auth.currentUser?auth.currentUser.uid:"";
-  // Resolve project owner: use estimate's userId if set, else fall back to owner UID
-  var projectOwnerUid=e.userId||(currentUser&&currentUser.ownerUid)||"L5XUqfnWrrgbAk18X36XcHDJxnz1"||""+uid;
+  var resolvedProjectOwnerUid = e.ownerUid || e.userId || (currentUser&&currentUser.uid) || uid || "L5XUqfnWrrgbAk18X36XcHDJxnz1";
 
   var np={
     id:"p"+Date.now(),
-    userId:projectOwnerUid,
-    ownerUid:projectOwnerUid,
+    userId:resolvedProjectOwnerUid,
+    ownerUid:resolvedProjectOwnerUid,
     createdBy:uid,
+    createdByUid:uid,
+    updatedByUid:uid,
     client:e.client,
     clientPhone:e.clientPhone||e.phone||"",
     clientEmail:e.clientEmail||e.email||"",
@@ -4142,7 +4260,10 @@ function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addP
   if(document.getElementById("fJobNum"))document.getElementById("fJobNum").value=p.jobNum||"";
   if(document.getElementById("fPO"))document.getElementById("fPO").value=p.poNum||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=document.getElementById('fJobNum')&&document.getElementById('fJobNum').value.trim()?document.getElementById('fJobNum').value.trim():(existing.jobNum||nextJobNumber());
-  var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});col.doc(id).set(p).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(){T("Error");});}
+  var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});withSharedOwnerMetadata(p).then(function(record){
+  record.userId = record.ownerUid;
+  return col.doc(record.id).set(record).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");if(editId)currentId=id;}).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});
+}).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
@@ -4262,55 +4383,101 @@ auth.onAuthStateChanged(function(user){
   projects=[];estimates=[];notifications=[];unreadCount=0;
   initUserCollections(user.uid);
 
-  // Check trial
-  checkTrialStatus(user, function(ok, reason){
-    if(!ok){
-      document.getElementById('authScreen').style.display='none';
-      document.getElementById('mainView').style.display='none';
-      // Show appropriate message
-      var screen = document.getElementById('trialExpiredScreen');
-      if(reason==='revoked'){
-        var msg = screen.querySelector('.trial-msg');
-        if(msg){
-          msg.textContent='Your access has been removed by your company admin. Contact your manager for assistance.';
+  resolvePendingTeamInviteForUser(user.uid, user.email).then(function(inviteResult){
+    if(inviteResult && inviteResult.resolved && inviteResult.reason !== 'already-linked'){
+      // Invited employee must load the owner workspace immediately and never fall into new-owner onboarding.
+      // The existing ownerUid sync logic handles the shared project/estimate load once the profile is bound.
+    }
+    return applyInviteOwnerLink(user.uid, user.email);
+  }).then(function(){
+    checkTrialStatus(user, function(ok, reason){
+      if(!ok){
+        document.getElementById('authScreen').style.display='none';
+        document.getElementById('mainView').style.display='none';
+        var screen = document.getElementById('trialExpiredScreen');
+        if(reason==='revoked'){
+          var msg = screen.querySelector('.trial-msg');
+          if(msg){
+            msg.textContent='Your access has been removed by your company admin. Contact your manager for assistance.';
+          }
         }
+        screen.style.display='block';
+        return;
       }
-      screen.style.display='block';
-      return;
-    }
-    // Good to go
-    document.getElementById('authScreen').style.display='none';
-    document.getElementById('trialExpiredScreen').style.display='none';
-    document.getElementById('mainView').style.display='block';
-    // Clear logo immediately for non-owner accounts
-    if(user.uid !== 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){
-      var tl=document.getElementById('topbarLogo');
-      if(tl) tl.src='';
-    }
-    loadSettings(function(){
-      if(DD.logoData && DD.logoData.length > 10){
-        LOGO_SRC = DD.logoData;
+      document.getElementById('authScreen').style.display='none';
+      document.getElementById('trialExpiredScreen').style.display='none';
+      document.getElementById('mainView').style.display='block';
+      if(user.uid !== 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){
+        var tl=document.getElementById('topbarLogo');
+        if(tl) tl.src='';
       }
-      // Wake Replit server in background on login (prevents cold start on first AI use)
-      setTimeout(function(){
-        fetch('/api/estimate',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
-        }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
-      }, 3000); // 3s after login, silently
-      // Topbar, favicon and apple icon always show Contractor Desk brand
-      var tl = document.getElementById('topbarLogo');
-      if(tl){ tl.src = CD_LOGO; tl.style.display='block'; }
-      var _fav=document.getElementById('pwFavicon'); if(_fav) _fav.href=CD_LOGO;
-      var _appl=document.getElementById('pwaAppleIcon'); if(_appl) _appl.href=CD_LOGO;
-      // Update company name from user profile if first time
-      if(!DD.companyName || DD.companyName==='Contractor Desk'){
-        var meta = getUserMeta(user.uid);
+      loadSettings(function(){
+        if(DD.logoData && DD.logoData.length > 10){
+          LOGO_SRC = DD.logoData;
+        }
+        setTimeout(function(){
+          fetch('/api/estimate',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
+          }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
+        }, 3000);
+        var tl = document.getElementById('topbarLogo');
+        if(tl){ tl.src = CD_LOGO; tl.style.display='block'; }
+        var _fav=document.getElementById('pwFavicon'); if(_fav) _fav.href=CD_LOGO;
+        var _appl=document.getElementById('pwaAppleIcon'); if(_appl) _appl.href=CD_LOGO;
+        if(!DD.companyName || DD.companyName==='Contractor Desk'){
+          var meta = getUserMeta(user.uid);
+        }
+        startSync();
+        startNotifSync();
+        initPWA();
+      });
+    });
+  }).catch(function(){
+    checkTrialStatus(user, function(ok, reason){
+      if(!ok){
+        document.getElementById('authScreen').style.display='none';
+        document.getElementById('mainView').style.display='none';
+        var screen = document.getElementById('trialExpiredScreen');
+        if(reason==='revoked'){
+          var msg = screen.querySelector('.trial-msg');
+          if(msg){
+            msg.textContent='Your access has been removed by your company admin. Contact your manager for assistance.';
+          }
+        }
+        screen.style.display='block';
+        return;
       }
-      startSync();
-      startNotifSync();
-      initPWA();
+      document.getElementById('authScreen').style.display='none';
+      document.getElementById('trialExpiredScreen').style.display='none';
+      document.getElementById('mainView').style.display='block';
+      if(user.uid !== 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){
+        var tl=document.getElementById('topbarLogo');
+        if(tl) tl.src='';
+      }
+      loadSettings(function(){
+        if(DD.logoData && DD.logoData.length > 10){
+          LOGO_SRC = DD.logoData;
+        }
+        setTimeout(function(){
+          fetch('/api/estimate',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
+          }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
+        }, 3000);
+        var tl = document.getElementById('topbarLogo');
+        if(tl){ tl.src = CD_LOGO; tl.style.display='block'; }
+        var _fav=document.getElementById('pwFavicon'); if(_fav) _fav.href=CD_LOGO;
+        var _appl=document.getElementById('pwaAppleIcon'); if(_appl) _appl.href=CD_LOGO;
+        if(!DD.companyName || DD.companyName==='Contractor Desk'){
+          var meta = getUserMeta(user.uid);
+        }
+        startSync();
+        startNotifSync();
+        initPWA();
+      });
     });
   });
 });
@@ -4652,21 +4819,47 @@ function signUp(){
   document.getElementById('authError').style.display='none';
   auth.createUserWithEmailAndPassword(email, pass).then(function(cred){
     var uid = cred.user.uid;
-    var trialEnd = Date.now() + (14 * 24 * 60 * 60 * 1000); // 14 days
-    // Save user profile
-    return db.collection('userProfiles').doc(uid).set({
-      name: name,
-      company: company,
-      email: email,
-      trialEnd: trialEnd,
-      createdAt: Date.now(),
-      plan: 'trial',
-      agreedToTerms: true,
-      agreedAt: Date.now()
+    var normalizedEmail = normalizeInviteEmail(email);
+    var inviteLookup = db.collection('teamInvites').doc(normalizedEmail).get();
+    return inviteLookup.then(function(inviteDoc){
+      var inviteData = inviteDoc.exists ? (inviteDoc.data() || {}) : null;
+      var ownerUid = inviteData && inviteData.ownerUid ? inviteData.ownerUid : null;
+
+      if(ownerUid){
+        return db.collection('userProfiles').doc(uid).set({
+          name: name,
+          company: company || '',
+          email: normalizedEmail,
+          ownerUid: ownerUid,
+          plan: 'team',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          agreedToTerms: true,
+          agreedAt: Date.now()
+        }, {merge: true}).then(function(){
+          return inviteDoc.ref.set(Object.assign({}, inviteData, {
+            status: 'accepted',
+            acceptedAt: Date.now(),
+            acceptedByUid: uid
+          }), {merge: true});
+        });
+      }
+
+      var trialEnd = Date.now() + (14 * 24 * 60 * 60 * 1000); // 14 days
+      return db.collection('userProfiles').doc(uid).set({
+        name: name,
+        company: company,
+        email: normalizedEmail,
+        trialEnd: trialEnd,
+        createdAt: Date.now(),
+        plan: 'trial',
+        agreedToTerms: true,
+        agreedAt: Date.now()
+      }).then(function(){
+        return applyInviteOwnerLink(uid, normalizedEmail);
+      });
     });
   }).then(function(){
-    // Normal company signup — teamInvites NOT checked automatically
-    // Team join only happens via explicit invite link flow
     setAuthLoading(false);
   }).catch(function(err){
     setAuthLoading(false);
@@ -4931,7 +5124,7 @@ function loadTeamAccess(){
 }
 
 function inviteTeammate(){
-  var email = document.getElementById('inviteEmail').value.trim().toLowerCase();
+  var email = normalizeInviteEmail(document.getElementById('inviteEmail').value);
   var statusEl = document.getElementById('inviteStatus');
   if(!email){ alert('Enter an email address.'); return; }
   if(!currentUser){ alert('Not logged in.'); return; }
@@ -4939,7 +5132,7 @@ function inviteTeammate(){
   statusEl.style.color='#2B3990';
   statusEl.textContent='Sending invite...';
 
-  // Store invite in Firebase — when they sign up we link them
+  // Email-only Team Access invite: same normalized email updates/reactivates the existing record.
   db.collection('teamInvites').doc(email).set({
     ownerUid: currentUser.uid,
     ownerEmail: currentUser.email,
@@ -4947,9 +5140,9 @@ function inviteTeammate(){
     email: email,
     status: 'pending',
     memberStatus: 'active'
-  }).then(function(){
+  }, {merge: true}).then(function(){
     statusEl.style.color='#2EAA72';
-    statusEl.textContent='\u2713 Invite saved! Send them this link: '+window.location.href.split('?')[0];
+    statusEl.textContent='Invite saved. They can now sign up or sign in to Contractor Desk using this email address.';
     document.getElementById('inviteEmail').value='';
     T('Invite saved!');
   }).catch(function(err){

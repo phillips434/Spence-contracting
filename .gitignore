@@ -1,5 +1,8 @@
 node_modules
 .local
 .env
+.env.*
+playwright/.auth/
+.auth/
 .DS_Store
 serve.py

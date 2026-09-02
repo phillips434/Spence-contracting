@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --exit"
+    "test": "mocha --exit",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "mocha": "^11.8.0"
   }
 }

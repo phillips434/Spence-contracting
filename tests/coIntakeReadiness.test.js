@@ -1102,7 +1102,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE A: residential estimate renders PROJECT SCOPE', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1127,7 +1127,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE B: residential estimate renders WORK INCLUDED', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1152,7 +1152,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE C: known assumptions render under PROJECT CONDITIONS / ASSUMPTIONS', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1176,7 +1176,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE D: known exclusions render under EXCLUSIONS', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1200,7 +1200,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE E: no internal labor/material/markup values appear in the narrative', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1228,7 +1228,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE F: narrative does not duplicate the same scope sentence across sections', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1253,7 +1253,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE G: commercial estimate output remains unchanged', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function saveContractorSig', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -1273,6 +1273,250 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(narrative, null);
   });
 
+  it('CASE A: blank projectClass blocks AI generation before any request is sent', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const calls = [];
+    const context = {
+      console,
+      T: (msg) => calls.push({ kind: 'toast', msg }),
+      DD: { aiProfile: { markup: 20, laborRate: 85 }, companyName: 'Test Co' },
+      ger: () => ({ id: 'est-1', projectClass: '', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: 'Replace wiring in a house' };
+          if (id === 'efProjectClass') return { value: '', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          if (id === 'aiLoading') return { style: {}, textContent: '' };
+          return null;
+        }
+      },
+      fetch: (url, options) => {
+        calls.push({ kind: 'fetch', url, options });
+        return Promise.resolve({ ok: true, json: () => ({ action: 'ready' }) });
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (raw === 'residential') return 'residential';
+        if (raw === 'commercial') return 'commercial';
+        return null;
+      }
+    };
+    vm.runInNewContext(snippet, context);
+    context.generateAIEstimate();
+    assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length, 0);
+    assert.ok(calls.some((c) => c.kind === 'toast' && /Residential|Commercial/i.test(c.msg)));
+  });
+
+  it('CASE B: residential projectClass allows generation to continue', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 } },
+      ger: () => ({ id: 'est-2', projectClass: 'residential', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: 'Replace wiring in a house' };
+          if (id === 'aiLoading') return { style: {}, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'residential', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      fetch: (url, options) => {
+        calls.push({ kind: 'fetch', url, options });
+        return Promise.resolve({ ok: true, json: () => ({ action: 'ready' }) });
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (raw === 'residential') return 'residential';
+        if (raw === 'commercial') return 'commercial';
+        return null;
+      }
+    };
+    vm.runInNewContext(snippet, context);
+    context.generateAIEstimate();
+    assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length > 0, true);
+  });
+
+  it('CASE C: commercial projectClass allows generation to continue', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 } },
+      ger: () => ({ id: 'est-3', projectClass: 'commercial', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: 'Tenant improvement office buildout' };
+          if (id === 'aiLoading') return { style: {}, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'commercial', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      fetch: (url, options) => {
+        calls.push({ kind: 'fetch', url, options });
+        return Promise.resolve({ ok: true, json: () => ({ action: 'ready' }) });
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (raw === 'residential') return 'residential';
+        if (raw === 'commercial') return 'commercial';
+        return null;
+      }
+    };
+    vm.runInNewContext(snippet, context);
+    context.generateAIEstimate();
+    assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length > 0, true);
+  });
+
+  it('CASE D: blank projectClass is not silently inferred from residential-looking scope text', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function resolveEstimateProjectClass', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {} };
+    vm.runInNewContext(snippet, context);
+    const value = context.normalizeProjectClass('');
+    assert.strictEqual(value, null);
+    const residentialText = 'Replace knob and tube wiring in a house';
+    assert.strictEqual(context.normalizeProjectClass(residentialText), null);
+  });
+
+  it('CASE E: blank projectClass is not silently inferred from commercial-looking scope text', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function resolveEstimateProjectClass', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {} };
+    vm.runInNewContext(snippet, context);
+    const value = context.normalizeProjectClass('');
+    assert.strictEqual(value, null);
+    const commercialText = 'Tenant improvement office fit-out';
+    assert.strictEqual(context.normalizeProjectClass(commercialText), null);
+  });
+
+  it('CASE F: saveEstimate validation remains intact for blank projectClass', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function saveEstimate(){var client');
+    const end = html.indexOf('function updateEstStatus', start);
+    const snippet = html.slice(start, end);
+    const alerts = [];
+    const context = {
+      document: {
+        getElementById: (id) => {
+          const values = {
+            efClient: 'Client',
+            efType: 'Test Project',
+            efProjectClass: '',
+            efAddress: '',
+            efNotes: '',
+            efClientEmail: '',
+            efClientPhone: '',
+            efMarkup: '20',
+            efTax: '0',
+            efStatus: 'Draft',
+            efDate: '2026-08-13',
+            efValidUntil: '2026-09-12'
+          };
+          return { value: values[id] || '' };
+        }
+      },
+      alert: (msg) => alerts.push(msg),
+      ger: () => ({ id: 'est-4', lineItems: [], exclusions: [], projectClass: '' }),
+      nextEstNumber: () => 'EST-999',
+      currentUser: { uid: 'u-1' },
+      DD: { aiProfile: { markup: 20 }, logoData: '', companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: () => Promise.resolve() }) },
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (raw === 'residential') return 'residential';
+        if (raw === 'commercial') return 'commercial';
+        return null;
+      },
+      T: () => {},
+      openEstDetail: () => {},
+      currentEstId: null,
+      editEstId: null
+    };
+    vm.runInNewContext(snippet, context);
+    context.saveEstimate();
+    assert.strictEqual(alerts.length, 1);
+    assert.ok(alerts[0].toLowerCase().includes('residential') || alerts[0].toLowerCase().includes('commercial'));
+  });
+
+  it('CASE G: pricing/labor/material/markup/total logic is unchanged by the projectClass gate', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function saveEstimate(){var client');
+    const end = html.indexOf('function updateEstStatus', start);
+    const snippet = html.slice(start, end);
+    const context = {
+      document: {
+        getElementById: (id) => {
+          const values = {
+            efClient: 'Client',
+            efType: 'Test Project',
+            efProjectClass: 'residential',
+            efAddress: '',
+            efNotes: '',
+            efClientEmail: '',
+            efClientPhone: '',
+            efMarkup: '20',
+            efTax: '0',
+            efStatus: 'Draft',
+            efDate: '2026-08-13',
+            efValidUntil: '2026-09-12'
+          };
+          return { value: values[id] || '' };
+        }
+      },
+      alert: () => {},
+      ger: () => ({ id: 'est-5', lineItems: [], exclusions: [], projectClass: 'residential' }),
+      nextEstNumber: () => 'EST-555',
+      currentUser: { uid: 'u-2' },
+      DD: { aiProfile: { markup: 20 }, logoData: '', companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: () => Promise.resolve() }) },
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (raw === 'residential') return 'residential';
+        if (raw === 'commercial') return 'commercial';
+        return null;
+      },
+      T: () => {},
+      openEstDetail: () => {},
+      currentEstId: null,
+      editEstId: null
+    };
+    vm.runInNewContext(snippet, context);
+    context.saveEstimate();
+    assert.strictEqual(typeof context.normalizeProjectClass('residential'), 'string');
+    assert.strictEqual(context.normalizeProjectClass('residential'), 'residential');
+  });
+
   it('PROJECT-CLASS A: new estimates expose a dedicated projectClass selector and ask for residential vs commercial', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.ok(html.includes('id="efProjectClass"'));
@@ -1282,7 +1526,7 @@ describe('coIntakeReadiness', () => {
 
   it('PROJECT-CLASS B: projectClass persists and canonical customerScope is built from saved estimate data', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function resolveEstimateProjectClass');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function buildResidentialEstimateDescription', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
@@ -1438,7 +1682,7 @@ describe('coIntakeReadiness', () => {
 
   it('PROJECT-CLASS F: legacy estimates without projectClass still use fallback behavior', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function resolveEstimateProjectClass');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function buildCanonicalCustomerScope', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
@@ -1456,7 +1700,7 @@ describe('coIntakeReadiness', () => {
 
   it('CASE H: saved quantities, labor, costs, markup, and final totals are unchanged before vs after rendering', () => {
     const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    const start = html.indexOf('function buildResidentialEstimateDescription');
+    const start = html.indexOf('function normalizeProjectClass');
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
@@ -2042,5 +2286,226 @@ describe('coIntakeReadiness', () => {
     assert.ok(html.includes('function ensureApprovedCOFinancialAccounting'));
     assert.ok(html.includes('function buildResidentialEstimateDescription'));
     assert.ok(html.includes('function approveCOContractor'));
+  });
+
+  it('residential repair provenance keeps customer measurements authoritative and blocks AI quantity override', () => {
+    const { applyResidentialRepairQuantityProvenance } = require('../server');
+
+    const items = [
+      { desc: 'Laundry room ceiling paint and stain block', qty: 180, unit: 'sqft', source: 'customer', metadata: { authoritativeQty: 180, authoritativeUnit: 'sqft', authoritativeQuantitySource: 'customer' } },
+      { desc: 'Laundry room ceiling paint and stain block', qty: 240, unit: 'sqft', source: 'ai_assumption', metadata: { authoritativeQty: 180, authoritativeUnit: 'sqft', authoritativeQuantitySource: 'customer' } }
+    ];
+
+    const result = applyResidentialRepairQuantityProvenance(items);
+    assert.strictEqual(result[0].source, 'customer');
+    assert.strictEqual(result[0].qty, 180);
+    assert.strictEqual(result[1].source, 'ai_assumption');
+    assert.strictEqual(result[1].qty, 180);
+    assert.strictEqual(result[1].metadata.authoritativeQuantitySource, 'customer');
+  });
+
+  it('material quantity cannot overwrite a customer quantity', () => {
+    const { applyResidentialRepairQuantityProvenance } = require('../server');
+
+    const item = {
+      desc: 'Bathroom drywall repair',
+      qty: 60,
+      unit: 'sqft',
+      source: 'customer',
+      metadata: { authoritativeQty: 60, authoritativeUnit: 'sqft', authoritativeQuantitySource: 'customer' },
+      materials: [{ desc: 'Drywall patch material', qty: 120, unit: 'sqft', unitCost: 1.2 }]
+    };
+
+    const result = applyResidentialRepairQuantityProvenance([item])[0];
+    assert.strictEqual(result.qty, 60);
+    assert.strictEqual(result.materials[0].qty, 60);
+    assert.strictEqual(result.materials[0].unit, 'sqft');
+  });
+
+  it('laundry and master closet remain distinct normalized work areas', () => {
+    const { buildNormalizedWorkAreaIdentity } = require('../server');
+
+    const laundry = buildNormalizedWorkAreaIdentity({
+      location: 'Laundry Room',
+      category: 'paint',
+      desc: 'Laundry room ceiling paint and stain block',
+      qty: 180,
+      unit: 'sqft',
+      metadata: { authoritativeQty: 180, authoritativeUnit: 'sqft' }
+    });
+
+    const masterCloset = buildNormalizedWorkAreaIdentity({
+      location: 'Master Closet',
+      category: 'paint',
+      desc: 'Master closet seam repair, stain block, and ceiling paint',
+      qty: 180,
+      unit: 'sqft',
+      metadata: { authoritativeQty: 180, authoritativeUnit: 'sqft' }
+    });
+
+    assert.notStrictEqual(laundry, masterCloset);
+  });
+
+  it('bathroom caulk and drywall repair remain distinct work areas', () => {
+    const { buildNormalizedWorkAreaIdentity } = require('../server');
+
+    const caulk = buildNormalizedWorkAreaIdentity({
+      location: 'Bathroom',
+      category: 'caulk',
+      desc: 'Bathroom caulk grout cleanup around shower',
+      qty: 20,
+      unit: 'lf',
+      metadata: { authoritativeQty: 20, authoritativeUnit: 'lf' }
+    });
+
+    const drywall = buildNormalizedWorkAreaIdentity({
+      location: 'Bathroom',
+      category: 'drywall',
+      desc: 'Bathroom drywall repair with ceiling patch',
+      qty: 60,
+      unit: 'sqft',
+      metadata: { authoritativeQty: 60, authoritativeUnit: 'sqft' }
+    });
+
+    assert.notStrictEqual(caulk, drywall);
+  });
+
+  it('soffit remains distinct from other repair areas', () => {
+    const { buildNormalizedWorkAreaIdentity } = require('../server');
+
+    const soffit = buildNormalizedWorkAreaIdentity({
+      location: 'Bay Window',
+      category: 'soffit',
+      desc: 'Install F-channel and vinyl soffit with insulation',
+      qty: 18,
+      unit: 'lf',
+      metadata: { authoritativeQty: 18, authoritativeUnit: 'lf' }
+    });
+
+    const bathCaulk = buildNormalizedWorkAreaIdentity({
+      location: 'Bathroom',
+      category: 'caulk',
+      desc: 'Bathroom caulk around tub',
+      qty: 20,
+      unit: 'lf',
+      metadata: { authoritativeQty: 20, authoritativeUnit: 'lf' }
+    });
+
+    assert.notStrictEqual(soffit, bathCaulk);
+  });
+
+  it('baseline exclusions are deterministic and repeatable', () => {
+    const { generateBaselineExclusionsForScope } = require('../server');
+
+    const first = generateBaselineExclusionsForScope('Laundry room ceiling paint/stain block and bay window soffit insulation repair');
+    const second = generateBaselineExclusionsForScope('Laundry room ceiling paint/stain block and bay window soffit insulation repair');
+    assert.deepStrictEqual(first, second);
+    assert.ok(first.some((exclusion) => exclusion.toLowerCase().includes('concealed')));
+  });
+
+  it('project summary contains all normalized work areas and not just the first line item', () => {
+    const { buildResidentialRepairProjectSummary } = require('../server');
+
+    const items = [
+      { location: 'Laundry Room', operation: 'paint', desc: 'Ceiling paint and stain block', qty: 180, unit: 'sqft' },
+      { location: 'Bay Window', operation: 'soffit', desc: 'F-channel and soffit install', qty: 18, unit: 'lf' },
+      { location: 'Bathroom', operation: 'caulk', desc: 'Caulk grout cleanup', qty: 20, unit: 'lf' },
+      { location: 'Master Closet', operation: 'paint', desc: 'Ceiling paint and seam repair', qty: 180, unit: 'sqft' }
+    ];
+
+    const summary = buildResidentialRepairProjectSummary(items);
+    assert.ok(summary.toLowerCase().includes('laundry room'));
+    assert.ok(summary.toLowerCase().includes('bay window'));
+    assert.ok(summary.toLowerCase().includes('bathroom'));
+    assert.ok(summary.toLowerCase().includes('master closet'));
+  });
+
+  it('Brian Tiller residential scope summary includes the full multi-trade project instead of only the first task', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderResidentialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      projectClass: 'residential',
+      type: 'Residential Repair',
+      notes: 'Laundry room ceiling stain blocking and repainting. Bay window soffit/F-channel installation and insulation work. Bathtub/shower caulking cleanup and recaulk. Bathroom drywall and paint repair. Master-closet ceiling seam repair, stain blocking, and painting.',
+      lineItems: [
+        { desc: 'Laundry room ceiling stain blocking and repainting', qty: 1, unit: 'job' },
+        { desc: 'Bay window soffit / F-channel installation and insulation work', qty: 1, unit: 'job' },
+        { desc: 'Bathtub/shower caulking cleanup and recaulk', qty: 1, unit: 'job' },
+        { desc: 'Bathroom drywall and paint repair', qty: 1, unit: 'job' },
+        { desc: 'Master-closet ceiling seam repair, stain blocking, and painting', qty: 1, unit: 'job' }
+      ],
+      exclusions: ['Cleanup beyond normal dust control']
+    };
+
+    const scope = context.buildCanonicalCustomerScope(estimate);
+    assert.ok(scope.projectScope.toLowerCase().includes('laundry room'));
+    assert.ok(scope.projectScope.toLowerCase().includes('bay window'));
+    assert.ok(scope.projectScope.toLowerCase().includes('bathroom'));
+    assert.ok(scope.projectScope.toLowerCase().includes('master closet'));
+    assert.ok(scope.workIncluded.some((entry) => entry.toLowerCase().includes('laundry room')));
+    assert.ok(scope.workIncluded.some((entry) => entry.toLowerCase().includes('bay window')));
+    assert.notStrictEqual(scope.projectScope, estimate.lineItems[0].desc);
+  });
+
+  it('company labor-rate changes deterministically change labor cost', () => {
+    const { calculateResidentialRepairLabor } = require('../server');
+
+    const rateA = calculateResidentialRepairLabor({ qty: 40, unit: 'sqft', category: 'paint', productionStandard: { setupHours: 0.5, productionRate: 40, productionRateUnit: 'sqft/hr', minimumTaskHours: 0.5 } }, 85);
+    const rateB = calculateResidentialRepairLabor({ qty: 40, unit: 'sqft', category: 'paint', productionStandard: { setupHours: 0.5, productionRate: 40, productionRateUnit: 'sqft/hr', minimumTaskHours: 0.5 } }, 100);
+
+    assert.strictEqual(rateA.laborCost, 1.5 * 85);
+    assert.strictEqual(rateB.laborCost, 1.5 * 100);
+    assert.notStrictEqual(rateA.laborCost, rateB.laborCost);
+  });
+
+  it('2-hour project minimum is applied only when total project labor is below 2 hours', () => {
+    const { calculateResidentialRepairProjectMinimum } = require('../server');
+
+    const belowMinimum = calculateResidentialRepairProjectMinimum([
+      { category: 'paint', quantity: 10, unit: 'sqft', laborHours: 0.5 },
+      { category: 'caulk', quantity: 5, unit: 'lf', laborHours: 0.75 }
+    ], 85, 2);
+
+    const aboveMinimum = calculateResidentialRepairProjectMinimum([
+      { category: 'paint', quantity: 10, unit: 'sqft', laborHours: 1.25 },
+      { category: 'caulk', quantity: 5, unit: 'lf', laborHours: 1.25 }
+    ], 85, 2);
+
+    assert.strictEqual(belowMinimum.projectLaborHours, 2);
+    assert.strictEqual(aboveMinimum.projectLaborHours, 2.5);
+    assert.strictEqual(belowMinimum.lineItems[0].laborHours, 0.5);
+    assert.strictEqual(belowMinimum.lineItems[1].laborHours, 0.75);
+  });
+
+  it('categories without an approved production rate are marked needs_company_rate instead of using AI price', () => {
+    const { getResidentialRepairProductionStandard } = require('../server');
+
+    const standard = getResidentialRepairProductionStandard('paint');
+    assert.strictEqual(standard.status, 'needs_company_rate');
+    assert.strictEqual(standard.productionRate, null);
+  });
+
+  it('identical deterministic inputs return identical residential repair pricing results', () => {
+    const { calculateResidentialRepairPricing } = require('../server');
+
+    const itemA = {
+      desc: 'Bathroom caulk repair',
+      qty: 20,
+      unit: 'lf',
+      category: 'caulk',
+      materials: [{ desc: 'Caulk and sealant', qty: 20, unit: 'lf', unitCost: 0.8 }],
+      productionStandard: { setupHours: 0.25, productionRate: null, productionRateUnit: 'lf/hr', minimumTaskHours: 0.5, status: 'needs_company_rate' }
+    };
+
+    const resultA = calculateResidentialRepairPricing(itemA, 85, 20);
+    const resultB = calculateResidentialRepairPricing({ ...itemA, materials: [{ ...itemA.materials[0] }] }, 85, 20);
+
+    assert.deepStrictEqual(resultA, resultB);
+    assert.strictEqual(resultA.status, 'needs_company_rate');
   });
 });
