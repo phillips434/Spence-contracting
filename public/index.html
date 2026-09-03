@@ -195,6 +195,15 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}input[t
   .bva-val{font-size:13px}
 }
 
+.diag-btn{background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.diag-panel{position:fixed;inset:0;background:rgba(10,14,24,0.75);display:none;z-index:300;align-items:center;justify-content:center;padding:20px}
+.diag-panel.show{display:flex}
+.diag-panel-box{width:min(92vw,900px);max-height:82vh;overflow:auto;background:#fff;border-radius:16px;padding:18px 18px 14px;box-shadow:0 20px 60px rgba(0,0,0,0.25);color:#1A1A2E}
+.diag-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px}
+.diag-panel-title{font-size:18px;font-weight:800}
+.diag-close{background:#2B3990;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}
+#diagReport{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55;background:#f7f8fb;border:1px solid #e5e7ef;border-radius:10px;padding:12px;max-height:62vh;overflow:auto}
+
 /* Client view: hide all contractor UI */
 body.client-mode #aiPanel,
 body.client-mode #estDetailPage,
@@ -342,6 +351,7 @@ body.client-mode .phead { display:none !important; }
     <div style="display:flex;gap:8px;align-items:center">
       <button class="bell-btn" onclick="openNotifications()" title="Notifications">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
       <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()" title="Settings">&#9881;</button>
+      <button class="diag-btn" id="diagOpenBtn" onclick="openDiagnosticPanel()" title="Diagnostic panel">Diag</button>
       <button onclick="signOutUser()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer">Out</button>
       <button id="pwaInstallBtn" onclick="showInstallPrompt()" title="Install App" style="display:none;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center">&#8681;</button>
       <button class="btn-orange" id="btnNew">+ New</button>
@@ -703,6 +713,15 @@ body.client-mode .phead { display:none !important; }
 
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)"/>
 <div class="toast" id="toast"></div>
+<div class="diag-panel" id="diagPanel">
+  <div class="diag-panel-box">
+    <div class="diag-panel-head">
+      <div class="diag-panel-title">Workspace Diagnostic</div>
+      <button class="diag-close" onclick="closeDiagnosticPanel()">Close</button>
+    </div>
+    <div id="diagReport">Loading runtime diagnostics...</div>
+  </div>
+</div>
 <script>
 var _selectedSubItems=[];
 
@@ -798,6 +817,169 @@ var notifications=[],unreadCount=0,currentEstId=null,editEstId=null,liTabMode="d
 
 var SEED=[{id:"s1",client:"Hargrove Residence",address:"4821 Maple Ridge Dr",type:"Kitchen Remodel",status:"In Progress",startDate:"2026-03-10",endDate:"2026-05-15",budget:48000,spent:22400,pm:"Danny Cruz",color:"#2B3990",notes:"",jobNum:"JOB-0001",scopeItems:[{desc:"Demo existing cabinets and countertops",start:"2026-03-10",end:"2026-03-14",budget:2000,actual:1800,complete:"Complete",assignTo:"",assignPhone:"",assignEmail:""},{desc:"Install new cabinets",start:"2026-04-01",end:"2026-04-18",budget:12000,actual:0,complete:"In Progress",assignTo:"",assignPhone:"",assignEmail:""}],choices:[{category:"Cabinetry",item:"Shaker White Maple",vendor:"KraftMaid",status:"Ordered",notes:"Lead time 6 wks",budgetAmt:12000,actualAmt:11800}],costs:[{category:"Labor",description:"Framing crew",budgetAmt:8000,actualAmt:8200}],punchList:[{text:"Touch up paint in hallway",done:false,category:"Painting"}],changeOrders:[{title:"Add under-cabinet lighting",type:"Owner Request",status:"Approved",budgetImpact:1200,description:"Client requested LED strips",date:"2026-03-28"}],dailyLogs:[{date:"2026-04-08",crew:"Danny Cruz",weather:"Clear 72F",work:"Installed upper cabinet boxes.",issues:""}],notesLog:[]},{id:"s2",client:"Vega Commercial",address:"110 Commerce Blvd",type:"Office Build-Out",status:"Planning",startDate:"2026-05-01",endDate:"2026-07-30",budget:135000,spent:8200,pm:"Rena Okafor",color:"#3A78E8",notes:"",jobNum:"JOB-0002",scopeItems:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]},{id:"s3",client:"Thornfield Estate",address:"8 Crestview Lane",type:"Master Bath",status:"Completed",startDate:"2026-01-06",endDate:"2026-03-28",budget:62000,spent:59800,pm:"Danny Cruz",color:"#2EAA72",notes:"",jobNum:"JOB-0003",scopeItems:[],choices:[],costs:[],punchList:[],changeOrders:[],dailyLogs:[],notesLog:[]}];
 function T(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2200);}
+
+async function collectRuntimeDiagnosticState(){
+  var uid = currentUser && currentUser.uid ? currentUser.uid : null;
+  var errors = [];
+  var employeeProfile = { plan: null, ownerUid: null, companyName: null };
+  var ownerUid = null;
+  var workspaceUid = null;
+  var settingsTarget = 'not instrumented';
+  var projectTarget = 'not instrumented';
+  var estimateTarget = 'not instrumented';
+  var companyNameLoaded = DD && DD.companyName ? DD.companyName : null;
+  var syncLabelText = document.getElementById('syncLabel') ? document.getElementById('syncLabel').textContent : '';
+  var onboardingVisible = false;
+  var authVisible = !!document.getElementById('authScreen') && getComputedStyle(document.getElementById('authScreen')).display !== 'none';
+  var mainVisible = !!document.getElementById('mainView') && getComputedStyle(document.getElementById('mainView')).display !== 'none';
+  var localStorageRelevant = 'no relevant keys';
+  var sessionStorageRelevant = 'no relevant keys';
+
+  try {
+    if (uid && db && db.collection) {
+      var profileDoc = await db.collection('userProfiles').doc(uid).get();
+      if (profileDoc.exists) {
+        var profileData = profileDoc.data() || {};
+        employeeProfile.plan = profileData.plan || null;
+        employeeProfile.ownerUid = profileData.ownerUid || null;
+        employeeProfile.companyName = profileData.companyName || profileData.company || null;
+      }
+    }
+  } catch (e) {
+    errors.push('profile read failed: ' + (e && e.message ? e.message : String(e)));
+  }
+
+  try {
+    ownerUid = typeof resolveCurrentOwnerUid === 'function' ? await resolveCurrentOwnerUid() : null;
+  } catch (e) {
+    errors.push('resolveCurrentOwnerUid failed: ' + (e && e.message ? e.message : String(e)) );
+  }
+
+  try {
+    workspaceUid = typeof resolveWorkspaceUidForSession === 'function' && uid ? await resolveWorkspaceUidForSession(uid) : null;
+  } catch (e) {
+    errors.push('resolveWorkspaceUidForSession failed: ' + (e && e.message ? e.message : String(e)) );
+  }
+
+  if (sCol && sCol.path) {
+    settingsTarget = 'not instrumented';
+  }
+  if (col && col.path) {
+    projectTarget = col.path;
+  }
+  if (eCol && eCol.path) {
+    estimateTarget = eCol.path;
+  }
+
+  try {
+    var onboardingHtml = typeof renderOnboarding === 'function' ? renderOnboarding() : '';
+    onboardingVisible = !!(onboardingHtml && String(onboardingHtml).indexOf('Welcome to Contractor Desk') !== -1);
+  } catch (e) {
+    errors.push('renderOnboarding check failed: ' + (e && e.message ? e.message : String(e)) );
+  }
+
+  try {
+    var localStorageKeys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (!key) continue;
+      if (/onboarding|workspace|team|settings|owner|trial|plan/i.test(key)) {
+        localStorageKeys.push(key + ': ' + localStorage.getItem(key));
+      }
+    }
+    localStorageRelevant = localStorageKeys.length ? localStorageKeys.join('\n') : 'no relevant keys';
+  } catch (e) {
+    errors.push('localStorage read failed: ' + (e && e.message ? e.message : String(e)) );
+    localStorageRelevant = 'storage unavailable';
+  }
+
+  try {
+    var sessionStorageKeys = [];
+    for (var j = 0; j < sessionStorage.length; j++) {
+      var sKey = sessionStorage.key(j);
+      if (!sKey) continue;
+      if (/onboarding|workspace|team|settings|owner|trial|plan/i.test(sKey)) {
+        sessionStorageKeys.push('session:' + sKey + ': ' + sessionStorage.getItem(sKey));
+      }
+    }
+    sessionStorageRelevant = sessionStorageKeys.length ? sessionStorageKeys.join('\n') : 'no relevant keys';
+  } catch (e) {
+    errors.push('sessionStorage read failed: ' + (e && e.message ? e.message : String(e)) );
+    sessionStorageRelevant = 'storage unavailable';
+  }
+
+  return {
+    url: window.location.href,
+    userAgent: navigator && navigator.userAgent ? navigator.userAgent : 'n/a',
+    currentUserUid: uid,
+    currentUserEmail: currentUser && currentUser.email ? currentUser.email : null,
+    employeeProfile: employeeProfile,
+    resolvedOwnerUid: ownerUid,
+    resolvedWorkspaceUid: workspaceUid,
+    sessionWorkspaceType: window._sessionWorkspaceType || null,
+    settingsTarget: settingsTarget,
+    settingsRuntimeValue: (DD && DD.companyName !== undefined) ? (DD.companyName || 'n/a') : 'not instrumented',
+    companyNameLoaded: companyNameLoaded,
+    projectTarget: projectTarget,
+    estimateTarget: estimateTarget,
+    projectCount: Array.isArray(projects) ? projects.length : 0,
+    estimateCount: Array.isArray(estimates) ? estimates.length : 0,
+    syncLabelText: syncLabelText,
+    onboardingVisible: onboardingVisible,
+    authScreenVisible: authVisible,
+    mainViewVisible: mainVisible,
+    localStorageRelevant: localStorageRelevant,
+    sessionStorageRelevant: sessionStorageRelevant,
+    errors: errors.length ? errors : ['none']
+  };
+}
+
+async function openDiagnosticPanel(){
+  var panel = document.getElementById('diagPanel');
+  var report = document.getElementById('diagReport');
+  if(!panel || !report){return;}
+  panel.classList.add('show');
+  report.textContent = 'Loading runtime diagnostics...';
+
+  try {
+    var state = await collectRuntimeDiagnosticState();
+    var lines = [
+      'CURRENT URL: ' + (state.url || 'n/a'),
+      'navigator.userAgent: ' + (state.userAgent || 'n/a'),
+      'Firebase currentUser.uid: ' + (state.currentUserUid || 'n/a'),
+      'Firebase currentUser.email: ' + (state.currentUserEmail || 'n/a'),
+      'employee userProfiles plan: ' + (state.employeeProfile && state.employeeProfile.plan !== null ? state.employeeProfile.plan : 'n/a'),
+      'employee userProfiles ownerUid: ' + (state.employeeProfile && state.employeeProfile.ownerUid !== null ? state.employeeProfile.ownerUid : 'n/a'),
+      'employee userProfiles companyName: ' + (state.employeeProfile && state.employeeProfile.companyName ? state.employeeProfile.companyName : 'n/a'),
+      'resolveCurrentOwnerUid(): ' + (state.resolvedOwnerUid !== null && state.resolvedOwnerUid !== undefined ? state.resolvedOwnerUid : 'n/a'),
+      'resolveWorkspaceUidForSession(currentUser.uid): ' + (state.resolvedWorkspaceUid !== null && state.resolvedWorkspaceUid !== undefined ? state.resolvedWorkspaceUid : 'n/a'),
+      'window._sessionWorkspaceType: ' + (state.sessionWorkspaceType || 'n/a'),
+      'settings target: ' + state.settingsTarget,
+      'settings runtime value: ' + (state.settingsRuntimeValue || 'n/a'),
+      'companyName actually loaded: ' + (state.companyNameLoaded || 'n/a'),
+      'projects target: ' + state.projectTarget,
+      'estimates target: ' + state.estimateTarget,
+      'projects currently loaded: ' + state.projectCount,
+      'estimates currently loaded: ' + state.estimateCount,
+      'syncLabel text: ' + (state.syncLabelText || 'n/a'),
+      'onboarding visible: ' + (state.onboardingVisible ? 'YES' : 'NO'),
+      'auth screen visible: ' + (state.authScreenVisible ? 'YES' : 'NO'),
+      'mainView visible: ' + (state.mainViewVisible ? 'YES' : 'NO'),
+      'relevant localStorage keys/values: ' + (state.localStorageRelevant || 'n/a'),
+      'relevant sessionStorage keys/values: ' + (state.sessionStorageRelevant || 'n/a'),
+      'relevant Firestore/profile/workspace errors: ' + state.errors.join('\n  - ')
+    ];
+    report.textContent = lines.join('\n');
+  } catch (e) {
+    report.textContent = 'Diagnostic read failed: ' + (e && e.message ? e.message : String(e));
+  }
+}
+
+function closeDiagnosticPanel(){
+  var panel = document.getElementById('diagPanel');
+  if(panel){ panel.classList.remove('show'); }
+}
+
 function fmt(d){if(!d)return"--";var p=d.split("-");return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(p[1])-1]+" "+parseInt(p[2]);}
 function fmtFull(d){if(!d)return"";var p=d.split("-");return["January","February","March","April","May","June","July","August","September","October","November","December"][parseInt(p[1])-1]+" "+parseInt(p[2])+", "+p[0];}
 function fmtTS(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString()+" "+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});}
