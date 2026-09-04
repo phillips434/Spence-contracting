@@ -1253,12 +1253,16 @@ function resolveCurrentOwnerUid(){
 function resolveWorkspaceUidForSession(uid){
   var activeUid = uid || (currentUser && currentUser.uid) || null;
   if(!activeUid){return Promise.resolve(null);}
-  if(activeUid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(activeUid);}
+
   return db.collection('userProfiles').doc(activeUid).get().then(function(doc){
     var data = doc.exists ? (doc.data() || {}) : {};
-    if(data && data.plan === 'team' && data.ownerUid && data.ownerUid !== activeUid){
-      return data.ownerUid;
+    var profilePlan = data && data.plan ? String(data.plan).toLowerCase() : '';
+    var profileOwnerUid = data && data.ownerUid ? data.ownerUid : null;
+
+    if(profilePlan === 'team' && profileOwnerUid && profileOwnerUid !== activeUid){
+      return profileOwnerUid;
     }
+
     return activeUid;
   }).catch(function(){
     return activeUid;
