@@ -1071,6 +1071,88 @@ app.get("/api/build-info", function (req, res) {
   });
 });
 
+app.post("/api/daily-log", async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
+  }
+
+  const daily = req.body || {};
+  const date = daily.date || "";
+  const weather = daily.weather || "";
+  const crew = daily.crew || "";
+  const workCompleted = daily.workCompleted || "";
+  const issues = daily.issues || "";
+  const projectContext = daily.projectContext || {};
+
+  const prompt = [
+    "You are a construction site foreman writing a concise daily log entry.",
+    "Use only the facts supplied below.",
+    "Do not invent work, crew, weather, delays, status, categories, recommendations, schedules, actions, or future tasks.",
+    "Do not add assistant conversation, questions, project-management language, or unrelated project details.",
+    "Polish grammar and tighten wording while preserving the substance of the contractor-entered facts.",
+    "Only rewrite the Work Completed section.",
+    "",
+    "Date: " + date,
+    "Weather: " + weather,
+    "Crew on Site: " + crew,
+    "Work Completed: " + workCompleted,
+    "Issues / Delays: " + issues,
+    "Project context: " + JSON.stringify(projectContext)
+  ].join("\n");
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
+        system: "Return only valid JSON with one key named workCompleted. The value must be a concise, fact-only Work Completed summary. Do not include assistant text, questions, schedules, recommendations, invented facts, project status, categories, or unrelated project details.",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const responseText = await response.text();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Daily log AI failed", detail: responseText.slice(0, 200) });
+    }
+
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (parseErr) {
+      return res.status(500).json({ error: "Daily log AI returned invalid JSON", detail: responseText.slice(0, 200) });
+    }
+
+    const contentText = data && data.content && data.content[0] && typeof data.content[0].text === "string" ? data.content[0].text : "";
+    if (!contentText) {
+      return res.status(500).json({ error: "Daily log AI returned no text" });
+    }
+
+    const cleanedText = contentText.trim().replace(/^```json\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanedText);
+    } catch (err) {
+      return res.status(500).json({ error: "Daily log AI returned non-JSON content", detail: cleanedText.slice(0, 200) });
+    }
+
+    if (!parsed || typeof parsed.workCompleted !== "string" || !parsed.workCompleted.trim()) {
+      return res.status(500).json({ error: "Daily log AI missing workCompleted field" });
+    }
+
+    return res.json({ workCompleted: parsed.workCompleted.trim() });
+  } catch (err) {
+    console.error("[AI DAILY LOG] failed", err);
+    return res.status(500).json({ error: err && err.message ? err.message : "Daily log AI failed" });
+  }
+});
+
 app.post("/api/estimate", async (req, res) => {
   const routeStart = Date.now();
   const contentLength = req.headers && req.headers['content-length'] ? req.headers['content-length'] : null;
