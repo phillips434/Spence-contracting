@@ -2220,8 +2220,11 @@ function generateAIEstimate(){
     e2.exclusions=e2.exclusions||[];
     var changes=[];
     if(parsed.lineItems&&parsed.lineItems.length){
-      e2.lineItems=e2.lineItems.concat(parsed.lineItems);
-      changes.push('Added '+parsed.lineItems.length+' item(s)');
+      var newIndependentItems=parsed.lineItems.filter(function(li){return li && li.isNewWork===true;}).map(function(li){var itemCopy=Object.assign({},li);delete itemCopy.isNewWork;return itemCopy;});
+      if(newIndependentItems.length){
+        e2.lineItems=e2.lineItems.concat(newIndependentItems);
+        changes.push('Added '+newIndependentItems.length+' new item(s)');
+      }
     }
     if(parsed.deleteIndexes&&parsed.deleteIndexes.length){
       var toDelete=parsed.deleteIndexes.slice().sort(function(a,b){return b-a;});
