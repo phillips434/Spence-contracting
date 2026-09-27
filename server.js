@@ -1220,7 +1220,7 @@ app.post("/api/estimate", async (req, res) => {
               " No markdown, no code fences, no backticks, no explanation." +
               " Start your response with { and end with }." +
               " You are a construction estimator." +
-              ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"what was done"}' +
+              ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"residentialSummary":"","projectScope":"","workIncluded":[],"conditionsAssumptions":[],"exclusions":[],"message":"what was done"}' +
               " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildMaterialPricingContractText() +
               " Current items: " +
               items +
@@ -1234,6 +1234,14 @@ app.post("/api/estimate", async (req, res) => {
               (location ? " Location: " + location + "." : "") +
               (histCtx ? " HISTORICAL: " + histCtx + "." : "") +
               " Rules: lineItems=ADD, deleteIndexes=DELETE, updateItems=UPDATE." +
+              " IMPORTANT: when a follow-up adds detail, corrects quantity/specifications, or enriches work already represented in Current items, use updateItems for the closest matching existing line item instead of creating another line item." +
+              " Preserve the existing item's established quantity and pricing unless the contractor's instruction specifically requires changing them." +
+              " Only return lineItems for genuinely new work that is not already represented in Current items." +
+              " RESIDENTIAL SUMMARY: 1-2 concise sentences describing the overall project; high-level only; do not simply repeat Project Scope or Work Included." +
+              " PROJECT SCOPE: readable overview of the primary project areas and intended finished result; more descriptive than Residential Summary; do not simply copy Work Included." +
+              " WORK INCLUDED: complete detailed list of all materially included work; no arbitrary item cap; do not merely repeat the Project Scope paragraph." +
+              " CONDITIONS ASSUMPTIONS: allowances, supplier calculations, owner responsibilities, measurements awaiting verification, existing conditions, and other assumptions/conditions affecting the estimate." +
+              " EXCLUSIONS: only work/materials not included in the contract price; do not put conditions or assumptions into Exclusions; preserve the existing instruction not to repeat exclusions already in the current exclusions list." +
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
           }
