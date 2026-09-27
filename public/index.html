@@ -2253,18 +2253,19 @@ function generateAIEstimate(){
         changes.push('Added '+dedupedExclusions.length+' exclusion(s)');
       }
     }
+    var narrativeUpdate = parsed && parsed.narrativeUpdate && typeof parsed.narrativeUpdate === 'object' ? parsed.narrativeUpdate : null;
     var hasExplicitNarrativeField = false;
-    if(parsed.residentialSummary !== undefined && typeof parsed.residentialSummary === 'string' && parsed.residentialSummary.trim()){
+    if(parsed.residentialSummary !== undefined && typeof parsed.residentialSummary === 'string' && parsed.residentialSummary.trim() && (!narrativeUpdate || narrativeUpdate.residentialSummary === true)){
       e2.customerScope=e2.customerScope||{};
       e2.customerScope.residentialSummary=parsed.residentialSummary.trim();
       hasExplicitNarrativeField = true;
     }
-    if(parsed.projectScope !== undefined && typeof parsed.projectScope === 'string' && parsed.projectScope.trim()){
+    if(parsed.projectScope !== undefined && typeof parsed.projectScope === 'string' && parsed.projectScope.trim() && (!narrativeUpdate || narrativeUpdate.projectScope === true)){
       e2.customerScope=e2.customerScope||{};
       e2.customerScope.projectScope=parsed.projectScope.trim();
       hasExplicitNarrativeField = true;
     }
-    if(parsed.workIncluded !== undefined && Array.isArray(parsed.workIncluded) && parsed.workIncluded.length){
+    if(parsed.workIncluded !== undefined && Array.isArray(parsed.workIncluded) && parsed.workIncluded.length && (!narrativeUpdate || narrativeUpdate.workIncluded === true)){
       e2.customerScope=e2.customerScope||{};
       var cleanedWorkIncluded=parsed.workIncluded.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
       if(cleanedWorkIncluded.length){
@@ -2272,7 +2273,7 @@ function generateAIEstimate(){
         hasExplicitNarrativeField = true;
       }
     }
-    if(parsed.conditionsAssumptions !== undefined && Array.isArray(parsed.conditionsAssumptions) && parsed.conditionsAssumptions.length){
+    if(parsed.conditionsAssumptions !== undefined && Array.isArray(parsed.conditionsAssumptions) && parsed.conditionsAssumptions.length && (!narrativeUpdate || narrativeUpdate.conditionsAssumptions === true)){
       e2.customerScope=e2.customerScope||{};
       var cleanedConditions=parsed.conditionsAssumptions.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
       if(cleanedConditions.length){
