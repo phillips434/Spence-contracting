@@ -2285,7 +2285,13 @@ function generateAIEstimate(){
     if(resolvedProjectClass){
       e2.projectClass=resolvedProjectClass;
     }
-    if(!hasExplicitNarrativeField){
+    var hasUsableExistingCustomerScope = !!(e2.customerScope && (
+      (typeof e2.customerScope.residentialSummary === 'string' && e2.customerScope.residentialSummary.trim()) ||
+      (typeof e2.customerScope.projectScope === 'string' && e2.customerScope.projectScope.trim()) ||
+      (Array.isArray(e2.customerScope.workIncluded) && e2.customerScope.workIncluded.some(function(item){return typeof item === 'string' && item.trim();})) ||
+      (Array.isArray(e2.customerScope.conditionsAssumptions) && e2.customerScope.conditionsAssumptions.some(function(item){return typeof item === 'string' && item.trim();}))
+    ));
+    if(!hasExplicitNarrativeField && !hasUsableExistingCustomerScope){
       e2.customerScope=buildCanonicalCustomerScope(e2);
     }
     eCol.doc(e2.id).set(e2).then(function(){
