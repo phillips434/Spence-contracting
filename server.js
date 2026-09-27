@@ -12,7 +12,7 @@ const APP_BUILD_INFO = {
   generatedAt: new Date().toISOString(),
   source: 'runtime-env'
 };
-const AI_BREAKDOWN_EXPERIMENT = (process.env.AI_BREAKDOWN_EXPERIMENT === 'true' || process.env.AI_BREAKDOWN_EXPERIMENT === '1');
+const AI_BREAKDOWN_EXPERIMENT = false;
 
 function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
 
