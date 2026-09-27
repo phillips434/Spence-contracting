@@ -2322,7 +2322,7 @@ function generateAIEstimate(){
     profile=DD.aiProfile||{};
     dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
     lr=parseFloat(profile.laborRate)||85;
-    existingItems=JSON.stringify((e.lineItems||[]).slice(0,20).map(function(li,i){
+    existingItems=JSON.stringify((e.lineItems||[]).map(function(li,i){
       return{index:i,desc:li.desc,category:li.category,total:li.total};
     }));
     existingExcls=JSON.stringify((e.exclusions||[]).slice(0,10));
