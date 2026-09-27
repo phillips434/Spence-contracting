@@ -2250,27 +2250,40 @@ function generateAIEstimate(){
         changes.push('Added '+dedupedExclusions.length+' exclusion(s)');
       }
     }
+    var hasExplicitNarrativeField = false;
     if(parsed.residentialSummary !== undefined && typeof parsed.residentialSummary === 'string' && parsed.residentialSummary.trim()){
       e2.customerScope=e2.customerScope||{};
       e2.customerScope.residentialSummary=parsed.residentialSummary.trim();
+      hasExplicitNarrativeField = true;
     }
     if(parsed.projectScope !== undefined && typeof parsed.projectScope === 'string' && parsed.projectScope.trim()){
       e2.customerScope=e2.customerScope||{};
       e2.customerScope.projectScope=parsed.projectScope.trim();
+      hasExplicitNarrativeField = true;
     }
     if(parsed.workIncluded !== undefined && Array.isArray(parsed.workIncluded) && parsed.workIncluded.length){
       e2.customerScope=e2.customerScope||{};
-      e2.customerScope.workIncluded=parsed.workIncluded.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
+      var cleanedWorkIncluded=parsed.workIncluded.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
+      if(cleanedWorkIncluded.length){
+        e2.customerScope.workIncluded=cleanedWorkIncluded;
+        hasExplicitNarrativeField = true;
+      }
     }
     if(parsed.conditionsAssumptions !== undefined && Array.isArray(parsed.conditionsAssumptions) && parsed.conditionsAssumptions.length){
       e2.customerScope=e2.customerScope||{};
-      e2.customerScope.conditionsAssumptions=parsed.conditionsAssumptions.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
+      var cleanedConditions=parsed.conditionsAssumptions.filter(function(item){return typeof item === 'string' && item.trim();}).map(function(item){return item.trim();});
+      if(cleanedConditions.length){
+        e2.customerScope.conditionsAssumptions=cleanedConditions;
+        hasExplicitNarrativeField = true;
+      }
     }
     var resolvedProjectClass=normalizeProjectClass(e2.projectClass || e2.projectType || e2.type) || resolveEstimateProjectClass(e2);
     if(resolvedProjectClass){
       e2.projectClass=resolvedProjectClass;
     }
-    e2.customerScope=buildCanonicalCustomerScope(e2);
+    if(!hasExplicitNarrativeField){
+      e2.customerScope=buildCanonicalCustomerScope(e2);
+    }
     eCol.doc(e2.id).set(e2).then(function(){
       T(parsed.message||changes.join(', ')||'Done!');
       document.getElementById('aiPrompt').value='';
