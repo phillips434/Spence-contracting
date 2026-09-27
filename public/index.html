@@ -2425,21 +2425,42 @@ function generateAILog(){
   var p=gpr();if(!p)return;
   var logBtn=document.getElementById('aiLogBtn');
   if(logBtn)logBtn.disabled=true;
-  var items=(p.scopeItems||[]).filter(function(s){return s.complete==='In Progress';}).map(function(s){return s.desc;}).join(', ');
-  var sp='You are a construction site foreman. Write a brief realistic 2-3 sentence daily log entry. Active scope: '+(items||'General construction');
+  var date=document.getElementById('logDate')?document.getElementById('logDate').value:'';
+  var weather=document.getElementById('logWeather')?document.getElementById('logWeather').value.trim():'';
+  var crew=document.getElementById('logCrew')?document.getElementById('logCrew').value.trim():'';
+  var workCompleted=document.getElementById('logWork')?document.getElementById('logWork').value.trim():'';
+  var issues=document.getElementById('logIssues')?document.getElementById('logIssues').value.trim():'';
+  var projectContext={
+    client:p.client||'',
+    type:p.type||'',
+    activeItems:(p.scopeItems||[]).filter(function(s){return s.complete==='In Progress';}).map(function(s){return s.desc;})
+  };
   var _logCtrl=new AbortController();
   var _logTimeout=setTimeout(function(){_logCtrl.abort();},15000);
-  fetch('/api/estimate',{
+  fetch('/api/daily-log',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,
-      system:'You are a construction foreman. Write a brief 2-3 sentence daily log entry. Return only the log text.',
-      messages:[{role:'user',content:'Project: '+p.client+' - '+p.type+'. Active items: '+(items||'general work')}]}),
+    body:JSON.stringify({
+      date:date,
+      weather:weather,
+      crew:crew,
+      workCompleted:workCompleted,
+      issues:issues,
+      projectContext:projectContext
+    }),
     signal:_logCtrl.signal
-  }).then(function(r){clearTimeout(_logTimeout);return r.json();
+  }).then(function(r){
+    clearTimeout(_logTimeout);
+    if(!r.ok){
+      return r.text().then(function(t){throw new Error('Daily log server error '+r.status+': '+t.slice(0,160));});
+    }
+    return r.json();
   }).then(function(data){
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    document.getElementById('logWork').value=text.trim();
+    var text=(data&&data.workCompleted)?String(data.workCompleted).trim():'';
+    if(!text){
+      throw new Error('Daily log AI returned empty work completed.');
+    }
+    document.getElementById('logWork').value=text;
     T('AI log generated!');
   }).catch(function(err){
     clearTimeout(_logTimeout);
