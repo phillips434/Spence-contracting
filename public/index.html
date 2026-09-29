@@ -2220,10 +2220,20 @@ function generateAIEstimate(){
     e2.exclusions=e2.exclusions||[];
     var changes=[];
     if(parsed.lineItems&&parsed.lineItems.length){
-      var newIndependentItems=parsed.lineItems.filter(function(li){return li && li.isNewWork===true;}).map(function(li){var itemCopy=Object.assign({},li);delete itemCopy.isNewWork;return itemCopy;});
-      if(newIndependentItems.length){
-        e2.lineItems=e2.lineItems.concat(newIndependentItems);
-        changes.push('Added '+newIndependentItems.length+' new item(s)');
+      var generatedItems = parsed.lineItems.filter(function(li){
+        if(!li || typeof li !== 'object') return false;
+        if(Object.prototype.hasOwnProperty.call(li,'isNewWork') && li.isNewWork === false) return false;
+        if(Object.prototype.hasOwnProperty.call(li,'isNewWork') && li.isNewWork === true) return true;
+        return !!(li.desc || li.category) && (
+          (typeof li.qty !== 'undefined' && li.qty !== null) ||
+          (typeof li.unitCost !== 'undefined' && li.unitCost !== null) ||
+          (typeof li.total !== 'undefined' && li.total !== null)
+        );
+      });
+      if(generatedItems.length){
+        var normalizedGeneratedItems = generatedItems.map(function(li){ var itemCopy=Object.assign({},li); delete itemCopy.isNewWork; return itemCopy; });
+        e2.lineItems=e2.lineItems.concat(normalizedGeneratedItems);
+        changes.push('Added '+normalizedGeneratedItems.length+' item(s)');
       }
     }
     if(parsed.deleteIndexes&&parsed.deleteIndexes.length){
@@ -2363,12 +2373,12 @@ function generateAIEstimate(){
     history:(intakeState.history||[]).slice()
   };
 
-  var intakePayload={mode:'estimate-intake',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+  var intakePayload={mode:'estimate-intake',max_tokens:2000,
     prompt:prompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
     location:profile.location||'',histCtx:_histCtxVal,
     questionContext:questionContext,
     messages:[{role:'user',content:prompt}]};
-  var generationPayload={mode:'estimate-generate',model:'claude-haiku-4-5-20251001',max_tokens:2000,
+  var generationPayload={mode:'estimate-generate',max_tokens:8000,
     prompt:originalPrompt,items:existingItems,excls:existingExcls,markup:dm,laborRate:lr,
     location:profile.location||'',histCtx:_histCtxVal,
     questionContext:questionContext,
@@ -3971,7 +3981,6 @@ function runCOGenerationRequest(title, desc, btnEl, questionState){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       mode:'change-order-generate',
-      model:'gpt-4.1',
       max_tokens:1200,
       laborRate:lr,
       markup:markup,
@@ -4087,7 +4096,6 @@ function generateCOWithAI(btnEl){
     if(btn){btn.disabled=true;btn.textContent='Checking scope...';}
     fetch('/api/estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       mode:'change-order-intake',
-      model:'gpt-4.1',
       max_tokens:1200,
       prompt:nextPrompt,
       title:title,
@@ -4137,7 +4145,6 @@ function generateCOWithAI(btnEl){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       mode:'change-order-intake',
-      model:'gpt-4.1',
       max_tokens:1200,
       prompt:combined,
       title:title,

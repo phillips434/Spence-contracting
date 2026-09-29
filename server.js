@@ -27,6 +27,34 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+function detectGenerationFailure(data, mode){
+  if (!data || typeof data !== 'object') return { failed: false };
+  if (mode !== 'estimate-generate' && mode !== 'change-order-generate') return { failed: false };
+
+  const openaiChoice = (data && data._raw && data._raw.choices && data._raw.choices[0]) ||
+    (data && data.choices && data.choices[0]) || null;
+  const openaiFinishReason = openaiChoice && openaiChoice.finish_reason ? openaiChoice.finish_reason : null;
+  const anthropicStopReason = data && data.stop_reason ? data.stop_reason : null;
+
+  if (anthropicStopReason === 'max_tokens') {
+    return {
+      failed: true,
+      error: 'generation_truncated',
+      message: 'AI estimate generation was truncated by the token limit and could not be trusted.'
+    };
+  }
+
+  if (openaiFinishReason === 'length') {
+    return {
+      failed: true,
+      error: 'generation_truncated',
+      message: 'OpenAI estimate generation was truncated by the output token limit and could not be trusted.'
+    };
+  }
+
+  return { failed: false };
+}
+
 const MATERIAL_PRICE_CATALOG = Object.freeze({
   'nm-b 12/2': { unit: 'ft', unitCost: 0.72, aliases: ['romex 12/2', 'romex 12-2', 'nm-b 12-2', '12/2 nm-b', '12-2 nm-b', 'nm b 12 2', '12 2 nm-b', '12/2 romex', '12-2 romex', 'romex 12 2', '12 2 romex', '12 gauge 2 conductor nm-b', '12 gauge 2 conductor nmb', '12 gauge 2 conductor romex', '12-2 wire', '12/2 wire', '12 2 wire'] },
   'nm-b 14/2': { unit: 'ft', unitCost: 0.58, aliases: ['romex 14/2', 'romex 14-2', 'nm-b 14-2', '14/2 nm-b', '14-2 nm-b', 'nm b 14 2', '14 2 nm-b', '14/2 romex', '14-2 romex', 'romex 14 2', '14 2 romex', '14 gauge 2 conductor nm-b', '14 gauge 2 conductor nmb', '14 gauge 2 conductor romex', '14-2 wire', '14/2 wire', '14 2 wire'] },
@@ -1164,12 +1192,6 @@ app.post("/api/estimate", async (req, res) => {
     bodySizeBytes: req.body && typeof req.body === 'object' ? JSON.stringify(req.body).length : (typeof req.body === 'string' ? Buffer.byteLength(req.body) : 0)
   });
   try {
-    const apiKey = process.env.ANTHROPIC_KEY;
-    if (!apiKey) {
-      console.error("STEP 1 ERROR - Missing Anthropic API key");
-      return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
-    }
-
     try {
       console.log("STEP 2 - Request body parsed", { hasBody: !!req.body, bodyKeys: req.body ? Object.keys(req.body) : [] });
     } catch (err) {
@@ -1189,7 +1211,29 @@ app.post("/api/estimate", async (req, res) => {
       const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
       const isEstimateRequest = mode === "estimate" || mode === "estimate-generate";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
-      console.log("STEP 3 - Internal mode determined", { mode, isIntakeRequest, isEstimateIntakeRequest, isCOIntakeRequest, isEstimateRequest, isChangeOrderGenerateRequest });
+      const isOpenAIRequiredRoute = isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
+      console.log("STEP 3 - Internal mode determined", {
+        mode,
+        isIntakeRequest,
+        isEstimateIntakeRequest,
+        isCOIntakeRequest,
+        isEstimateRequest,
+        isChangeOrderGenerateRequest,
+        isOpenAIRequiredRoute
+      });
+
+      if (isOpenAIRequiredRoute && !process.env.OPENAI_API_KEY) {
+        console.error("[/api/estimate] Provider configuration error: OPENAI_API_KEY missing for estimator/change-order route.");
+        return res.status(503).json({
+          error: "OPENAI_API_KEY is not configured for the estimator/change-order route. This endpoint requires OpenAI GPT-4.1 and must not silently fall back to Anthropic."
+        });
+      }
+
+      const apiKey = process.env.ANTHROPIC_KEY;
+      if (!isOpenAIRequiredRoute && !apiKey) {
+        console.error("STEP 1 ERROR - Missing Anthropic API key");
+        return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
+      }
 
       const title = body.title || "";
       const description = body.description || "";
@@ -1211,7 +1255,7 @@ app.post("/api/estimate", async (req, res) => {
           const prompt = body.prompt || "";
           const originalEstimateContext = body.originalEstimateContext || "";
           const model = body.model || "claude-haiku-4-5-20251001";
-          const maxTok = body.max_tokens || 2000;
+          const maxTok = mode === "estimate-generate" ? 8000 : (body.max_tokens || 2000);
           const questionContext = body.questionContext || null;
           const followUpContext = questionContext
             ? " FOLLOW-UP CONTEXT: Original request: " +
@@ -1355,16 +1399,17 @@ app.post("/api/estimate", async (req, res) => {
         let responseText;
         let data;
 
-        // If this is an intake request or estimate/CO generation and OPENAI_API_KEY is present, route to OpenAI
-        if ((isIntakeRequest || mode === "estimate-generate" || mode === "change-order-generate") && process.env.OPENAI_API_KEY) {
+        // Estimator and change-order routes must use OpenAI GPT-4.1 explicitly and must not silently fall back to Anthropic.
+        if (isOpenAIRequiredRoute) {
           const openaiModel = "gpt-4.1";
+          const openaiMaxTokens = mode === "estimate-generate" ? 8000 : ((anthropicBody && anthropicBody.max_tokens) || 2000);
           const openaiBody = {
             model: openaiModel,
             messages: [
               { role: "system", content: (anthropicBody && anthropicBody.system) || "" },
               { role: "user", content: (anthropicBody && anthropicBody.messages && anthropicBody.messages[0] && anthropicBody.messages[0].content) || "" }
             ],
-            max_tokens: (anthropicBody && anthropicBody.max_tokens) || 2000,
+            max_tokens: openaiMaxTokens,
             temperature: 0
           };
           if (AI_BREAKDOWN_EXPERIMENT && (mode === "estimate-generate" || mode === "change-order-generate")) {
@@ -1729,6 +1774,18 @@ app.post("/api/estimate", async (req, res) => {
             });
           }
         }
+        const generationFailure = detectGenerationFailure(data, mode);
+        if (generationFailure.failed) {
+          console.error("[AI ESTIMATE SERVER] generation failed due to truncation", {
+            mode,
+            stopReason: data && data.stop_reason,
+            provider: process.env.OPENAI_API_KEY ? 'openai' : 'anthropic'
+          });
+          return res.status(502).json({
+            error: generationFailure.error,
+            message: generationFailure.message
+          });
+        }
         if (isIntakeRequest && data && data.content && data.content[0] && typeof data.content[0].text === "string") {
           try {
             const rawText = data.content[0].text;
@@ -2011,4 +2068,5 @@ module.exports = {
   applyResidentialRepairQuantityProvenance,
   buildResidentialRepairProjectSummary,
   getCompanyLaborRate,
+  detectGenerationFailure,
 };

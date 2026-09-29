@@ -775,6 +775,215 @@ describe('coIntakeReadiness', () => {
     assert.ok(!card.innerHTML.includes('Use This Total'));
   });
 
+  it('requires OpenAI for estimator and change-order routes and fails clearly without a provider key', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+
+    delete process.env.OPENAI_API_KEY;
+    process.env.ANTHROPIC_KEY = 'test-key';
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        content: [{ text: JSON.stringify({ action: 'ready', lineItems: [], deleteIndexes: [], updateItems: [], exclusions: [], message: 'ok' }) }]
+      })
+    });
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimator test',
+            description: 'Test description',
+            prompt: 'Create an estimate for a small remodel',
+            items: '[]',
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create an estimate for a small remodel' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(result.status, 503);
+      assert.ok(String(result.body && result.body.error).includes('OPENAI_API_KEY'));
+      assert.ok(String(result.body && result.body.error).includes('estimate'));
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
+  it('server sets 8000 max_tokens for the OpenAI estimate-generate request and rejects missing OPENAI_API_KEY with 503', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    const openAiCalls = [];
+
+    delete process.env.OPENAI_API_KEY;
+    process.env.ANTHROPIC_KEY = 'test-key';
+    global.fetch = async (url, options) => {
+      const body = JSON.parse(options && options.body ? options.body : '{}');
+      openAiCalls.push({ url, body });
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          choices: [{ message: { content: JSON.stringify({ action: 'ready', lineItems: [], deleteIndexes: [], updateItems: [], exclusions: [], message: 'ok' }) } }]
+        })
+      };
+    };
+
+    try {
+      const missingKeyResult = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create an estimate for a small remodel',
+            items: '[]',
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create an estimate for a small remodel' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(missingKeyResult.status, 503);
+      assert.ok(String(missingKeyResult.body && missingKeyResult.body.error).includes('OPENAI_API_KEY'));
+      assert.strictEqual(openAiCalls.length, 0);
+
+      process.env.OPENAI_API_KEY = 'test-key';
+      const successResult = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create an estimate for a small remodel',
+            items: '[]',
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create an estimate for a small remodel' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(successResult.status, 200);
+      assert.ok(openAiCalls.length >= 1);
+      assert.strictEqual(openAiCalls[openAiCalls.length - 1].body.max_tokens, 8000);
+      assert.strictEqual(openAiCalls[openAiCalls.length - 1].body.model, 'gpt-4.1');
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
   it('returns a valid provider intake response without failing on parse after a valid OpenAI question payload', async () => {
     const originalFetch = global.fetch;
     process.env.ANTHROPIC_KEY = 'test-key';
@@ -1575,6 +1784,293 @@ describe('coIntakeReadiness', () => {
     assert.ok(contractText.toLowerCase().includes('scope of work'));
     assert.ok(!contractText.toLowerCase().includes('test 1'));
     assert.ok(contractText.toLowerCase().includes('replace 400 linear feet') || contractText.toLowerCase().includes('12/2'));
+  });
+
+  it('RESIDENTIAL NARRATIVE A: residential summary, project scope, and work included remain independent', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderCommercialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      projectClass: 'residential',
+      notes: 'Kitchen remodel. Remove old cabinets and repaint the walls.',
+      lineItems: [
+        { desc: 'Remove old cabinets' },
+        { desc: 'Paint walls' }
+      ],
+      customerScope: {
+        residentialSummary: 'Kitchen remodel for a small family home.',
+        projectScope: 'Replace the kitchen cabinetry and refresh the painted surfaces.',
+        workIncluded: ['Remove old cabinets', 'Paint walls'],
+        conditionsAssumptions: ['Existing plumbing remains in place.'],
+        exclusions: ['Structural repairs beyond the visible scope.']
+      }
+    };
+
+    const scope = context.getCanonicalCustomerScope(estimate);
+    assert.strictEqual(scope.residentialSummary, 'Kitchen remodel for a small family home.');
+    assert.strictEqual(scope.projectScope, 'Replace the kitchen cabinetry and refresh the painted surfaces.');
+    assert.deepStrictEqual(scope.workIncluded, ['Remove old cabinets', 'Paint walls']);
+    assert.deepStrictEqual(scope.conditionsAssumptions, ['Existing plumbing remains in place.']);
+    assert.deepStrictEqual(scope.exclusions, ['Structural repairs beyond the visible scope.']);
+  });
+
+  it('RESIDENTIAL NARRATIVE B: editing residentialSummary leaves projectScope and arrays unchanged', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderCommercialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      customerScope: {
+        residentialSummary: 'Original summary.',
+        projectScope: 'Original project scope.',
+        workIncluded: ['Item 1', 'Item 2'],
+        conditionsAssumptions: ['Condition 1'],
+        exclusions: ['Exclusion 1']
+      }
+    };
+
+    context.setScopeSectionValue(estimate, 'residentialSummary', 'Updated summary.');
+    assert.strictEqual(estimate.customerScope.residentialSummary, 'Updated summary.');
+    assert.strictEqual(estimate.customerScope.projectScope, 'Original project scope.');
+    assert.deepStrictEqual(estimate.customerScope.workIncluded, ['Item 1', 'Item 2']);
+    assert.deepStrictEqual(estimate.customerScope.conditionsAssumptions, ['Condition 1']);
+    assert.deepStrictEqual(estimate.customerScope.exclusions, ['Exclusion 1']);
+  });
+
+  it('RESIDENTIAL NARRATIVE C: editing projectScope leaves residentialSummary and arrays unchanged', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderCommercialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      customerScope: {
+        residentialSummary: 'Original summary.',
+        projectScope: 'Original project scope.',
+        workIncluded: ['Item 1', 'Item 2'],
+        conditionsAssumptions: ['Condition 1'],
+        exclusions: ['Exclusion 1']
+      }
+    };
+
+    context.setScopeSectionValue(estimate, 'projectScope', 'Updated project scope.');
+    assert.strictEqual(estimate.customerScope.residentialSummary, 'Original summary.');
+    assert.strictEqual(estimate.customerScope.projectScope, 'Updated project scope.');
+    assert.deepStrictEqual(estimate.customerScope.workIncluded, ['Item 1', 'Item 2']);
+    assert.deepStrictEqual(estimate.customerScope.conditionsAssumptions, ['Condition 1']);
+    assert.deepStrictEqual(estimate.customerScope.exclusions, ['Exclusion 1']);
+  });
+
+  it('RESIDENTIAL NARRATIVE D: legacy estimates with projectScope get a summary fallback without losing projectScope', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderCommercialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      projectClass: 'residential',
+      notes: 'Kitchen remodel and repaint. Existing layout stays in place.',
+      lineItems: [
+        { desc: 'Remove old cabinets' },
+        { desc: 'Paint walls' }
+      ],
+      customerScope: {
+        projectScope: 'Kitchen cabinet replacement and repaint.'
+      }
+    };
+
+    const scope = context.getCanonicalCustomerScope(estimate);
+    assert.strictEqual(scope.projectScope, 'Kitchen cabinet replacement and repaint.');
+    assert.strictEqual(scope.residentialSummary, 'Kitchen cabinet replacement and repaint.');
+    assert.deepStrictEqual(scope.workIncluded.length >= 1, true);
+  });
+
+  it('RESIDENTIAL NARRATIVE E: legacy customerScope arrays are preserved when present', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function normalizeProjectClass');
+    const end = html.indexOf('function renderCommercialNarrativeBlock', start);
+    const snippet = html.slice(start, end);
+    const context = { window: {}, Number };
+    vm.runInNewContext(snippet, context);
+
+    const estimate = {
+      customerScope: {
+        residentialSummary: 'Legacy summary preserved.',
+        projectScope: 'Legacy scope preserved.',
+        workIncluded: ['Work A', 'Work B'],
+        conditionsAssumptions: ['Condition A'],
+        exclusions: ['Exclusion A']
+      }
+    };
+
+    const scope = context.getCanonicalCustomerScope(estimate);
+    assert.deepStrictEqual(scope.workIncluded, ['Work A', 'Work B']);
+    assert.deepStrictEqual(scope.conditionsAssumptions, ['Condition A']);
+    assert.deepStrictEqual(scope.exclusions, ['Exclusion A']);
+    assert.strictEqual(scope.projectScope, 'Legacy scope preserved.');
+  });
+
+  it('ESTIMATE MERGE A: valid generated price entries without isNewWork are accepted when creating a new estimate', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function applyEstimateChanges');
+    const end = html.indexOf('function handleAIError', start);
+    const snippet = html.slice(start, end);
+    const saved = [];
+    const context = {
+      ger: () => ({
+        id: 'est-merge-a',
+        lineItems: [],
+        exclusions: [],
+        markup: 20,
+        projectClass: 'residential',
+        customerScope: {}
+      }),
+      eCol: {
+        doc: () => ({ set: (value) => { saved.push(value); return Promise.resolve(); } })
+      },
+      T: () => {},
+      renderEstDetailBody: () => {},
+      normalizeProjectClass: (v) => v || 'residential',
+      resolveEstimateProjectClass: () => 'residential',
+      buildCanonicalCustomerScope: () => ({
+        residentialSummary: 'Generated summary.',
+        projectScope: 'Generated project scope.',
+        workIncluded: ['Generated work'],
+        conditionsAssumptions: []
+      })
+    };
+    vm.runInNewContext(snippet, context);
+    context.applyEstimateChanges({
+      lineItems: [
+        { category: 'Labor', desc: 'Frame wall', qty: 2, unit: 'hrs', unitCost: 85, total: 170, markup: 20 },
+        { category: 'Materials', desc: 'Lumber pack', qty: 12, unit: 'ea', unitCost: 18, total: 216, markup: 20 }
+      ],
+      exclusions: [],
+      message: 'Done'
+    });
+    assert.strictEqual(saved.length, 1);
+    assert.strictEqual(saved[0].lineItems.length, 2);
+    assert.strictEqual(saved[0].lineItems[0].desc, 'Frame wall');
+    assert.strictEqual(saved[0].lineItems[1].qty, 12);
+  });
+
+  it('ESTIMATE MERGE B: multiple valid generated lineItems survive merge without requiring isNewWork', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function applyEstimateChanges');
+    const end = html.indexOf('function handleAIError', start);
+    const snippet = html.slice(start, end);
+    const saved = [];
+    const context = {
+      ger: () => ({
+        id: 'est-merge-b',
+        lineItems: [{ category: 'Labor', desc: 'Existing item', qty: 1, unit: 'hrs', unitCost: 85, total: 85, markup: 20 }],
+        exclusions: [],
+        markup: 20,
+        projectClass: 'residential',
+        customerScope: {}
+      }),
+      eCol: {
+        doc: () => ({ set: (value) => { saved.push(value); return Promise.resolve(); } })
+      },
+      T: () => {},
+      renderEstDetailBody: () => {},
+      normalizeProjectClass: (v) => v || 'residential',
+      resolveEstimateProjectClass: () => 'residential',
+      buildCanonicalCustomerScope: () => ({
+        residentialSummary: 'Generated summary.',
+        projectScope: 'Generated project scope.',
+        workIncluded: ['Generated work'],
+        conditionsAssumptions: []
+      })
+    };
+    vm.runInNewContext(snippet, context);
+    context.applyEstimateChanges({
+      lineItems: [
+        { category: 'Labor', desc: 'Framing labor', qty: 4, unit: 'hrs', unitCost: 85, total: 340, markup: 20 },
+        { category: 'Materials', desc: 'Framing pack', qty: 8, unit: 'ea', unitCost: 14, total: 112, markup: 20 },
+        { category: 'Materials', desc: 'Corner bracing', qty: 4, unit: 'ea', unitCost: 12, total: 48, markup: 20 }
+      ],
+      exclusions: [],
+      message: 'Done'
+    });
+    assert.strictEqual(saved.length, 1);
+    assert.strictEqual(saved[0].lineItems.length, 4);
+    assert.strictEqual(saved[0].lineItems[1].desc, 'Framing labor');
+    assert.strictEqual(saved[0].lineItems[2].desc, 'Framing pack');
+    assert.strictEqual(saved[0].lineItems[3].desc, 'Corner bracing');
+  });
+
+  it('GENERATION FAILURE A: Anthropic max_tokens response is treated as a failed generation and does not save partial data', () => {
+    const { detectGenerationFailure } = require('../server');
+    const failed = detectGenerationFailure({ stop_reason: 'max_tokens' }, 'estimate-generate');
+    assert.strictEqual(failed.failed, true);
+    assert.strictEqual(failed.error, 'generation_truncated');
+    assert.ok(failed.message.toLowerCase().includes('truncated'));
+  });
+
+  it('GENERATION FAILURE OPENAI: finish_reason=length response is treated as a failed generation and does not save partial data', () => {
+    const { detectGenerationFailure } = require('../server');
+    const failed = detectGenerationFailure({
+      choices: [{ finish_reason: 'length', index: 0, message: { content: '{"action":"add","lineItems":[{"category":"Labor","desc":"Partial","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}]}' } }]
+    }, 'estimate-generate');
+    assert.strictEqual(failed.failed, true);
+    assert.strictEqual(failed.error, 'generation_truncated');
+    assert.ok(failed.message.toLowerCase().includes('truncated'));
+  });
+
+  it('GENERATION SUCCESS OPENAI: finish_reason=stop with valid structured estimate is accepted', () => {
+    const { detectGenerationFailure } = require('../server');
+    const ok = detectGenerationFailure({
+      choices: [{ finish_reason: 'stop', index: 0, message: { content: '{"action":"add","lineItems":[{"category":"Labor","desc":"Frame wall","qty":2,"unit":"hrs","unitCost":85,"total":170,"markup":20}],"deleteIndexes":[],"updateItems":[],"exclusions":[],"message":"ok"}' } }]
+    }, 'estimate-generate');
+    assert.strictEqual(ok.failed, false);
+  });
+
+  it('GENERATION FAILURE OPENAI: truncated output cannot merge partial lineItems', () => {
+    const { detectGenerationFailure } = require('../server');
+    const failed = detectGenerationFailure({
+      _raw: {
+        choices: [{ finish_reason: 'length', index: 0, message: { content: '{"action":"add","lineItems":[{"category":"Labor","desc":"Partial","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}]' } }]
+      }
+    }, 'estimate-generate');
+    assert.strictEqual(failed.failed, true);
+    assert.strictEqual(failed.error, 'generation_truncated');
+  });
+
+  it('GENERATION FAILURE B: malformed/truncated JSON is rejected without merging partial content', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function parseAIResponse');
+    const end = html.indexOf('function normalizeExclusionText', start);
+    const snippet = html.slice(start, end);
+    const context = { T: () => {}, console };
+    vm.runInNewContext(snippet, context);
+    const malformed = {
+      content: [{ type: 'text', text: '```json\n{"action":"add","lineItems":[{"category":"Labor","desc":"Frame wall","qty":2,"unit":"hrs","unitCost":85,"total":170,"markup":20},' }]
+    };
+    const parsed = context.parseAIResponse(malformed);
+    assert.strictEqual(parsed, null);
+  });
+
+  it('CLARIFICATION GATE E: intake gate still triggers on new estimate prompts and stays off for explicit edit commands', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function shouldUseIntakeGate');
+    const end = html.indexOf('function generateAIEstimate', start);
+    const snippet = html.slice(start, end);
+    const context = { console };
+    vm.runInNewContext(snippet, context);
+    assert.strictEqual(context.shouldUseIntakeGate('Build a detached garage with 2 overhead doors and 10 windows.'), true);
+    assert.strictEqual(context.shouldUseIntakeGate('Remove the old siding and replace it with fiber cement.'), false);
   });
 
   it('PROJECT-CLASS D: blank projectClass is rejected on a new estimate and does not save', () => {
