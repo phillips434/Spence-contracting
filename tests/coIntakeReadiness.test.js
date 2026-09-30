@@ -868,7 +868,18 @@ describe('coIntakeReadiness', () => {
         ok: true,
         status: 200,
         text: async () => JSON.stringify({
-          choices: [{ message: { content: JSON.stringify({ action: 'ready', lineItems: [], deleteIndexes: [], updateItems: [], exclusions: [], message: 'ok' }) } }]
+          choices: [{ message: { content: JSON.stringify({
+            action: 'ready',
+            lineItems: [{ category: 'Labor', desc: 'Install siding', qty: 2, unit: 'hrs', unitCost: 85, total: 170, markup: 20 }],
+            deleteIndexes: [],
+            updateItems: [],
+            residentialSummary: 'Summary',
+            projectScope: 'Scope',
+            workIncluded: ['Install siding'],
+            conditionsAssumptions: ['Assumption'],
+            exclusions: [],
+            message: 'ok'
+          }) } }]
         })
       };
     };
@@ -969,6 +980,242 @@ describe('coIntakeReadiness', () => {
       assert.ok(openAiCalls.length >= 1);
       assert.strictEqual(openAiCalls[openAiCalls.length - 1].body.max_tokens, 8000);
       assert.strictEqual(openAiCalls[openAiCalls.length - 1].body.model, 'gpt-4.1');
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
+  it('server uses a strict flat estimate schema for GPT-4.1 without enabling the breakdown experiment', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    const captured = [];
+
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.ANTHROPIC_KEY = 'test-key';
+    global.fetch = async (url, options) => {
+      const body = JSON.parse(options && options.body ? options.body : '{}');
+      captured.push(body);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          choices: [{ message: { content: JSON.stringify({
+            action: 'add',
+            lineItems: [{ category: 'Labor', desc: 'Install siding', qty: 2, unit: 'hrs', unitCost: 85, total: 170, markup: 20 }],
+            deleteIndexes: [],
+            updateItems: [],
+            residentialSummary: 'Summary',
+            projectScope: 'Scope',
+            workIncluded: ['Install siding'],
+            conditionsAssumptions: ['Assumptions'],
+            exclusions: [],
+            message: 'ok'
+          }) } }]
+        })
+      };
+    };
+
+    try {
+      await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve(JSON.parse(body));
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create a small estimate',
+            items: '[]',
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create a small estimate' }]
+          }));
+          req.end();
+        });
+      });
+
+      const lastCall = captured[captured.length - 1];
+      assert.strictEqual(lastCall.response_format.json_schema.strict, true);
+      assert.strictEqual(lastCall.response_format.json_schema.schema.additionalProperties, false);
+      assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.additionalProperties, false);
+      assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.required, ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup']);
+      assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.properties.isNewWork, undefined);
+      assert.strictEqual(lastCall.model, 'gpt-4.1');
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
+  it('flat structured responses with multiple priced lineItems survive parse and merge', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function parseAIResponse');
+    const end = html.indexOf('function handleAIError', start);
+    const snippet = html.slice(start, end);
+    const saved = [];
+    const context = {
+      ger: () => ({ id: 'est-flat-merge', lineItems: [], exclusions: [], markup: 20, projectClass: 'residential', customerScope: {} }),
+      eCol: { doc: () => ({ set: (value) => { saved.push(value); return Promise.resolve(); } }) },
+      T: () => {},
+      renderEstDetailBody: () => {},
+      normalizeProjectClass: (v) => v || 'residential',
+      resolveEstimateProjectClass: () => 'residential',
+      buildCanonicalCustomerScope: () => ({
+        residentialSummary: 'Generated summary.',
+        projectScope: 'Generated project scope.',
+        workIncluded: ['Generated work'],
+        conditionsAssumptions: []
+      })
+    };
+    vm.runInNewContext(snippet, context);
+
+    const fixture = {
+      action: 'add',
+      lineItems: [
+        { category: 'Labor', desc: 'Install siding', qty: 12, unit: 'hrs', unitCost: 85, total: 1020, markup: 20 },
+        { category: 'Materials', desc: 'Siding bundle', qty: 6, unit: 'bundle', unitCost: 42, total: 252, markup: 20 }
+      ],
+      deleteIndexes: [],
+      updateItems: [],
+      residentialSummary: 'Summary',
+      projectScope: 'Scope',
+      workIncluded: ['Install siding'],
+      conditionsAssumptions: ['Assumption'],
+      exclusions: [],
+      message: 'ok'
+    };
+
+    const parsed = context.parseAIResponse(fixture);
+    assert.strictEqual(Array.isArray(parsed.lineItems), true);
+    assert.strictEqual(parsed.lineItems.length, 2);
+    context.applyEstimateChanges(parsed);
+    assert.strictEqual(saved.length, 1);
+    assert.strictEqual(saved[0].lineItems.length, 2);
+    assert.strictEqual(saved[0].lineItems[0].unitCost, 85);
+    assert.strictEqual(saved[0].lineItems[1].total, 252);
+    assert.strictEqual(saved[0].customerScope.residentialSummary, 'Summary');
+    assert.strictEqual(saved[0].customerScope.projectScope, 'Scope');
+    assert.deepStrictEqual(saved[0].customerScope.workIncluded, ['Install siding']);
+    assert.deepStrictEqual(saved[0].customerScope.conditionsAssumptions, ['Assumption']);
+  });
+
+  it('full estimate generation fails safely when the structured response has zero lineItems', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.ANTHROPIC_KEY = 'test-key';
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({
+          action: 'add',
+          lineItems: [],
+          deleteIndexes: [],
+          updateItems: [],
+          residentialSummary: 'Summary',
+          projectScope: 'Scope',
+          workIncluded: ['Install siding'],
+          conditionsAssumptions: ['Assumption'],
+          exclusions: [],
+          message: 'ok'
+        }) } }]
+      })
+    });
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create a small estimate',
+            items: '[]',
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create a small estimate' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(result.status, 502);
+      assert.ok(String(result.body && result.body.error).includes('generation'));
     } finally {
       global.fetch = originalFetch;
       if (previousOpenAiKey === undefined) {
@@ -2053,7 +2300,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function parseAIResponse');
     const end = html.indexOf('function normalizeExclusionText', start);
     const snippet = html.slice(start, end);
-    const context = { T: () => {}, console };
+    const context = { T: () => {}, _aiDone: () => {}, console };
     vm.runInNewContext(snippet, context);
     const malformed = {
       content: [{ type: 'text', text: '```json\n{"action":"add","lineItems":[{"category":"Labor","desc":"Frame wall","qty":2,"unit":"hrs","unitCost":85,"total":170,"markup":20},' }]

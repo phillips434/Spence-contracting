@@ -27,6 +27,80 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+function buildFlatEstimateGenerateSchema(){
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'estimate_generate_flat_schema',
+      strict: true,
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'action',
+          'lineItems',
+          'deleteIndexes',
+          'updateItems',
+          'residentialSummary',
+          'projectScope',
+          'workIncluded',
+          'conditionsAssumptions',
+          'exclusions',
+          'message'
+        ],
+        properties: {
+          action: { type: 'string', enum: ['add', 'update', 'ready'] },
+          lineItems: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup'],
+              properties: {
+                category: { type: 'string' },
+                desc: { type: 'string' },
+                qty: { type: 'number' },
+                unit: { type: 'string' },
+                unitCost: { type: 'number' },
+                total: { type: 'number' },
+                markup: { type: 'number' }
+              }
+            }
+          },
+          deleteIndexes: {
+            type: 'array',
+            items: { type: 'integer' }
+          },
+          updateItems: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['index'],
+              properties: {
+                index: { type: 'integer' },
+                category: { type: 'string' },
+                desc: { type: 'string' },
+                qty: { type: 'number' },
+                unit: { type: 'string' },
+                unitCost: { type: 'number' },
+                total: { type: 'number' },
+                markup: { type: 'number' }
+              }
+            }
+          },
+          residentialSummary: { type: 'string' },
+          projectScope: { type: 'string' },
+          workIncluded: { type: 'array', items: { type: 'string' } },
+          conditionsAssumptions: { type: 'array', items: { type: 'string' } },
+          exclusions: { type: 'array', items: { type: 'string' } },
+          message: { type: 'string' }
+        }
+      }
+    }
+  };
+}
+
 function detectGenerationFailure(data, mode){
   if (!data || typeof data !== 'object') return { failed: false };
   if (mode !== 'estimate-generate' && mode !== 'change-order-generate') return { failed: false };
@@ -1412,6 +1486,10 @@ app.post("/api/estimate", async (req, res) => {
             max_tokens: openaiMaxTokens,
             temperature: 0
           };
+          if (mode === "estimate-generate") {
+            openaiBody.max_tokens = 8000;
+            openaiBody.response_format = buildFlatEstimateGenerateSchema();
+          }
           if (AI_BREAKDOWN_EXPERIMENT && (mode === "estimate-generate" || mode === "change-order-generate")) {
             openaiBody.max_tokens = 8000;
             const isCO = mode === "change-order-generate";
@@ -1724,6 +1802,25 @@ app.post("/api/estimate", async (req, res) => {
             }
             const messageText = (openaiJson.choices && openaiJson.choices[0] && openaiJson.choices[0].message && openaiJson.choices[0].message.content) || "";
             data = { content: [{ text: messageText }], _raw: openaiJson };
+            if (mode === 'estimate-generate') {
+              let parsedEstimate = null;
+              try {
+                parsedEstimate = (messageText && messageText.trim()) ? JSON.parse(messageText.trim()) : null;
+              } catch (parseErr) {
+                parsedEstimate = null;
+              }
+              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0)) {
+                console.error('[AI ESTIMATE SERVER] estimate-generate returned zero lineItems in a valid structured response', {
+                  mode,
+                  parsedEstimateKeys: parsedEstimate && typeof parsedEstimate === 'object' ? Object.keys(parsedEstimate) : [],
+                  finishReason: openaiJson && openaiJson.choices && openaiJson.choices[0] && openaiJson.choices[0].finish_reason
+                });
+                return res.status(502).json({
+                  error: 'generation_failed',
+                  message: 'AI estimate generation returned no lineItems for a full estimate request.'
+                });
+              }
+            }
           } catch (parseErr) {
             if (mode === "change-order-generate") {
               console.log("CO_OPENAI_DIAGNOSTIC parse_error", parseErr && parseErr.message ? parseErr.message : parseErr);
