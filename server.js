@@ -76,7 +76,7 @@ function buildFlatEstimateGenerateSchema(){
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['index'],
+              required: ['index', 'category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup'],
               properties: {
                 index: { type: 'integer' },
                 category: { type: 'string' },

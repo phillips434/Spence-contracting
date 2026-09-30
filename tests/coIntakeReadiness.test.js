@@ -1075,6 +1075,8 @@ describe('coIntakeReadiness', () => {
       assert.strictEqual(lastCall.response_format.json_schema.schema.additionalProperties, false);
       assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.additionalProperties, false);
       assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.required, ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup']);
+      assert.strictEqual(lastCall.response_format.json_schema.schema.properties.updateItems.items.additionalProperties, false);
+      assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.updateItems.items.required, ['index', 'category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup']);
       assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.properties.isNewWork, undefined);
       assert.strictEqual(lastCall.model, 'gpt-4.1');
     } finally {
@@ -1727,6 +1729,298 @@ describe('coIntakeReadiness', () => {
 
     const narrative = context.buildResidentialEstimateDescription(estimate);
     assert.strictEqual(narrative, null);
+  });
+
+  const flushAIGenerationQueue = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+
+  it('STATE A: single-round estimate intake keeps originalPrompt immutable and sends it into generation', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'MasterRib metal wall and ceiling with drywall finish, 30 linear feet, 12-foot walls, no doors yet.';
+    const responseQueue = [
+      { action: 'questions', questions: ['Round 1 question'] },
+      { action: 'ready' },
+      { action: 'ready' }
+    ];
+    let promptValue = originalScope;
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 }, companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: async () => {} }) },
+      ger: () => ({ id: 'est-state-a', projectClass: 'residential', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: promptValue };
+          if (id === 'aiLoading') return { style: { display: 'none' }, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'residential', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      shouldUseIntakeGate: () => true,
+      parseAIResponse: (value) => value,
+      applyEstimateChanges: () => {},
+      buildCanonicalCustomerScope: () => ({ residentialSummary: '', projectScope: '', workIncluded: [], conditionsAssumptions: [] }),
+      renderEstDetailBody: () => {},
+      fetch: async (_url, options) => {
+        const payload = JSON.parse(options.body);
+        calls.push(payload);
+        const response = responseQueue.shift() || { action: 'ready' };
+        return { ok: true, json: async () => response };
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 0; },
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        return raw === 'residential' || raw === 'commercial' ? raw : null;
+      },
+      window: { _histCtx: '', _aiEstimateQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      globalThis: null
+    };
+    context.globalThis = context;
+    vm.runInNewContext(snippet, context);
+
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
+    assert.strictEqual(context.window._aiEstimateQuestionState.questions[0], 'Round 1 question');
+
+    promptValue = 'Round 1 answer: added two braces and a tape seal';
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+
+    const finalGeneration = calls[calls.length - 1];
+    assert.strictEqual(finalGeneration.questionContext.originalPrompt, originalScope);
+    assert.strictEqual(finalGeneration.questionContext.history.length, 1);
+    assert.strictEqual(finalGeneration.questionContext.history[0].questions[0], 'Round 1 question');
+    assert.strictEqual(finalGeneration.questionContext.history[0].answer, 'Round 1 answer: added two braces and a tape seal');
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, '');
+    assert.strictEqual(context.window._aiEstimateQuestionState.active, false);
+  });
+
+  it('STATE B: two-round estimate intake preserves originalPrompt and accumulates both answer rounds', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'MasterRib metal wall and ceiling with drywall finish. Project is a residential addition with a 9x11 ceiling.';
+    const responseQueue = [
+      { action: 'questions', questions: ['Round 1 question A', 'Round 1 question B'] },
+      { action: 'questions', questions: ['Round 2 question C'] },
+      { action: 'ready' },
+      { action: 'ready' }
+    ];
+    let promptValue = originalScope;
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 }, companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: async () => {} }) },
+      ger: () => ({ id: 'est-state-b', projectClass: 'residential', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: promptValue };
+          if (id === 'aiLoading') return { style: { display: 'none' }, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'residential', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      shouldUseIntakeGate: () => true,
+      parseAIResponse: (value) => value,
+      applyEstimateChanges: () => {},
+      buildCanonicalCustomerScope: () => ({ residentialSummary: '', projectScope: '', workIncluded: [], conditionsAssumptions: [] }),
+      renderEstDetailBody: () => {},
+      fetch: async (_url, options) => {
+        const payload = JSON.parse(options.body);
+        calls.push(payload);
+        const response = responseQueue.shift() || { action: 'ready' };
+        return { ok: true, json: async () => response };
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 0; },
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        return raw === 'residential' || raw === 'commercial' ? raw : null;
+      },
+      window: { _histCtx: '', _aiEstimateQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      globalThis: null
+    };
+    context.globalThis = context;
+    vm.runInNewContext(snippet, context);
+
+    promptValue = originalScope;
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
+    assert.strictEqual(context.window._aiEstimateQuestionState.questions.length, 2);
+
+    promptValue = 'Round 1 answer: 177 inches, metal gauge 24, new subframe.';
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
+    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 1);
+
+    promptValue = 'Round 2 answer: two doors, one window, ceiling 9x11, normal access, no electrical/plumbing/HVAC.';
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+
+    const finalGeneration = calls[calls.length - 1];
+    assert.strictEqual(finalGeneration.questionContext.originalPrompt, originalScope);
+    assert.strictEqual(finalGeneration.questionContext.history.length, 2);
+    assert.strictEqual(finalGeneration.questionContext.history[0].answer, 'Round 1 answer: 177 inches, metal gauge 24, new subframe.');
+    assert.strictEqual(finalGeneration.questionContext.history[1].answer, 'Round 2 answer: two doors, one window, ceiling 9x11, normal access, no electrical/plumbing/HVAC.');
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, '');
+    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 0);
+  });
+
+  it('STATE C: three-round estimate intake keeps originalPrompt immutable all the way through', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const originalScope = 'MasterRib metal wall and ceiling with drywall finish and a 13-foot garage span.';
+    const responseQueue = [
+      { action: 'questions', questions: ['Q1'] },
+      { action: 'questions', questions: ['Q2'] },
+      { action: 'questions', questions: ['Q3'] },
+      { action: 'ready' },
+      { action: 'ready' }
+    ];
+    let promptValue = originalScope;
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 }, companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: async () => {} }) },
+      ger: () => ({ id: 'est-state-c', projectClass: 'residential', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: promptValue };
+          if (id === 'aiLoading') return { style: { display: 'none' }, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'residential', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      shouldUseIntakeGate: () => true,
+      parseAIResponse: (value) => value,
+      applyEstimateChanges: () => {},
+      buildCanonicalCustomerScope: () => ({ residentialSummary: '', projectScope: '', workIncluded: [], conditionsAssumptions: [] }),
+      renderEstDetailBody: () => {},
+      fetch: async (_url, options) => {
+        const payload = JSON.parse(options.body);
+        calls.push(payload);
+        const response = responseQueue.shift() || { action: 'ready' };
+        return { ok: true, json: async () => response };
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 0; },
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        return raw === 'residential' || raw === 'commercial' ? raw : null;
+      },
+      window: { _histCtx: '', _aiEstimateQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      globalThis: null
+    };
+    context.globalThis = context;
+    vm.runInNewContext(snippet, context);
+
+    for (const answer of ['Answer 1', 'Answer 2', 'Answer 3']) {
+      promptValue = answer;
+      await context.generateAIEstimate();
+      await flushAIGenerationQueue();
+      assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
+    }
+    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 3);
+    const finalPayload = calls[calls.length - 1];
+    assert.strictEqual(finalPayload.questionContext.originalPrompt, originalScope);
+    assert.strictEqual(finalPayload.questionContext.history.length, 3);
+  });
+
+  it('STATE D: successful estimate generation resets intake state for the next completely new estimate', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    const start = html.indexOf('function generateAIEstimate');
+    const end = html.indexOf('function generateAILog', start);
+    const snippet = html.slice(start, end);
+    const firstScope = 'Original residential scope';
+    const secondScope = 'New estimate for a detached garage';
+    let promptValue = firstScope;
+    const calls = [];
+    const context = {
+      console,
+      T: () => {},
+      DD: { aiProfile: { markup: 20, laborRate: 85 }, companyName: 'Test Co' },
+      eCol: { doc: () => ({ set: async () => {} }) },
+      ger: () => ({ id: 'est-state-d', projectClass: 'residential', markup: 20, lineItems: [], exclusions: [] }),
+      document: {
+        querySelectorAll: () => [],
+        getElementById: (id) => {
+          if (id === 'aiPrompt') return { value: promptValue };
+          if (id === 'aiLoading') return { style: { display: 'none' }, textContent: '' };
+          if (id === 'efProjectClass') return { value: 'residential', focus: () => {}, scrollIntoView: () => {} };
+          if (id === 'estFormPage') return { classList: { add: () => {} } };
+          return null;
+        }
+      },
+      shouldUseIntakeGate: () => true,
+      parseAIResponse: (value) => value,
+      applyEstimateChanges: () => {},
+      buildCanonicalCustomerScope: () => ({ residentialSummary: '', projectScope: '', workIncluded: [], conditionsAssumptions: [] }),
+      renderEstDetailBody: () => {},
+      fetch: async (_url, options) => {
+        const payload = JSON.parse(options.body);
+        calls.push(payload);
+        if (payload.mode === 'estimate-intake' && calls.length === 1) {
+          return { ok: true, json: async () => ({ action: 'questions', questions: ['Need one missing detail'] }) };
+        }
+        if (payload.mode === 'estimate-intake' && calls.length === 2) {
+          return { ok: true, json: async () => ({ action: 'ready' }) };
+        }
+        return { ok: true, json: async () => ({ action: 'ready' }) };
+      },
+      AbortController: function () { this.abort = () => {}; },
+      setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 0; },
+      clearTimeout: () => {},
+      normalizeProjectClass: (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        return raw === 'residential' || raw === 'commercial' ? raw : null;
+      },
+      window: { _histCtx: '', _aiEstimateQuestionState: { active: false, originalPrompt: '', questions: [], history: [] } },
+      globalThis: null
+    };
+    context.globalThis = context;
+    vm.runInNewContext(snippet, context);
+
+    promptValue = firstScope;
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    promptValue = 'Missing detail answer';
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, '');
+    assert.strictEqual(context.window._aiEstimateQuestionState.active, false);
+
+    promptValue = secondScope;
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
+    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, secondScope);
+    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 0);
   });
 
   it('CASE A: blank projectClass blocks AI generation before any request is sent', () => {
