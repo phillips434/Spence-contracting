@@ -2356,21 +2356,37 @@ function generateAIEstimate(){
   window._histCtx=null;
   var intakeState=window._aiEstimateQuestionState||{active:false,originalPrompt:'',questions:[],history:[]};
   var isQuestionFlow=!!(intakeState.active&&intakeState.questions&&intakeState.questions.length);
-  var originalPrompt=isQuestionFlow?intakeState.originalPrompt||prompt:prompt;
+  var storedOriginalPrompt=(typeof intakeState.originalPrompt==='string'&&intakeState.originalPrompt.trim())?intakeState.originalPrompt.trim():'';
+  var originalPrompt=(storedOriginalPrompt || prompt).trim();
+  var currentHistory=Array.isArray(intakeState.history)?intakeState.history.slice():[];
   if(isQuestionFlow){
-    intakeState.history=intakeState.history||[];
-    intakeState.history.push({
+    currentHistory.push({
       questions:(intakeState.questions||[]).slice(),
       answer:prompt
     });
+  }
+  if(isQuestionFlow){
+    window._aiEstimateQuestionState={
+      active:true,
+      originalPrompt:originalPrompt,
+      questions:(intakeState.questions||[]).slice(),
+      history:currentHistory.slice()
+    };
+  } else if(!storedOriginalPrompt){
+    intakeState={active:false,originalPrompt:originalPrompt,questions:[],history:currentHistory.slice()};
     window._aiEstimateQuestionState=intakeState;
   } else {
-    intakeState={active:false,originalPrompt:prompt,questions:[],history:[]};
+    intakeState={
+      active:false,
+      originalPrompt:storedOriginalPrompt,
+      questions:[],
+      history:currentHistory.slice()
+    };
     window._aiEstimateQuestionState=intakeState;
   }
   var questionContext={
     originalPrompt:originalPrompt,
-    history:(intakeState.history||[]).slice()
+    history:currentHistory.slice()
   };
 
   var intakePayload={mode:'estimate-intake',max_tokens:2000,
@@ -2396,7 +2412,7 @@ function generateAIEstimate(){
           active:true,
           originalPrompt:originalPrompt,
           questions:parsed.questions.slice(),
-          history:(intakeState.history||[]).slice()
+          history:currentHistory.slice()
         };
         T('Need a few more details before I can finish this estimate.');
         renderEstDetailBody(e);
@@ -2404,11 +2420,11 @@ function generateAIEstimate(){
         return;
       }
       if(action==='ready'){
-        window._aiEstimateQuestionState={active:false,originalPrompt:'',questions:[],answers:[]};
         runEstimateRequest(generationPayload).then(function(data2){
           if(!data2){return;}
           var parsed2=parseAIResponse(data2);
           if(!parsed2){return;}
+          window._aiEstimateQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
           applyEstimateChanges(parsed2);
         }).catch(handleAIError);
         return;
