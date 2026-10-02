@@ -3917,7 +3917,8 @@ function addComm(){
     photos:[]
   };
   var photoInput=document.getElementById('commPhotos');
-  var files=photoInput&&photoInput.files?Array.from(photoInput.files).slice(0,5):[];
+  var files=photoInput&&photoInput.files?Array.from(photoInput.files):[];
+  if(files.length>5){T('Choose up to 5 screenshots before saving. Your notes and selected files are still here.');return;}
   if(files.length>0){
     var processed=0;
     files.forEach(function(file){
