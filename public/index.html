@@ -209,6 +209,32 @@ body.client-mode #aiPanel,
 body.client-mode #estDetailPage,
 body.client-mode #mainView,
 body.client-mode .phead { display:none !important; }
+
+/* Everyday contractor controls */
+.work-views{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.work-views button{min-height:44px;padding:10px 14px;border:1px solid #DDE1EA;border-radius:10px;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer}
+.work-views button.on{background:#2B3990;color:#fff;border-color:#2B3990}
+.cd-section{border:1px solid #E1E5ED;border-radius:12px;background:#fff;margin:12px 0;overflow:hidden}
+.cd-section>summary{padding:14px;font-size:14px;font-weight:700;cursor:pointer;min-height:44px;box-sizing:border-box;color:#1A1A2E}
+.cd-section>summary small{display:block;font-weight:400;font-size:12px;color:#666;margin:6px 0 0 18px;line-height:1.5}
+.cd-section[open]>summary small{display:none}
+.cd-section>.section-content{padding:0 14px 14px}
+.estimate-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.estimate-actions>.btn-sm{flex:1;min-height:46px;font-size:14px}
+.more-actions{margin-bottom:14px;border:1px solid #DDE1EA;border-radius:10px;background:#fff}
+.more-actions>summary{padding:13px;cursor:pointer;font-weight:600}
+.more-actions>div{display:flex;gap:8px;flex-wrap:wrap;padding:12px}
+.more-actions button{background:#EEF1F7!important;color:#26334C!important;min-height:44px}
+.question-card{padding:12px;margin:8px 0;background:#fff;border-radius:10px;color:#27324A}
+.question-card label{display:block;font-size:14px;line-height:1.5;margin-bottom:8px;font-weight:600}
+.question-card input{width:100%;padding:12px;border:1px solid #CCD3E0;border-radius:8px;font-size:16px;box-sizing:border-box}
+.question-card button{padding:10px;margin-top:8px;background:#EDF0F7;border:0;border-radius:8px;color:#26334C;min-height:44px;cursor:pointer}
+.question-group{margin:8px 0}.question-group>summary{padding:12px;color:#fff;font-weight:600;cursor:pointer}
+.archive-notice{background:#EEF1F7;border-radius:10px;padding:12px;font-size:13px;line-height:1.5;margin:12px 0}
+.topbar{flex-wrap:wrap;gap:8px;height:auto;min-height:58px;padding-top:10px;padding-bottom:10px}.topbar>div{flex-wrap:wrap}
+.cd-save-status{display:block;font-size:11px;color:#D8E7DD;white-space:nowrap}
+.btn-sm,.btn-ghost,.btn-dashed,.fb{min-height:44px}
+@media(max-width:600px){.topbar>div{gap:5px!important}.topbar button{font-size:12px!important;padding:9px!important}.wcard{padding:16px}.cd-section .wcard{margin:8px 0}.estimate-actions{position:relative}.sec-label{font-size:12px}}
 </style>
 </head>
 <body>
@@ -351,13 +377,13 @@ body.client-mode .phead { display:none !important; }
     <div style="display:flex;gap:8px;align-items:center">
       <button class="bell-btn" onclick="openNotifications()" title="Notifications">&#128276;<span class="bell-badge" id="bellBadge">0</span></button>
       <button style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer" onclick="openSettings()" title="Settings">&#9881;</button>
-      <button class="diag-btn" id="diagOpenBtn" onclick="openDiagnosticPanel()" title="Diagnostic panel">Diag</button>
-      <button onclick="signOutUser()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer">Out</button>
+      <button class="diag-btn" id="diagOpenBtn" style="display:none" onclick="openDiagnosticPanel()" title="Diagnostic panel">Diag</button>
+      <button onclick="signOutUser()" style="background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer">Sign out</button>
       <button id="pwaInstallBtn" onclick="showInstallPrompt()" title="Install App" style="display:none;background:rgba(255,255,255,0.15);border:none;border-radius:9px;color:#fff;padding:8px 10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center">&#8681;</button>
       <button class="btn-orange" id="btnNew">+ New</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v209</span> <button onclick="var r=typeof switchMainTab;alert(r===&quot;function&quot;?&quot;JS OK&quot;:&quot;JS FAIL&quot;);" style="font-size:9px;background:#2B3990;color:#fff;border:none;border-radius:3px;padding:2px 5px;cursor:pointer">TEST</button></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v210</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects">&#128193; Projects</button>
     <button class="nav-tab" id="navEstimates">&#128203; Estimates</button>
@@ -376,6 +402,8 @@ body.client-mode .phead { display:none !important; }
       <div style="font-size:16px;font-weight:700;color:#1A1A2E">Estimates</div>
       <button class="btn-orange" onclick="openNewEstimate()">+ New Estimate</button>
     </div>
+    <input class="fi" id="estimateSearch" type="search" placeholder="Search estimates..." aria-label="Search estimates" oninput="renderEstCards()"/>
+    <div id="estimateViews" class="work-views"></div>
     <div id="estCards"><div class="empty">No estimates yet.</div></div>
   </div>
   <div id="dashboardView" style="display:none;padding:14px 14px 80px">
@@ -387,12 +415,13 @@ body.client-mode .phead { display:none !important; }
 <div class="page" id="detailPage">
   <div class="phead">
     <a href="#" class="phead-back" onclick="closePage(&quot;detailPage&quot;);return false;">&#8249;</a>
-    <span class="phead-title" id="dName"></span>
+    <span class="phead-title"><span id="dName"></span><span class="cd-save-status">Live sync on</span></span>
     <span class="phead-num" id="dJobNum"></span>
     <span class="phead-num" id="dPONum" style="color:#9B6BE8"></span>
     <span class="pbadge" id="dBadge"></span>
   </div>
   <div class="ptabs" id="tabs"></div>
+  <div id="projectRecordTools" style="padding:0 14px"></div>
   <div class="pbody" id="tabBody"></div>
 </div>
 
@@ -400,7 +429,7 @@ body.client-mode .phead { display:none !important; }
 <div class="page" id="estDetailPage">
   <div class="phead">
     <a href="#" class="phead-back" onclick="closePage(&quot;estDetailPage&quot;);return false;">&#8249;</a>
-    <span class="phead-title" id="edName"></span>
+    <span class="phead-title"><span id="edName"></span><span class="cd-save-status">Live sync on</span></span>
     <span class="phead-num" id="edEstNum"></span>
     <span class="pbadge" id="edBadge"></span>
   </div>
@@ -529,7 +558,7 @@ body.client-mode .phead { display:none !important; }
     <div class="fg">
       <div><label class="fl">Client Name *</label><input class="fi" id="efClient"/></div>
       <div><label class="fl">Project Type *</label><input class="fi" id="efType"/></div>
-      <div><label class="fl">Project Class</label>
+      <div><label class="fl" for="efProjectClass">Project class *</label>
         <select class="fi" id="efProjectClass">
           <option value="">Select</option>
           <option value="residential">Residential</option>
@@ -584,6 +613,7 @@ body.client-mode .phead { display:none !important; }
         <button class="btn-green" onclick="backupAllData()">&#8659; Download Backup</button>
         <div id="backupStatus" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
+    <details class="more-actions" id="settingsDiagnostics"><summary>Support tools</summary><div><button class="btn-sm" onclick="openDiagnosticPanel()">View diagnostics</button></div></details>
     <div class="wcard" id="adminCardMigrate" style="display:none;border:2px solid #E8B43A;background:#FFFBF0">
         <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
         <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
@@ -802,10 +832,10 @@ function initUserCollections(uid){
       showTermsGate(uid);
     }
   }).catch(function(){});
-  col=db.collection('projects');
+  col=withSaveFeedback(db.collection('projects'));
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
-  eCol=db.collection('estimates');
+  eCol=withSaveFeedback(db.collection('estimates'));
 }
 var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2B3990","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
@@ -990,7 +1020,38 @@ function gpr(){return projects.find(function(x){return x.id===currentId;});}
 function ger(){return estimates.find(function(x){return x.id===currentEstId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
 function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#2B3990">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
-function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
+var pendingRecordSaves=0,lastRecordSavedAt=0,recordSaveError=false;
+function withSaveFeedback(collection){
+  if(collection._cdFeedback)return collection;
+  collection._cdFeedback=true;
+  var originalDoc=collection.doc.bind(collection);
+  collection.doc=function(){
+    var ref=originalDoc.apply(null,arguments);
+    ['set','update','delete'].forEach(function(method){
+      var original=ref[method].bind(ref);
+      ref[method]=function(){
+        pendingRecordSaves++;setSS('saving');
+        var operation;
+        try{operation=original.apply(null,arguments);}catch(err){pendingRecordSaves--;setSS('error');throw err;}
+        return operation.then(function(result){pendingRecordSaves--;setSS('saved');return result;},function(err){pendingRecordSaves--;setSS('error');throw err;});
+      };
+    });
+    return ref;
+  };
+  return collection;
+}
+function setSS(s){
+  var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+  if(s==='live'&&recordSaveError)return;
+  if(s==='saved'){lastRecordSavedAt=Date.now();if(recordSaveError)s='error';}
+  if(s==='saving')recordSaveError=false;
+  if(s==='error')recordSaveError=true;
+  if((s==='live'||s==='saved')&&pendingRecordSaves>0)s='saving';
+  var text=s==='saving'?'Saving…':s==='error'?'Not saved — check connection':lastRecordSavedAt?'Saved • Live sync on':'Live sync on';
+  if(dot)dot.style.background=s==='saving'?'#E8B43A':s==='error'?'#E83A6C':'#2EAA72';
+  if(lbl)lbl.textContent=text;
+  document.querySelectorAll('.cd-save-status').forEach(function(node){node.textContent=text;});
+}
 function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent().catch(function(){});return "JOB-"+String(n).padStart(4,"0");}
 function nextEstNumber(){if(typeof estimatesSyncReady!=='undefined'&&!estimatesSyncReady){T('Estimates are still syncing. Please try saving again in a moment.');return null;}var n=Math.max(1,parseInt(DD.nextEstNum,10)||1);(estimates||[]).forEach(function(e){var match=/^EST-(\d+)$/.exec(e.estNum||'');if(match)n=Math.max(n,Number(match[1])+1);});DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
 function workspaceSettingsDoc(workspaceUid){
@@ -1074,7 +1135,7 @@ function switchMainTab(tab){
     document.getElementById("btnNew").onclick=openAdd;
     renderCards();
   } else if(tab==="estimates"){
-    document.getElementById("btnNew").textContent="+ New Est";
+    document.getElementById("btnNew").textContent="+ New estimate";
     document.getElementById("btnNew").onclick=openNewEstimate;
     renderEstCards();
   } else if(tab==="dashboard"){
@@ -1602,36 +1663,72 @@ function _startSyncWithOwner(ownerUid, seeAll, memberUids){
     if(mainTabMode==='estimates')renderEstCards();
   });
 }
+var projectWorkView='work',estimateWorkView='work';
+function isTestRecord(record){
+  if(typeof record.isTest==='boolean')return record.isTest;
+  var name=String(record.client||'').trim();
+  return /^(QA(?:\s|$)|TEST(?:\s|$)|AI Diagnostic(?:\s|$)|Auto Estimate(?:\s|$))/i.test(name)||/^test(?:\s|$)/i.test(String(record.type||''));
+}
+function inWorkView(record,view){
+  if(view==='all')return true;
+  if(view==='archived')return record.archived===true;
+  if(view==='tests')return !record.archived&&isTestRecord(record);
+  return !record.archived&&!isTestRecord(record);
+}
+function workViewButtons(kind,current){return '<div class="work-views">'+[['work','Daily work'],['archived','Archived'],['tests','Tests'],['all','All records']].map(function(item){return '<button class="'+(current===item[0]?'on':'')+'" aria-pressed="'+(current===item[0])+'" onclick="setWorkView(\''+kind+'\',\''+item[0]+'\')">'+item[1]+'</button>';}).join('')+'</div>';}
+function setWorkView(kind,view){if(kind==='project'){projectWorkView=view;renderAll();}else{estimateWorkView=view;renderEstCards();}}
+function setRecordArchive(kind,archived){
+  var record=kind==='project'?gpr():ger();if(!record)return;
+  var patch={archived:!!archived,archivedAt:archived?Date.now():null};
+  return (kind==='project'?col:eCol).doc(record.id).update(patch).then(function(){
+    Object.assign(record,patch);
+    if(kind==='project'){rememberProjectSnapshot(record);renderAll();_renderDetail(record);}else{renderEstCards();renderEstDetailBody(record);}
+    T(archived?'Archived. Find it in the Archived view anytime.':'Restored to your daily lists.');
+  }).catch(function(err){T('Could not '+(archived?'archive':'restore')+': '+err.message);});
+}
+function setRecordTest(kind,isTest){
+  var record=kind==='project'?gpr():ger();if(!record)return;
+  return (kind==='project'?col:eCol).doc(record.id).update({isTest:!!isTest}).then(function(){record.isTest=!!isTest;if(kind==='project'){rememberProjectSnapshot(record);renderAll();_renderDetail(record);}else{renderEstCards();renderEstDetailBody(record);}T(isTest?'Moved to Tests.':'Moved to daily work.');}).catch(function(err){T('Could not update: '+err.message);});
+}
+function archiveControls(kind,record){return '<div class="archive-notice">'+(record.archived?'Archived — this record and its history are preserved.':'Archive when you no longer need this in your daily work. Nothing is deleted.')+'</div><button class="btn-ghost" onclick="setRecordArchive(\''+kind+'\','+(!record.archived)+')">'+(record.archived?'Restore to daily work':'Archive '+(kind==='project'?'project':'estimate'))+'</button><button class="btn-ghost" onclick="setRecordTest(\''+kind+'\','+(!isTestRecord(record))+')">'+(isTestRecord(record)?'Mark as real work':'Mark as test')+'</button>';}
+function updateEstimateAnswers(){
+  var questions=(window._aiEstimateQuestionState||{}).questions||[];
+  var answers=[];document.querySelectorAll('[data-est-question]').forEach(function(field){if(field.value.trim())answers.push((questions[Number(field.getAttribute('data-est-question'))]||'Detail')+': '+field.value.trim());});
+  document.getElementById('aiPrompt').value=answers.join('\n');
+}
+function setEstimateAnswer(index){var field=document.getElementById('estimateAnswer'+index);if(!field)return;field.value='Unknown — verify on site. Use a clearly marked assumption if needed, and keep this work in the estimate.';updateEstimateAnswers();}
+function reviewEstimate(){var section=document.getElementById('estimateReview');if(section){section.open=true;section.scrollIntoView({behavior:'smooth',block:'start'});}}
 function renderAll(){renderStats();renderFilters();renderCards();}
-function renderStats(){var total=projects.length,active=projects.filter(function(p){return p.status==="In Progress";}).length;var budget=projects.reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
-function renderFilters(){document.getElementById("filters").innerHTML=["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
-function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){el.innerHTML=renderOnboarding();return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990",dot:"#2B3990"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+p.id+'">'+(p.jobNum?'<div class="card-num">'+p.jobNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' &middot; '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"--")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
+function renderStats(){var total=projects.filter(function(p){return inWorkView(p,'work');}).length,active=projects.filter(function(p){return inWorkView(p,'work');}).filter(function(p){return p.status==="In Progress";}).length;var budget=projects.filter(function(p){return inWorkView(p,'work');}).reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.filter(function(p){return inWorkView(p,'work');}).reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
+function renderFilters(){document.getElementById("filters").innerHTML=workViewButtons('project',projectWorkView)+["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
+function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return inWorkView(p,projectWorkView)&&(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){el.innerHTML='<div class="empty">No projects in this view. Change the view or search to find older work.</div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2B3990",dot:"#2B3990"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+p.id+'">'+(p.jobNum?'<div class="card-num">'+p.jobNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+p.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+p.type+' &middot; '+(p.address||"")+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+p.status+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">PM</div><div style="font-size:12px;font-weight:600;color:#333">'+(p.pm||"--")+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Deadline</div><div style="font-size:12px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Budget</div><div style="font-size:12px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Change Orders</div><div style="font-size:12px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Punch List</div><div style="font-size:12px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+(p.color||"#2B3990")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
 
 function renderDashboard(){
   var el=document.getElementById("dashContent");
+  var dailyProjects=projects.filter(function(p){return inWorkView(p,'work');});var dailyEstimates=estimates.filter(function(e){return inWorkView(e,'work');});
   var now=Date.now();
   var today=new Date().toISOString().split('T')[0];
 
   // Core metrics
-  var totalB=projects.reduce(function(a,p){return a+(parseFloat(p.budget)||0);},0);
-  var totalS=projects.reduce(function(a,p){return a+(parseFloat(p.spent)||0);},0);
-  var active=projects.filter(function(p){return p.status==="In Progress";});
-  var planning=projects.filter(function(p){return p.status==="Planning";});
-  var completed=projects.filter(function(p){return p.status==="Completed";});
-  var onHold=projects.filter(function(p){return p.status==="On Hold";});
+  var totalB=dailyProjects.reduce(function(a,p){return a+(parseFloat(p.budget)||0);},0);
+  var totalS=dailyProjects.reduce(function(a,p){return a+(parseFloat(p.spent)||0);},0);
+  var active=dailyProjects.filter(function(p){return p.status==="In Progress";});
+  var planning=dailyProjects.filter(function(p){return p.status==="Planning";});
+  var completed=dailyProjects.filter(function(p){return p.status==="Completed";});
+  var onHold=dailyProjects.filter(function(p){return p.status==="On Hold";});
 
   // Estimate pipeline
-  var totalEstVal=estimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
-  var signedEst=estimates.filter(function(e){return e.signedAt;});
+  var totalEstVal=dailyEstimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
+  var signedEst=dailyEstimates.filter(function(e){return e.signedAt;});
   var signedVal=signedEst.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
-  var pendingEst=estimates.filter(function(e){return !e.signedAt&&e.status!=="Rejected";});
+  var pendingEst=dailyEstimates.filter(function(e){return !e.signedAt&&e.status!=="Rejected";});
 
   // Alerts
-  var openCO=projects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);
-  var openPunch=projects.reduce(function(a,p){return a+(p.punchList||[]).filter(function(i){return !i.done;}).length;},0);
+  var openCO=dailyProjects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);
+  var openPunch=dailyProjects.reduce(function(a,p){return a+(p.punchList||[]).filter(function(i){return !i.done;}).length;},0);
   var overdueProjects=active.filter(function(p){return p.endDate&&p.endDate<today;});
   var unpaidMilestones=0;
-  projects.forEach(function(p){
+  dailyProjects.forEach(function(p){
     (p.milestones||[]).forEach(function(m){if(!m.paid&&m.dueDate&&m.dueDate<today)unpaidMilestones++;});
   });
 
@@ -1672,7 +1769,7 @@ function renderDashboard(){
   html+='<div class="dash-card" style="border-left:4px solid #E8B43A">';
   html+='<div class="dash-label">Total Project Budget</div>';
   html+='<div class="dash-val">$'+Math.round(totalB/1000)+'k</div>';
-  html+='<div class="dash-sub">Across '+projects.length+' project'+(projects.length!==1?'s':'')+'</div></div>';
+  html+='<div class="dash-sub">Across '+dailyProjects.length+' project'+(dailyProjects.length!==1?'s':'')+'</div></div>';
   // Spent
   var spentPct=totalB>0?Math.round(totalS/totalB*100):0;
   html+='<div class="dash-card" style="border-left:4px solid '+(spentPct>90?'#E83A6C':'#888')+'">';
@@ -1720,7 +1817,7 @@ function renderDashboard(){
   html+='<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Recent Activity</div>';
   html+='<div class="wcard">';
   var activity=[];
-  projects.forEach(function(p){
+  dailyProjects.forEach(function(p){
     (p.dailyLogs||p.notesLog||[]).forEach(function(l){
       if(l.work||l.text) activity.push({ts:l.ts||new Date(l.date).getTime()||0,text:(l.work||l.text||'').slice(0,80),proj:p.client,icon:'&#128197;',color:'#2B3990'});
     });
@@ -1731,7 +1828,7 @@ function renderDashboard(){
       activity.push({ts:c.ts||0,text:c.type+': '+c.notes.slice(0,60),proj:p.client,icon:'&#128222;',color:'#888'});
     });
   });
-  estimates.forEach(function(e){
+  dailyEstimates.forEach(function(e){
     if(e.signedAt) activity.push({ts:e.signedAt,text:'Estimate signed: '+e.type,proj:e.client,icon:'&#9997;',color:'#2EAA72'});
   });
   activity.sort(function(a,b){return b.ts-a.ts;});
@@ -1751,7 +1848,7 @@ function renderDashboard(){
   el.innerHTML=html;
 }
 
-function renderEstCards(){var el=document.getElementById("estCards");if(!estimates.length){el.innerHTML='<div class="empty">No estimates yet.<br>Tap <b>+ New Estimate</b> to create one.</div>';return;}el.innerHTML=estimates.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+e.id+'">'+(e.estNum?'<div class="card-num">'+e.estNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' &middot; '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
+function renderEstCards(){var el=document.getElementById("estCards");var views=document.getElementById('estimateViews');if(views)views.innerHTML=workViewButtons('estimate',estimateWorkView);var search=document.getElementById('estimateSearch');var q=search?search.value.toLowerCase():'';var visible=estimates.filter(function(e){return inWorkView(e,estimateWorkView)&&(!q||[e.client,e.type,e.estNum,e.address].join(' ').toLowerCase().includes(q));});if(!visible.length){el.innerHTML='<div class="empty">No estimates in this view.<br>Choose another view or change your search.</div>';return;}el.innerHTML=visible.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+e.id+'">'+(e.estNum?'<div class="card-num">'+e.estNum+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:16px;font-weight:700;color:#1A1A2E">'+e.client+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+e.type+(e.address?' &middot; '+e.address:'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+e.status+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1A1A2E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Margin</div><div style="font-size:12px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Date</div><div style="font-size:12px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:9px;color:#bbb;text-transform:uppercase">Signed</div><div style="font-size:12px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
 function switchEstTab(tab,btn){}
 function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();if(!e)return;var sc2=EST_SC[e.status]||"#888";document.getElementById("edName").textContent=e.client+" - "+e.type;document.getElementById("edEstNum").textContent=e.estNum||"";var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;document.querySelectorAll(".est-subtab").forEach(function(t,i){t.classList.toggle("on",i===0);});renderEstDetailBody(e);var dp=document.getElementById("estDetailPage");dp.classList.add("show");dp.scrollTop=0;}
 
@@ -1765,7 +1862,7 @@ function renderEstDetailBody(e){
     var isQuestionFlow=!!(aiQuestionState.active&&aiQuestionState.questions&&aiQuestionState.questions.length);
     var aiHelperText=isQuestionFlow?'Answer the questions below to continue the estimate.':'Add items, remove items, adjust markup, generate exclusions';
     var aiPlaceholder=isQuestionFlow?'Type your answers here...':'e.g. Generate line items for kitchen remodel';
-    var aiButtonLabel=isQuestionFlow?'💬 Submit Answers':'✨ Run AI Command';
+    var aiButtonLabel=isQuestionFlow?'Continue estimate':'Update estimate';
     html+='<div style="padding:14px;background:#fff;border-bottom:2px solid #EEE">';
     html+='<div style="background:linear-gradient(135deg,#1A1A2E,#162360);border-radius:14px;padding:16px">';
     html+='<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">&#10024; AI Estimate Assistant</div>';
@@ -1773,14 +1870,17 @@ function renderEstDetailBody(e){
     if(isQuestionFlow){
       html+='<div style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:10px 12px;margin-bottom:10px">';
       html+='<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#fff">Follow-up questions</div>';
-      (aiQuestionState.questions||[]).forEach(function(q){
-        html+='<div style="font-size:12px;color:rgba(255,255,255,0.9);margin-bottom:6px">• '+q+'</div>';
+      (aiQuestionState.questions||[]).forEach(function(q,index){
+        if(index%3===0)html+='<details class="question-group"'+(index===0?' open':'')+'><summary>Questions '+(index+1)+'–'+Math.min(index+3,aiQuestionState.questions.length)+'</summary>';
+        html+='<div class="question-card"><label for="estimateAnswer'+index+'">'+escapeHtmlText(q)+'</label><input id="estimateAnswer'+index+'" data-est-question="'+index+'" placeholder="Your answer" oninput="updateEstimateAnswers()"/><button onclick="setEstimateAnswer('+index+')">I don’t know — verify on site</button></div>';
+        if(index%3===2||index===aiQuestionState.questions.length-1)html+='</details>';
       });
+      html+='<div style="color:#fff;font-size:12px">Answer in the boxes, or type your answers together below. Unknown details stay marked for verification.</div>';
       html+='</div>';
     }
     html+='<textarea id="aiPrompt" rows="3" style="width:100%;border-radius:10px;border:none;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px" placeholder="'+aiPlaceholder+'"></textarea>';
     html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
-    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate line items for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">+ Add items</button>';
+    html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate line items for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">Add work</button>';
     html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Remove the line item: &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#215; Remove</button>';
     html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Change markup on all items to &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">% Markup</button>';
     html+='<button onclick="document.getElementById(&quot;aiPrompt&quot;).value=&quot;Generate standard exclusions for &quot;" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;padding:6px 10px;font-size:11px;cursor:pointer">&#128683; Exclusions</button>';
@@ -1799,18 +1899,31 @@ function renderEstDetailBody(e){
   if(e.validUntil) html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
   html+='</div>';
 
+  // Grand total summary
+  html+='<div class="est-summary" style="margin-top:16px">';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  if(calc.taxAmt>0){
+    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  }
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+Math.round(calc.profit).toLocaleString()+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Margin</span><span>'+calc.margin.toFixed(1)+'%</span></div>';
+  html+='</div>';
+
+  html+='<div class="estimate-actions"><button class="btn-sm" style="background:#2B3990" onclick="openAddLineItem()">Add work</button><button class="btn-sm" style="background:#2B3990" onclick="reviewEstimate()">Review &amp; send</button></div>';
   html += renderResidentialNarrativeBlock(e, false);
 
   // Action buttons
-  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
-  html+='<button class="btn-sm" style="background:#2B3990" onclick="openEditEstimate()">&#9999; Edit</button>';
-  html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">+ Line Item</button>';
+  html+='<details class="more-actions"><summary>More estimate options</summary><div>';
+  html+='<button class="btn-sm" onclick="openEditEstimate()">Edit estimate details</button>';
+  html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">Add line item</button>';
   html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">&#128279; Share</button>';
   html+='<button class="btn-sm" style="background:#3A78E8" onclick="sendEstimate()">&#128228; Send</button>';
-  html+='<button class="btn-sm" style="background:#E8B43A" onclick="openClientPortal()">&#127968; Portal</button>';
-  html+='<button class="btn-sm" style="background:#E8713A" onclick="printInvoice()">&#128438; Invoice</button>';
-  if(e.status==='Approved') html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">&#127959; Convert</button>';
-  html+='</div>';
+  html+='<button class="btn-sm" style="background:#E8B43A" onclick="openClientPortal()">Client preview</button>';
+  html+='<button class="btn-sm" style="background:#E8713A" onclick="printInvoice()">Print invoice</button>';
+  if(e.status==='Approved') html+='<button class="btn-sm" style="background:#1A1A2E" onclick="convertToProject()">Create project</button>';
+  html+=archiveControls('estimate',e)+'</div></details>';
 
   if(e.signedAt) html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+e.signedBy+' &middot; '+fmtTS(e.signedAt)+'</div>';
 
@@ -1821,7 +1934,7 @@ function renderEstDetailBody(e){
   html+='</select></div>';
 
   // Line Items
-  html+='<div class="sec-label">Line Items</div>';
+  html+='<details class="cd-section" id="estimateLineItems"'+(!(e.lineItems||[]).length?' open':'')+'><summary>Line items<small>'+(e.lineItems||[]).length+' priced items — expand to review or edit.</small></summary><div class="section-content">';
   if(!(e.lineItems||[]).length){
     html+='<div class="wcard" style="color:#bbb;font-size:13px;text-align:center;padding:20px">No line items yet. Use &#10024; AI Generate or + Line Item.</div>';
   } else {
@@ -1853,6 +1966,7 @@ function renderEstDetailBody(e){
     html+='</div>';
   }
 
+  html+='</div></details>';
   // ── PAYMENT SCHEDULE ──────────────────────────────────
   html+='<div class="sec-label" style="margin-top:20px">Payment Schedule</div>';
   html+='<div class="wcard">';
@@ -1890,11 +2004,11 @@ function renderEstDetailBody(e){
   html+='</div>';
 
   // ── CONTRACT ──────────────────────────────────────────
-  html+='<div class="sec-label" style="margin-top:8px">Contract Agreement</div>';
+  html+='<details id="estimateReview" class="cd-section"><summary>Review contract &amp; signatures<small>Check your agreement before sending it to the client.</small></summary><div class="section-content">';
   html+='<div class="wcard">';
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   html+='<div style="font-size:13px;color:#888">Auto-generated from your estimate. Edit as needed.</div>';
-  html+='<button class="btn-sm" style="background:#2B3990" onclick="printContract()">&#128438; Print</button></div>';
+  html+='</div>';
   var contractText=(e&&e.contractText&&String(e.contractText).trim())?String(e.contractText):generateContractText(e,calc);
   html+='<div style="display:flex;gap:8px;margin-bottom:10px">';
   html+='<button class="btn-sm" style="background:#2B3990;flex:1" onclick="printContract()">&#128438; Print</button>';
@@ -1945,8 +2059,9 @@ function renderEstDetailBody(e){
     html+='</div>';
   }
 
+  html+='<button class="btn-dark" onclick="sendEstimate()">Send to client</button></div></details>';
   // EXCLUSIONS SECTION
-  html+='<div class="sec-label" style="margin-top:16px">Job Exclusions</div>';
+  html+='<details class="cd-section"><summary>Manage exclusions<small>Review or add work that is not included.</small></summary><div class="section-content">';
   html+='<div class="wcard">';
   html+='<div style="font-size:12px;color:#888;margin-bottom:10px">Items NOT included in this estimate — shown to client on their copy.</div>';
   var excls=e.exclusions||[];
@@ -1969,17 +2084,7 @@ function renderEstDetailBody(e){
   html+='<div class="fbtns"><button class="btn-ghost" ontouchend="event.preventDefault();document.getElementById(\'exclForm\').style.display=\'none\';" onclick="document.getElementById(\'exclForm\').style.display=\'none\';">Cancel</button><button class="btn-dark" style="flex:2" ontouchend="event.preventDefault();addExclusion();" onclick="addExclusion();">Add</button></div>';
   html+='</div>';
 
-  // Grand total summary
-  html+='<div class="est-summary" style="margin-top:16px">';
-  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  if(calc.taxAmt>0){
-    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  }
-  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+Math.round(calc.profit).toLocaleString()+'</span></div>';
-  html+='<div class="est-sum-row profit"><span>Margin</span><span>'+calc.margin.toFixed(1)+'%</span></div>';
-  html+='</div>';
+  html+='</div></details>';
 
   html+='<button class="btn-red" style="margin-top:14px" onclick="deleteEstimate()">&#128465; Delete Estimate</button>';
 
@@ -2041,7 +2146,7 @@ function escapeHtmlText(value){if(value==null)return '';return String(value).rep
 function openEstimateScopeEdit(sectionKey){var e=ger();if(!e)return;var scope=getCanonicalCustomerScope(e)||{projectScope:''};var key=sectionKey||'projectScope';window._scopeEdit={id:e.id,key:key,value:getScopeSectionText(scope,key)||''};renderEstDetailBody(e);}
 function cancelEstimateScopeEdit(){delete window._scopeEdit;var e=ger();if(e)renderEstDetailBody(e);}
 function saveEstimateScopeEdit(){var e=ger();if(!e)return;var field=document.getElementById('scopeEditInput');if(!field)return;var sectionKey=(window._scopeEdit&&window._scopeEdit.key)||'projectScope';var value=field.value.trim();if(sectionKey==='projectScope'&&!value){alert('Project Scope cannot be empty.');return;}e.customerScope=e.customerScope||{};setScopeSectionValue(e, sectionKey, value);var updatePayload={};updatePayload['customerScope.'+sectionKey]=sectionKey==='projectScope'?e.customerScope[sectionKey]:e.customerScope[sectionKey];eCol.doc(e.id).update(updatePayload).then(function(){delete window._scopeEdit;T('Project details updated!');renderEstDetailBody(e);}).catch(function(err){T('Save failed: '+err.message);});}
-function renderResidentialNarrativeBlock(e, isClientMode){var narrative=buildResidentialEstimateDescription(e);if(!narrative)return '';var html='';var isEditing=!!(window._scopeEdit&&window._scopeEdit.id===e.id);html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Residential')+'</div>';if(isEditing){var editingKey=(window._scopeEdit&&window._scopeEdit.key)||'projectScope';var editingValue=(window._scopeEdit&&window._scopeEdit.value!==undefined)?window._scopeEdit.value:getScopeSectionText(getCanonicalCustomerScope(e),editingKey)||'';html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">';html+='<textarea id="scopeEditInput" rows="4" style="flex:1;border:1px solid #D7DDF4;border-radius:10px;padding:10px;font-size:14px;line-height:1.5;resize:vertical">'+escapeHtmlText(editingValue)+'</textarea></div>';html+='<div style="display:flex;justify-content:flex-end;gap:8px">';html+='<button class="btn-sm" style="background:#E5E7EB;color:#1A1A2E" onclick="cancelEstimateScopeEdit()">Cancel</button>';html+='<button class="btn-sm" style="background:#2EAA72" onclick="saveEstimateScopeEdit()">Save</button>';html+='</div>';}else{html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">';html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;flex:1">'+narrative.summary+'</div>';if(!isClientMode){html+='<button class="btn-sm" style="background:#2B3990;flex-shrink:0" onclick="openEstimateScopeEdit(\'residentialSummary\')">Edit</button>';}html+='</div>';}if(Array.isArray(narrative.sections)&&narrative.sections.length){narrative.sections.forEach(function(section){if(!section||!section.value)return;html+='<div style="margin-top:10px">';html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">';html+='<div style="font-size:11px;font-weight:700;color:#555;flex:1">'+(section.label||'Details')+'</div>';if(!isClientMode){html+='<button class="btn-sm" style="background:#2B3990;padding:4px 8px;font-size:11px;line-height:1.2" onclick="openEstimateScopeEdit(\''+(section.key||'projectScope')+'\')">Edit</button>';}html+='</div>';html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';html+='</div>';});}html+='</div>';return html;}
+function renderResidentialNarrativeBlock(e, isClientMode){var narrative=buildResidentialEstimateDescription(e);if(!narrative)return '';var html='';var isEditing=!!(window._scopeEdit&&window._scopeEdit.id===e.id);html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+(narrative.heading||'Residential')+'</div>';if(isEditing){var editingKey=(window._scopeEdit&&window._scopeEdit.key)||'projectScope';var editingValue=(window._scopeEdit&&window._scopeEdit.value!==undefined)?window._scopeEdit.value:getScopeSectionText(getCanonicalCustomerScope(e),editingKey)||'';html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">';html+='<label for="scopeEditInput" style="display:block;font-size:13px;font-weight:700;margin-bottom:8px">'+escapeHtmlText(editingKey==='residentialSummary'?'Summary':editingKey==='projectScope'?'Project scope':editingKey==='workIncluded'?'Work included':editingKey==='conditionsAssumptions'?'Conditions and assumptions':'Exclusions')+'</label><textarea id="scopeEditInput" rows="4" style="flex:1;border:1px solid #D7DDF4;border-radius:10px;padding:10px;font-size:14px;line-height:1.5;resize:vertical">'+escapeHtmlText(editingValue)+'</textarea></div>';html+='<div style="display:flex;justify-content:flex-end;gap:8px">';html+='<button class="btn-sm" style="background:#E5E7EB;color:#1A1A2E" onclick="cancelEstimateScopeEdit()">Cancel</button>';html+='<button class="btn-sm" style="background:#2EAA72" onclick="saveEstimateScopeEdit()">Save</button>';html+='</div>';}else{html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">';html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;flex:1">'+narrative.summary+'</div>';if(!isClientMode){html+='<button class="btn-sm" style="background:#2B3990;flex-shrink:0" onclick="openEstimateScopeEdit(\'residentialSummary\')">Edit</button>';}html+='</div>';}if(Array.isArray(narrative.sections)&&narrative.sections.length){narrative.sections.forEach(function(section){if(!section||!section.value)return;html+=isClientMode?'<div style="margin-top:10px">':'<details class="cd-section"'+(section.key==='projectScope'?' open':'')+'><summary>'+escapeHtmlText(section.label||'Details')+'<small>'+escapeHtmlText(section.value.slice(0,110))+(section.value.length>110?'…':'')+'</small></summary><div class="section-content">';html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">';html+='<div style="font-size:11px;font-weight:700;color:#555;flex:1">'+(section.label||'Details')+'</div>';if(!isClientMode){html+='<button class="btn-sm" style="background:#2B3990;padding:4px 8px;font-size:11px;line-height:1.2" onclick="openEstimateScopeEdit(\''+(section.key||'projectScope')+'\')">Edit</button>';}html+='</div>';html+='<div style="font-size:13px;color:#333;line-height:1.6">'+section.value+'</div>';html+=isClientMode?'</div>':'</div></details>';});}html+='</div>';return html;}
 function saveContractorSig(){
   var name=document.getElementById("contractorName");
   if(!name||!name.value.trim()){T("Please enter your name.");return;}
@@ -2676,6 +2781,7 @@ function convertToProject(){
 
   var np={
     id:"p"+Date.now(),
+    isTest:isTestRecord(e),
     userId:resolvedProjectOwnerUid,
     ownerUid:resolvedProjectOwnerUid,
     createdBy:uid,
@@ -3351,6 +3457,8 @@ function openDetail(id){
 }
 
 function _renderDetail(p){
+  var tools=document.getElementById('projectRecordTools');
+  if(tools)tools.innerHTML='<details class="more-actions"><summary>Project options'+(p.archived?' • Archived':'')+'</summary><div><button class="btn-sm" onclick="openEditProject()">Edit project details</button>'+archiveControls('project',p)+'</div></details>';
   // Silently snapshot logo onto project if missing (fixes old projects)
   if(DD.logoData && DD.logoData.length > 10 && (!p.logoData || p.logoData.length < 10)){
     p.logoData = DD.logoData;
@@ -3864,6 +3972,7 @@ function renderTabBody(p){
     html+='<div class="wcard" style="margin-top:12px">';
     html+='<button class="btn-dark" style="margin-bottom:8px" onclick="openEditProject()">&#9999; Edit Project Details</button>';
     html+='<button class="btn-green" style="margin-bottom:8px" onclick="shareClientPortal()">&#128279; Share Client Portal</button>';
+    html+=archiveControls('project',p);
     html+='<button class="btn-red" onclick="deleteProject()">&#128465; Delete Project</button>';
     html+='</div>';
   }
@@ -4730,6 +4839,7 @@ function openSettings(){
 }
 
 function renderSettingsForm(){
+  var diagnostics=document.getElementById('settingsDiagnostics');if(diagnostics)diagnostics.style.display='block';
   renderTeamList();
   document.getElementById("companyName").value=DD.companyName||"Contractor Desk";
   if(document.getElementById("companyPhone")) document.getElementById("companyPhone").value=DD.companyPhone||"";
@@ -4787,10 +4897,10 @@ var _isClientView = _params.get('est') || _params.get('portal');
 var _isSubView = _params.get('sub');
 var _isInvoiceView = _params.get('invoice');
 if(_isClientView || _isSubView || _isInvoiceView || _params.get('est')){
-  col=db.collection('projects');
+  col=withSaveFeedback(db.collection('projects'));
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
-  eCol=db.collection('estimates');
+  eCol=withSaveFeedback(db.collection('estimates'));
   var _as=document.getElementById('authScreen');
   if(_as) _as.style.display='none';
   if(_isClientView) checkClientView();
