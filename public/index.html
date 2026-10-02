@@ -1497,7 +1497,19 @@ function startSync(){
   });
 }
 
-function _startSyncWithOwner(ownerUid, seeAll){
+function recordBelongsToWorkspace(record,uid,ownerUid,memberUids){
+  if(record.ownerUid && record.ownerUid!==ownerUid && record.ownerUid!==uid)return false;
+  return record.userId===uid || record.userId===ownerUid || record.ownerUid===ownerUid || (memberUids||[]).indexOf(record.userId)!==-1;
+}
+function _startSyncWithOwner(ownerUid, seeAll, memberUids){
+  if(!memberUids){
+    return db.collection('userProfiles').where('ownerUid','==',ownerUid).get().then(function(snap){
+      var members=[];
+      snap.forEach(function(doc){var profile=doc.data();if(profile.plan==='team'&&profile.status!=='inactive'&&profile.status!=='disabled')members.push(doc.id);});
+      _startSyncWithOwner(ownerUid,seeAll,members);
+    }).catch(function(){_startSyncWithOwner(ownerUid,seeAll,[]);});
+    return;
+  }
   estimatesSyncReady=false;
   var uid=currentUser?currentUser.uid:null;
   var isOwner=ownerUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
@@ -1514,7 +1526,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
       // Strict isolation: user sees ONLY their own projects
       // Team members see their owner's projects (p.userId===ownerUid)
       // NO global seeAll bypass — no account can see all companies
-      if(p.userId===uid || p.userId===ownerUid){
+      if(recordBelongsToWorkspace(p,uid,ownerUid,memberUids)){
         projects.push(p);
       }
     });
@@ -1534,7 +1546,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
       var e=d.data();
       // Exclude converted estimates — they live as projects now
       if(e.converted===true||e.status==='Converted') return;
-      if(e.userId===uid || e.userId===ownerUid){
+      if(recordBelongsToWorkspace(e,uid,ownerUid,memberUids)){
         estimates.push(e);
       }
     });

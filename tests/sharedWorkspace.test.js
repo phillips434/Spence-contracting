@@ -16,6 +16,7 @@ function fixture(uid = 'office') {
   const values = { efClient: 'Office customer', efType: 'Kitchen', efProjectClass: 'residential', efMarkup: '20', efTax: '0', efStatus: 'Draft', fClient: 'Office customer', fType: 'Kitchen', fBudget: '1000', fSpent: '0' };
   const nodes = {};
   const collection = name => ({
+    where: (field,op,value) => ({get:async()=>({forEach:fn=>Object.entries(profiles).filter(([,p])=>p[field]===value).forEach(([id,p])=>fn({id,data:()=>p}))})}),
     doc: id => ({
       get: async () => ({ exists: !!profiles[id], data: () => profiles[id] || {} }),
       set: async record => records[name].set(id, JSON.parse(JSON.stringify(record)))
@@ -37,7 +38,7 @@ function fixture(uid = 'office') {
   c.ger = () => c.estimates.find(e => e.id === c.currentEstId);
   c.gpr = () => c.projects.find(p => p.id === c.currentId);
   vm.createContext(c);
-  for (const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','normalizeProjectClass', 'resolveCurrentOwnerUid', 'withSharedOwnerMetadata', 'saveEstimate', 'saveProject', '_startSyncWithOwner']) vm.runInContext(source(name), c);
+  for (const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','normalizeProjectClass', 'resolveCurrentOwnerUid', 'withSharedOwnerMetadata', 'saveEstimate', 'saveProject', 'recordBelongsToWorkspace','_startSyncWithOwner']) vm.runInContext(source(name), c);
   return { c, records, nodes };
 }
 describe('shared company workspace save and visibility', () => {
@@ -55,7 +56,7 @@ describe('shared company workspace save and visibility', () => {
       records[kind + 's'].set('unrelated', { id: 'unrelated', userId: 'another-company', createdAt: 1 });
       for (const uid of ['company-owner', 'office']) {
         c.currentUser = { uid };
-        c._startSyncWithOwner('company-owner', true);
+        await c._startSyncWithOwner('company-owner', true);
         assert.strictEqual(c[kind + 's'].length, 1, 'Expected shared visibility without another company');
         assert.strictEqual(c[kind + 's'][0].id, saved.id);
       }
@@ -65,7 +66,7 @@ describe('shared company workspace save and visibility', () => {
       c[kind === 'estimate' ? 'saveEstimate' : 'saveProject'](); await flush();
       const saved = Array.from(records[kind + 's'].values())[0];
       assert.strictEqual(saved.ownerUid, 'company-owner');
-      c.currentUser = { uid: 'office' }; c._startSyncWithOwner('company-owner', true);
+      c.currentUser = { uid: 'office' }; await c._startSyncWithOwner('company-owner', true);
       assert.strictEqual(c[kind + 's'][0].id, saved.id);
     });
   }
