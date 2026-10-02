@@ -1412,30 +1412,8 @@ function saveP(p,notifText){
     var testStr=JSON.stringify(record);
     var tooLarge=false;
 
-    // Step 1: over 700KB — strip daily log photos from older entries (keep last 3)
-    if(testStr.length>700000 && record.dailyLogs && record.dailyLogs.length>0){
-      var logs=record.dailyLogs;
-      var keepPhotos=3;
-      for(var i=0;i<logs.length-keepPhotos;i++){
-        if(logs[i].photos && logs[i].photos.length>0){
-          logs[i].photos=[];
-        }
-      }
-      testStr=JSON.stringify(record);
-    }
-
-    // Step 2: still over 850KB — strip ALL daily log photos
-    if(testStr.length>850000 && record.dailyLogs){
-      for(var j=0;j<record.dailyLogs.length;j++){
-        if(record.dailyLogs[j]) record.dailyLogs[j].photos=[];
-      }
-      testStr=JSON.stringify(record);
-    }
-
-    // Step 3: warn when the project is too large to save with all comms attachments
-    if(testStr.length>950000){
-      tooLarge=true;
-    }
+    // Preserve every photo: oversized projects must never silently discard evidence.
+    if(testStr.length>950000){tooLarge=true;}
     if(tooLarge){
       T("Project too large to save with all attachments. Remove or shrink some images and try again.");
       setSS("error");
@@ -2613,7 +2591,7 @@ function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed
 function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(liTabMode==="detailed"){var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});}else{var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});}eCol.doc(e.id).set(e).then(function(){T("Added!");closeAddLineItem();renderEstDetailBody(e);});}
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
 function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
-function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail)alert("No client contact info found.");if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
+function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
 function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
