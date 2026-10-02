@@ -1,6 +1,6 @@
 # Contractor Desk stability review — October 2, 2026
 
-Baseline: production branch `phase-2-stability`, commit `c44b5050bcccfd2a44071145f7b3020035239ff1`. Railway source configuration was confirmed from the owner's screenshot. Live deployment logs and Firestore rules/data were not inspected.
+Baseline: production branch `phase-2-stability`, commit `c44b5050bcccfd2a44071145f7b3020035239ff1`. Railway source configuration, deployment status and selected runtime logs were inspected through the connected Railway plugin. The owner supplied the deployed Firestore rules; live database records were not inspected.
 
 ## Changes
 
@@ -15,7 +15,8 @@ Baseline: production branch `phase-2-stability`, commit `c44b5050bcccfd2a4407114
 ## Validation
 
 - Baseline direct Mocha run: 107 passing, 30 failing. Original `npm test` ran no tests.
-- Final full Mocha run: 118 passing, 24 failing.
+- Initial stability pass: 118 passing, 24 failing.
+- Follow-up failure repair: 143 passing, zero failing.
 - Focused project form, labor quantity, geometry and workspace tests: 10 passing.
 - Node syntax checks passed for server and inline application JavaScript.
 - Local HTTP smoke checks: homepage and `/api/build-info` returned 200.
@@ -24,17 +25,26 @@ Baseline: production branch `phase-2-stability`, commit `c44b5050bcccfd2a4407114
 
 ## Remaining work before release
 
-The full suite is still red; this change must not be represented as production-ready.
+The automated suite is green. Production readiness still requires the checks below.
 
-1. Repair isolated browser-function test contexts: missing `deriveAuthoritativeLaborFromScope`, `alert`, `window`, `withSharedOwnerMetadata`, `resolveEstimateProjectClass`, `getCanonicalCustomerScope`, and `normalizeExclusionText`. Some tests slice out functions without their real dependencies.
-2. Investigate three-round estimate intake and reset behavior with browser fixtures; current assertions show loss of original scope. Confirm whether application behavior or the fixture is responsible before changing logic.
-3. Reconcile residential scope summary, duplicate narrative, legacy fallback and section-edit expectations with current application behavior. A multi-trade scope test omits “master closet.”
-4. Investigate the CO normalization fixture expecting `lineItems` and a pricing fixture expecting `aiBreakdown.laborHours`; do not weaken the assertions without checking response contracts.
-5. Reconcile project-class validation and missing-provider error-message assertions.
-6. Run browser tests after `npx playwright install chromium`, then exercise actual sign-in, project create/edit, selection persistence after reload, team permissions, estimate generation and multi-round CO intake in an isolated test account.
-7. Inspect Firestore security rules, backups, and deployed Railway logs/build identity. These require access beyond the repository.
-8. Review server protection for paid AI routes. The inspected server has no inbound token verification or rate limiting; CORS is present but does not authenticate callers. Design this with the existing client authentication before enforcing it, to avoid locking out users.
-9. Remaining development dependency advisories require a separate compatibility review; `npm audit fix --force` was not used.
+1. Run browser tests when Chromium is available, then exercise sign-in, project create/edit, selection persistence after reload, team permissions, estimate generation and multi-round CO intake in an isolated test account.
+2. Address the Firestore exposures documented in `firestore-access-review-2026-10-02.md`, with coordinated portal changes and permission tests. No production rules were changed.
+3. Confirm backups and live persistence; repository tests use a mocked database.
+4. Add authentication and rate limiting to paid AI routes with matching client changes. CORS does not authenticate callers.
+5. Review remaining development dependency advisories separately; no forced upgrades were made.
+
+## Follow-up failure repairs
+
+- Remove duplicate canonical-scope and obsolete estimate-save declarations so source extraction and runtime behavior agree.
+- Preserve legacy saved project scope and arrays while supplying missing summary/detail fallback values. Rendering does not mutate saved estimates or pricing.
+- Avoid repeating the same detailed task in summary, overview, work and conditions; keep work details available and distinguish installation tasks from conditions.
+- Resolve a bare numerical crew answer from its follow-up question and accept “additional days” in browser labor derivation.
+- Preserve change-order original scope and follow-up history when an intake response is ready, including its authoritative labor facts.
+- Repair isolated VM contexts to load the actual application helpers. Provide form fields and database mocks used by real UI flows.
+- Correct the three-round fixture to submit the original scope first and assert reset after successful generation. Check the next request's scope rather than expecting completed intake state to remain active.
+- Check labor hours in the existing `aiBreakdown` response contract and match current project-class/error labels.
+- Explicitly compile the dormant breakdown branch in its integration test. The production experiment remains disabled; no environment flag was enabled.
+- Accept “Master-closet” as the same work-area spelling as “master closet” rather than rewriting customer text.
 
 ## Owner verification
 
@@ -44,4 +54,4 @@ The full suite is still red; this change must not be represented as production-r
 - Compare final labor rate, material totals, markup and client total against a manually calculated sample.
 - Confirm current local development changes not yet committed are preserved before any merge.
 
-These files are a review candidate. GitHub branch creation returned HTTP 403 “Resource not accessible by integration,” so no remote branch or pull request was created. The connector can read the repository; write access is blocked despite the repository permissions response listing push permission. Railway production and customer data were not changed.
+These files are committed on `codex/stability-review-2026-10-02` in draft PR #1. GitHub write access is working. Railway production and customer data were not changed.

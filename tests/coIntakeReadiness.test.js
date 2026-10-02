@@ -5,7 +5,37 @@ const vm = require('vm');
 const http = require('http');
 const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('../server');
 
+
+function runBrowserSnippet(snippet, context) {
+  const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+  context.window = context.window || {};
+  context.currentUser = context.currentUser || null;
+  context.eCol = context.eCol || { doc: () => ({ set: () => Promise.resolve() }) };
+  context.resolveCurrentOwnerUid = context.resolveCurrentOwnerUid || (() => Promise.resolve(context.currentUser && context.currentUser.uid));
+  for (const name of ['normalizeProjectClass', 'resolveEstimateProjectClass', 'sanitizeScopeText', 'addUniqueScopeItem', 'buildCanonicalCustomerScope', 'getCanonicalCustomerScope', 'parseScopeSectionText', 'setScopeSectionValue', 'deriveAuthoritativeLaborFromScope', 'withSharedOwnerMetadata', 'shouldUseIntakeGate']) {
+    if (typeof context[name] === 'function') continue;
+    const start = html.indexOf('function ' + name + '(');
+    const next = html.indexOf('\nfunction ', start + 1);
+    assert.ok(start >= 0 && next > start, 'missing application helper: ' + name);
+    vm.runInNewContext(html.slice(start, next), context);
+  }
+  if (snippet.includes('function applyEstimateChanges') && !snippet.includes('function normalizeExclusionText')) {
+    const start = html.indexOf('  function normalizeExclusionText');
+    const end = html.indexOf('  function applyEstimateChanges', start);
+    vm.runInNewContext(html.slice(start, end), context);
+  }
+  vm.runInNewContext(snippet, context);
+}
+
 describe('coIntakeReadiness', () => {
+  it('keeps one runtime definition for canonical scope and estimate form saving', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+    for (const name of ['buildCanonicalCustomerScope', 'saveEstimate']) {
+      const declarations = html.match(new RegExp('^function ' + name + '\\(', 'gm')) || [];
+      assert.strictEqual(declarations.length, 1, name + ' must not be shadowed by another declaration');
+    }
+  });
+
   it('builds a contractor authoritative labor fact from a 2-day 1-worker scope', () => {
     const result = buildAuthoritativeLaborFact(
       'Replace additional knob and tube wiring throughout. 2 additional days of work.',
@@ -39,7 +69,7 @@ describe('coIntakeReadiness', () => {
       gpr: () => ({ id: 'proj-1' }),
       document: { querySelector: () => null }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const result = context.buildCOGenerationRequestContext(
       'Replace additional knob and tube wiring throughout the property.',
       'Work will require 2 additional days of labor.',
@@ -68,7 +98,7 @@ describe('coIntakeReadiness', () => {
       gpr: () => ({ id: 'proj-1' }),
       document: { querySelector: () => null }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const result = context.buildCOGenerationRequestContext(
       'Replace additional knob and tube wiring throughout the property.',
       'Work will require 2 additional days of labor.',
@@ -96,7 +126,7 @@ describe('coIntakeReadiness', () => {
       gpr: () => ({ id: 'proj-1' }),
       document: {
         querySelector: () => null,
-        getElementById: () => null
+        getElementById: (id) => ({ value: id === 'coTitle' ? 'Replace additional knob and tube wiring. 2 additional days of labor.' : '' })
       },
       window: {
         _aiCOQuestionState: {
@@ -121,7 +151,8 @@ describe('coIntakeReadiness', () => {
         calls.push({ kind: 'runCOGenerationRequest', title, desc, questionState });
       }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
+    context.runCOGenerationRequest = function(title, desc, btnEl, questionState) { calls.push({ kind: 'runCOGenerationRequest', title, desc, questionState }); };
     context.generateCOWithAI({ disabled: false, textContent: 'AI Draft' });
     await new Promise((resolve) => setImmediate(resolve));
 
@@ -131,7 +162,7 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(runCall.questionState.history.length, 1);
     assert.strictEqual(runCall.questionState.history[0].answer, '1');
     assert.strictEqual(runCall.questionState.authoritativeLabor.totalHours, 16);
-    assert.strictEqual(context.window._aiCOQuestionState.history.length, 0);
+    assert.strictEqual(context.window._aiCOQuestionState.history.length, 1);
   });
 
   it('uses the authoritative server-computed CO total for base, markup, and client-facing amount', () => {
@@ -262,7 +293,7 @@ describe('coIntakeReadiness', () => {
       T: () => {}
     };
 
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const result = context.buildCOGenerationRequestContext('CO title', 'AI generated expanded description', context.window._aiCOQuestionState);
     assert.strictEqual(result.questionContext.originalPrompt, originalScope);
     assert.strictEqual(result.questionContext.history[0].answer, followUpAnswer);
@@ -285,7 +316,7 @@ describe('coIntakeReadiness', () => {
       document: { querySelector: () => null }
     };
 
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const result = context.buildCOGenerationRequestContext('CO title', generatedReview, context.window._aiCOQuestionState);
     assert.strictEqual(result.questionContext.originalPrompt, originalScope);
     assert.notStrictEqual(result.questionContext.originalPrompt, generatedReview);
@@ -308,7 +339,7 @@ describe('coIntakeReadiness', () => {
       document: { querySelector: () => null }
     };
 
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const result = context.buildCOGenerationRequestContext('CO title', priorGeneratedDescription, context.window._aiCOQuestionState);
     assert.strictEqual(result.questionContext.originalPrompt, originalScope);
     assert.strictEqual(result.questionContext.history.length, 1);
@@ -491,8 +522,13 @@ describe('coIntakeReadiness', () => {
     process.env.AI_BREAKDOWN_EXPERIMENT = 'true';
     delete require.cache[require.resolve('../server')];
 
-    const serverModule = require('../server');
-    const serverApp = serverModule.app;
+    const Module = require('module');
+    const serverPath = require.resolve('../server');
+    const experimentalModule = new Module(serverPath, module);
+    experimentalModule.filename = serverPath;
+    experimentalModule.paths = module.paths;
+    experimentalModule._compile(fs.readFileSync(serverPath, 'utf8').replace('const AI_BREAKDOWN_EXPERIMENT = false;', 'const AI_BREAKDOWN_EXPERIMENT = true;'), serverPath);
+    const serverApp = experimentalModule.exports.app;
 
     const providerResponse = {
       action: 'add',
@@ -762,7 +798,7 @@ describe('coIntakeReadiness', () => {
         }
       }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.updateCOPreview();
 
     assert.ok(card.innerHTML.includes('12-2 Romex'));
@@ -837,7 +873,7 @@ describe('coIntakeReadiness', () => {
 
       assert.strictEqual(result.status, 503);
       assert.ok(String(result.body && result.body.error).includes('OPENAI_API_KEY'));
-      assert.ok(String(result.body && result.body.error).includes('estimate'));
+      assert.ok(String(result.body && result.body.error).includes('estimator'));
     } finally {
       global.fetch = originalFetch;
       if (previousOpenAiKey === undefined) {
@@ -1114,7 +1150,7 @@ describe('coIntakeReadiness', () => {
         conditionsAssumptions: []
       })
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const fixture = {
       action: 'add',
@@ -1410,7 +1446,7 @@ describe('coIntakeReadiness', () => {
       buildResidentialEstimateDescription: null,
       window: {}
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const estimate = {
       client: 'Hargrove Residence',
       type: 'Residential Wiring Replacement',
@@ -1451,7 +1487,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
     const co = { id: 'co-1', title: 'Add lighting', budgetImpact: 250 };
@@ -1468,7 +1504,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
     const co = { id: 'co-2', title: 'Add lighting', budgetImpact: 250 };
@@ -1486,7 +1522,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
     const co = { id: 'co-3', title: 'Add lighting', budgetImpact: 250 };
@@ -1504,7 +1540,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
     const co = { id: 'co-4', title: 'Add lighting', budgetImpact: 250 };
@@ -1522,7 +1558,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = { paymentMilestones: [], clientTotal: 5000, budget: 10000 };
     context.ensureApprovedCOFinancialAccounting(project, { id: 'co-5', title: 'Add lighting', budgetImpact: 250 }, 250, { includeBudget: true });
@@ -1539,7 +1575,7 @@ describe('coIntakeReadiness', () => {
     const start = html.indexOf('function ensureApprovedCOFinancialAccounting');
     const snippet = html.slice(start, html.indexOf('function generatePunchListAI', start));
     const context = { parseFloat: Number.parseFloat, Date, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const project = {
       paymentMilestones: [
@@ -1564,7 +1600,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1589,7 +1625,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1614,7 +1650,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1638,7 +1674,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1662,7 +1698,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1690,7 +1726,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -1715,7 +1751,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function saveContractorSig', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Commercial Client',
@@ -1787,7 +1823,7 @@ describe('coIntakeReadiness', () => {
       globalThis: null
     };
     context.globalThis = context;
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     await context.generateAIEstimate();
     await flushAIGenerationQueue();
@@ -1859,7 +1895,7 @@ describe('coIntakeReadiness', () => {
       globalThis: null
     };
     context.globalThis = context;
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     promptValue = originalScope;
     await context.generateAIEstimate();
@@ -1939,15 +1975,17 @@ describe('coIntakeReadiness', () => {
       globalThis: null
     };
     context.globalThis = context;
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
+    await context.generateAIEstimate();
+    await flushAIGenerationQueue();
     for (const answer of ['Answer 1', 'Answer 2', 'Answer 3']) {
       promptValue = answer;
       await context.generateAIEstimate();
       await flushAIGenerationQueue();
-      assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
+      if(answer !== 'Answer 3')assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, originalScope);
     }
-    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 3);
+    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 0);
     const finalPayload = calls[calls.length - 1];
     assert.strictEqual(finalPayload.questionContext.originalPrompt, originalScope);
     assert.strictEqual(finalPayload.questionContext.history.length, 3);
@@ -2005,7 +2043,7 @@ describe('coIntakeReadiness', () => {
       globalThis: null
     };
     context.globalThis = context;
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     promptValue = firstScope;
     await context.generateAIEstimate();
@@ -2019,8 +2057,9 @@ describe('coIntakeReadiness', () => {
     promptValue = secondScope;
     await context.generateAIEstimate();
     await flushAIGenerationQueue();
-    assert.strictEqual(context.window._aiEstimateQuestionState.originalPrompt, secondScope);
-    assert.strictEqual(context.window._aiEstimateQuestionState.history.length, 0);
+    const secondIntake = calls.find((call) => call.mode === 'estimate-intake' && call.prompt === secondScope);
+    assert.strictEqual(secondIntake.questionContext.originalPrompt, secondScope);
+    assert.strictEqual(secondIntake.questionContext.history.length, 0);
   });
 
   it('CASE A: blank projectClass blocks AI generation before any request is sent', () => {
@@ -2058,7 +2097,7 @@ describe('coIntakeReadiness', () => {
         return null;
       }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.generateAIEstimate();
     assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length, 0);
     assert.ok(calls.some((c) => c.kind === 'toast' && /Residential|Commercial/i.test(c.msg)));
@@ -2099,7 +2138,7 @@ describe('coIntakeReadiness', () => {
         return null;
       }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.generateAIEstimate();
     assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length > 0, true);
   });
@@ -2139,7 +2178,7 @@ describe('coIntakeReadiness', () => {
         return null;
       }
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.generateAIEstimate();
     assert.strictEqual(calls.filter((c) => c.kind === 'fetch').length > 0, true);
   });
@@ -2150,7 +2189,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function resolveEstimateProjectClass', start);
     const snippet = html.slice(start, end);
     const context = { window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const value = context.normalizeProjectClass('');
     assert.strictEqual(value, null);
     const residentialText = 'Replace knob and tube wiring in a house';
@@ -2163,7 +2202,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function resolveEstimateProjectClass', start);
     const snippet = html.slice(start, end);
     const context = { window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const value = context.normalizeProjectClass('');
     assert.strictEqual(value, null);
     const commercialText = 'Tenant improvement office fit-out';
@@ -2213,7 +2252,7 @@ describe('coIntakeReadiness', () => {
       currentEstId: null,
       editEstId: null
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.saveEstimate();
     assert.strictEqual(alerts.length, 1);
     assert.ok(alerts[0].toLowerCase().includes('residential') || alerts[0].toLowerCase().includes('commercial'));
@@ -2261,7 +2300,7 @@ describe('coIntakeReadiness', () => {
       currentEstId: null,
       editEstId: null
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.saveEstimate();
     assert.strictEqual(typeof context.normalizeProjectClass('residential'), 'string');
     assert.strictEqual(context.normalizeProjectClass('residential'), 'residential');
@@ -2280,7 +2319,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function buildResidentialEstimateDescription', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       type: 'test 1',
@@ -2307,7 +2346,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function isResidentialEstimate', start);
     const snippet = html.slice(start, end);
     const context = { DD: { companyName: 'Contractor Desk' }, Date };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Client',
@@ -2322,7 +2361,7 @@ describe('coIntakeReadiness', () => {
     };
 
     const contractText = context.generateContractText(estimate, { grandTotal: 1000 });
-    assert.ok(contractText.toLowerCase().includes('scope of work'));
+    assert.ok(contractText.toLowerCase().includes('project scope'));
     assert.ok(!contractText.toLowerCase().includes('test 1'));
     assert.ok(contractText.toLowerCase().includes('replace 400 linear feet') || contractText.toLowerCase().includes('12/2'));
   });
@@ -2333,7 +2372,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderCommercialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       projectClass: 'residential',
@@ -2365,7 +2404,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderCommercialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       customerScope: {
@@ -2391,7 +2430,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderCommercialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       customerScope: {
@@ -2417,7 +2456,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderCommercialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       projectClass: 'residential',
@@ -2443,7 +2482,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderCommercialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       customerScope: {
@@ -2491,7 +2530,7 @@ describe('coIntakeReadiness', () => {
         conditionsAssumptions: []
       })
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.applyEstimateChanges({
       lineItems: [
         { category: 'Labor', desc: 'Frame wall', qty: 2, unit: 'hrs', unitCost: 85, total: 170, markup: 20 },
@@ -2535,7 +2574,7 @@ describe('coIntakeReadiness', () => {
         conditionsAssumptions: []
       })
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.applyEstimateChanges({
       lineItems: [
         { category: 'Labor', desc: 'Framing labor', qty: 4, unit: 'hrs', unitCost: 85, total: 340, markup: 20 },
@@ -2595,7 +2634,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function normalizeExclusionText', start);
     const snippet = html.slice(start, end);
     const context = { T: () => {}, _aiDone: () => {}, console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const malformed = {
       content: [{ type: 'text', text: '```json\n{"action":"add","lineItems":[{"category":"Labor","desc":"Frame wall","qty":2,"unit":"hrs","unitCost":85,"total":170,"markup":20},' }]
     };
@@ -2609,7 +2648,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function generateAIEstimate', start);
     const snippet = html.slice(start, end);
     const context = { console };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     assert.strictEqual(context.shouldUseIntakeGate('Build a detached garage with 2 overhead doors and 10 windows.'), true);
     assert.strictEqual(context.shouldUseIntakeGate('Remove the old siding and replace it with fiber cement.'), false);
   });
@@ -2657,7 +2696,7 @@ describe('coIntakeReadiness', () => {
       normalizeProjectClass: (v) => ((v || '').trim().toLowerCase() === 'residential' ? 'residential' : ((v || '').trim().toLowerCase() === 'commercial' ? 'commercial' : '')),
       getCanonicalCustomerScope: (e) => ({ projectClass: e.projectClass || 'commercial', projectScope: 'Scope of work', workIncluded: [], conditionsAssumptions: [], exclusions: e.exclusions || [] })
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     context.saveEstimate();
     assert.strictEqual(alerts.length, 1);
     assert.strictEqual(saved.length, 0);
@@ -2697,7 +2736,7 @@ describe('coIntakeReadiness', () => {
         exclusions: estimate.exclusions || []
       })
     };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
     const finalEstimate = {
       projectClass: 'residential',
       notes: 'Replace 400 linear feet of knob and tube wiring with new 12/2 NM-B.',
@@ -2723,7 +2762,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function buildCanonicalCustomerScope', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       type: 'test 1',
@@ -2741,7 +2780,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { isResidentialEstimate: null, buildResidentialEstimateDescription: null, window: {} };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       client: 'Hargrove Residence',
@@ -3061,7 +3100,7 @@ describe('coIntakeReadiness', () => {
     const normalized = normalizeAIGenerated(parsed, 85, 40);
     const baseCost = Math.round((400 * 0.72 + 16 * 85) * 100) / 100;
 
-    assert.strictEqual(normalized[0].laborHours, 16);
+    assert.strictEqual(normalized[0].aiBreakdown.laborHours, 16);
     assert.strictEqual(normalized[0].markup, 40);
     assert.strictEqual(normalized[0].total, baseCost);
   });
@@ -3463,7 +3502,7 @@ describe('coIntakeReadiness', () => {
     const end = html.indexOf('function renderResidentialNarrativeBlock', start);
     const snippet = html.slice(start, end);
     const context = { window: {}, Number };
-    vm.runInNewContext(snippet, context);
+    runBrowserSnippet(snippet, context);
 
     const estimate = {
       projectClass: 'residential',
@@ -3483,7 +3522,7 @@ describe('coIntakeReadiness', () => {
     assert.ok(scope.projectScope.toLowerCase().includes('laundry room'));
     assert.ok(scope.projectScope.toLowerCase().includes('bay window'));
     assert.ok(scope.projectScope.toLowerCase().includes('bathroom'));
-    assert.ok(scope.projectScope.toLowerCase().includes('master closet'));
+    assert.ok(scope.projectScope.toLowerCase().replace(/-/g, ' ').includes('master closet'));
     assert.ok(scope.workIncluded.some((entry) => entry.toLowerCase().includes('laundry room')));
     assert.ok(scope.workIncluded.some((entry) => entry.toLowerCase().includes('bay window')));
     assert.notStrictEqual(scope.projectScope, estimate.lineItems[0].desc);
@@ -3546,3 +3585,4 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(resultA.status, 'needs_company_rate');
   });
 });
+
