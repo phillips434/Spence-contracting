@@ -16,7 +16,7 @@ Baseline: production branch `phase-2-stability`, commit `c44b5050bcccfd2a4407114
 
 - Baseline direct Mocha run: 107 passing, 30 failing. Original `npm test` ran no tests.
 - Initial stability pass: 118 passing, 24 failing.
-- Follow-up failure repair: 143 passing, zero failing.
+- Follow-up failure repair: 148 passing, zero failing.
 - Focused project form, labor quantity, geometry and workspace tests: 10 passing.
 - Node syntax checks passed for server and inline application JavaScript.
 - Local HTTP smoke checks: homepage and `/api/build-info` returned 200.
@@ -55,3 +55,7 @@ The automated suite is green. Production readiness still requires the checks bel
 - Confirm current local development changes not yet committed are preserved before any merge.
 
 These files are committed on `codex/stability-review-2026-10-02` in draft PR #1. GitHub write access is working. Railway production and customer data were not changed.
+
+## Reported-bug audit and workspace fix
+
+See `reported-bugs-and-coverage-2026-10-02.md` for 20 report groups and missing coverage. Five shared-workspace regression tests now exercise actual form saves and sync callbacks. Two failed before the fix: new office records were tagged with the office UID. New forms now resolve company ownership before saving; existing ownership and creator metadata remain intact. Older misfiled records require a separate reviewed migration.
