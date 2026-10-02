@@ -884,14 +884,15 @@ function parseDurationFromText(text){
     /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)(?:\d+(?:\.\d+)?\s*(?:-|to\s+)?\s*(?:hours?|hrs?|hr)\s*)?(day|days|shift|shifts|week|weeks)\b/i,
     /(\d+(?:\.\d+)?)\s*(?:\d+(?:\.\d+)?\s*(?:-|to\s+)?\s*(?:hours?|hrs?|hr)\s*)(day|days|shift|shifts|week|weeks)\b/i,
     /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(day|days|shift|shifts|week|weeks)\b/i,
-    /(\d+(?:\.\d+)?)\s*(day|days|shift|shifts|week|weeks)\b/i
+    /(\d+(?:\.\d+)?)\s*(day|days|shift|shifts|week|weeks)\b/i,
+    /(\d+(?:\.\d+)?)\s*(?:additional\s+|more\s+)?(hours?|hrs?)\b/i
   ];
 
   for (let i = 0; i < patterns.length; i++) {
     const match = text.match(patterns[i]);
     if (match && match[1]) {
       const value = Number(match[1]);
-      const unit = (match[2] || match[1]).toLowerCase();
+      const unit = (match[2] || match[1]).toLowerCase().replace(/^hrs?$/, 'hours');
       if (Number.isFinite(value) && value > 0) {
         return { value: value, unit: unit };
       }
@@ -983,20 +984,20 @@ function applyAuthoritativeLaborInvariant(parsed, authoritativeLabor){
     return entry.li && Number(entry.li.laborHours || 0) > 0;
   });
 
+  const hourlyRow = parsed.lineItems.find(function(li){
+    return li && /^(?:hours?|hrs?|h)$/i.test(String(li.unit || '').trim());
+  });
+  // Keep a dedicated hourly row authoritative, without changing material quantities.
+  if (hourlyRow) {
+    parsed.lineItems.forEach(function(li){ if (li) li.laborHours = li === hourlyRow ? targetHours : 0; });
+    hourlyRow.qty = targetHours;
+    return parsed;
+  }
   if (!laborRows.length) return parsed;
-
-  const affectedIndexes = laborRows.map(function(entry){ return entry.index; });
-  const rowTotals = laborRows.map(function(entry){ return Number(entry.li.laborHours || 0); });
-  const currentTotal = rowTotals.reduce(function(sum, value){ return sum + value; }, 0);
-
+  const currentTotal = laborRows.reduce(function(sum, entry){ return sum + Number(entry.li.laborHours || 0); }, 0);
   if (currentTotal <= 0) return parsed;
-
   if (laborRows.length === 1) {
-    const singleRow = laborRows[0].li;
-    singleRow.laborHours = targetHours;
-    if (singleRow.qty !== undefined && singleRow.qty !== null && Number(singleRow.qty) > 0) {
-      singleRow.qty = targetHours;
-    }
+    laborRows[0].li.laborHours = targetHours;
     return parsed;
   }
 
@@ -1006,17 +1007,9 @@ function applyAuthoritativeLaborInvariant(parsed, authoritativeLabor){
     const share = currentTotal > 0 ? original / currentTotal : 0;
     const assigned = Number((targetHours * share).toFixed(2));
     entry.li.laborHours = rowIdx === laborRows.length - 1 ? Number((targetHours - runningTotal).toFixed(2)) : assigned;
-    if (entry.li.qty !== undefined && entry.li.qty !== null && Number(entry.li.qty) > 0) {
-      entry.li.qty = Number(entry.li.laborHours);
-    }
     runningTotal += Number(entry.li.laborHours || 0);
   });
 
-  for (let i = 0; i < parsed.lineItems.length; i++) {
-    if (affectedIndexes.indexOf(i) === -1 && Number(parsed.lineItems[i].laborHours || 0) > 0) {
-      parsed.lineItems[i].laborHours = 0;
-    }
-  }
 
   return parsed;
 }
@@ -2167,3 +2160,4 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
+

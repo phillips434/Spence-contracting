@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --exit",
+    "test": "mocha tests/*.test.js --exit",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },
@@ -21,3 +21,4 @@
     "mocha": "^11.8.0"
   }
 }
+
