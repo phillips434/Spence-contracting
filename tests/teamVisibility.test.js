@@ -9,6 +9,7 @@ describe('company record visibility',function(){
   const visible=context.recordBelongsToWorkspace;
   it('includes legacy estimates owned by verified company teammates',function(){assert.strictEqual(visible({userId:'heather'},'owner','owner',['heather']),true);});
   it('includes explicit company metadata',function(){assert.strictEqual(visible({userId:'heather',ownerUid:'owner'},'owner','owner',[]),true);});
+  it('includes the observed legacy personal-owner format for company teammates',function(){assert.strictEqual(visible({userId:'heather',ownerUid:'heather'},'owner','owner',['heather']),true);assert.strictEqual(visible({userId:'other',ownerUid:'other'},'owner','owner',['heather']),false);});
   it('excludes unrelated accounts and conflicting company metadata',function(){assert.strictEqual(visible({userId:'other'},'owner','owner',['heather']),false);assert.strictEqual(visible({userId:'heather',ownerUid:'other'},'owner','owner',['heather']),false);});
   it('preserves owner and member access to company records',function(){assert.strictEqual(visible({userId:'owner'},'heather','owner',['heather']),true);assert.strictEqual(visible({userId:'owner'},'owner','owner',[]),true);});
 });
