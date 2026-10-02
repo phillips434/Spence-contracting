@@ -14,7 +14,7 @@ function fixture() {
   c.gpr = () => c.projects.find(p => p.id === c.currentId);
   c.openDetail = id => { c.openedProject = c.projects.find(p => p.id === id); };
   vm.createContext(c);
-  for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges']){
+  for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','reconcileProjectSpent','syncProjectCostLedger']){
     const start=html.indexOf('function '+name+'('),end=html.indexOf('\nfunction ',start+1);
     vm.runInContext(html.slice(start,end),c);
   }

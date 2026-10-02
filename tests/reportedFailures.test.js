@@ -157,13 +157,13 @@ describe('safe project attachment saves',()=>{
   it('retains older daily photos when saving a large project',async()=>{
     const record={dailyLogs:Array.from({length:4},()=>({photos:['x'.repeat(180000)]}))};let saved;
     const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async value=>{saved=clone(value);return value;},rememberProjectSnapshot(){},T(){}};
-    vm.runInNewContext(source('saveP'),c);await c.saveP(record);
+    c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await c.saveP(record);
     assert.strictEqual(saved.dailyLogs.length,4);assert(saved.dailyLogs.every(log=>log.photos[0].length===180000));
   });
   it('rejects an oversized project without removing any photo or writing it',async()=>{
     const record={dailyLogs:[{photos:['x'.repeat(960000)]}]};let writes=0;
     const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async()=>writes++,T(){}};
-    vm.runInNewContext(source('saveP'),c);await assert.rejects(c.saveP(record),/too large/);
+    c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await assert.rejects(c.saveP(record),/too large/);
     assert.strictEqual(writes,0);assert.strictEqual(record.dailyLogs[0].photos[0].length,960000);
   });
 });

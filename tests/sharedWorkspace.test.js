@@ -31,7 +31,7 @@ function fixture(uid = 'office') {
     currentEstId: null, selColor: 0, COLORS: ['blue'], mainTabMode: 'estimates', unsubProjects: null, unsubEstimates: null,
     document: { getElementById: id => nodes[id] || (nodes[id] = { value: values[id] || '', classList: { remove() {}, contains: () => false } }) },
     db: { collection }, col: collection('projects'), eCol: collection('estimates'),
-    nextEstNumber: () => 'EST-TEAM', nextJobNumber: () => 'JOB-TEAM', T() {}, pushNotification() {},
+    nextEstNumber: () => 'EST-TEAM', nextJobNumber: () => 'JOB-TEAM', reconcileProjectSpent() {}, syncProjectCostLedger() {}, T() {}, pushNotification() {},
     openEstDetail() {}, openDetail() {}, renderAll() {}, renderEstCards() {}, setSS() {},
     alert(message) { throw Error(message); }, setTimeout: fn => { fn(); return 0; }, console
   };
