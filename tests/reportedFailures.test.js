@@ -39,7 +39,7 @@ describe('reported selection loss',()=>{
   function fixture(){
     let stored={id:'p1',client:'Client',notes:'',choices:[{category:'Cabinet',item:'Oak'},{category:'Countertop',item:'Quartz'}]};
     const c={col:{doc:id=>({id,set:async value=>{stored=clone(value);}})},db:{runTransaction:async fn=>fn({get:async()=>({exists:true,data:()=>clone(stored)}),update:(_ref,patch)=>{stored=Object.assign(stored,clone(patch));}})}};
-    vm.createContext(c);for(const name of ['rememberProjectSnapshot','persistProjectChanges'])vm.runInContext(source(name),c);
+    vm.createContext(c);for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges'])vm.runInContext(source(name),c);
     return {c,read:()=>clone(stored),remote:patch=>{stored=Object.assign(stored,clone(patch));}};
   }
   it('preserves a newer backsplash selection when an older office view saves notes',async()=>{
@@ -47,6 +47,13 @@ describe('reported selection loss',()=>{
     remote({choices:read().choices.concat({category:'Backsplash',item:'Tile'})});p.notes='Office note';
     const saved=await c.persistProjectChanges(p,p._savedProjectSnapshot);
     assert.strictEqual(read().choices.length,3);assert.strictEqual(saved.choices[2].item,'Tile');assert.strictEqual(read().notes,'Office note');
+  });
+  it('accepts unchanged values returned with reordered Firestore object fields',async()=>{
+    const {c,read,remote}=fixture();const p=c.rememberProjectSnapshot(read());
+    remote({choices:read().choices.map(item=>({item:item.item,category:item.category}))});
+    p.choices[0].item='Maple';
+    await c.persistProjectChanges(p,p._savedProjectSnapshot);
+    assert.strictEqual(read().choices[0].item,'Maple');
   });
   it('rejects conflicting selection edits without erasing either saved selection',async()=>{
     const {c,read,remote}=fixture();const p=c.rememberProjectSnapshot(read());

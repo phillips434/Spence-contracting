@@ -102,7 +102,7 @@ button,select,input,textarea{-webkit-appearance:none;font-family:inherit}input[t
 .notif-item.unread{background:#EEF2FF}
 .notif-time{font-size:10px;color:#aaa;margin-top:4px}
 .punch-item{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #F0F0F0}
-.punch-cb{width:22px;height:22px;border-radius:6px;border:2px solid #CCC;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.punch-cb{width:44px;height:44px;border-radius:6px;border:2px solid #CCC;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
 .punch-cb.done{background:#2EAA72;border-color:#2EAA72;color:#fff}
 .punch-text{flex:1;font-size:14px;color:#333}
 .punch-text.done{text-decoration:line-through;color:#aaa}
@@ -1374,12 +1374,21 @@ function rememberProjectSnapshot(p){
   Object.defineProperty(p,'_savedProjectSnapshot',{value:JSON.parse(JSON.stringify(p)),writable:true,configurable:true,enumerable:false});
   return p;
 }
+function projectFieldEqual(a,b){
+  if(a===b)return true;
+  if(!a||!b||typeof a!=='object'||typeof b!=='object')return false;
+  if(Array.isArray(a)!==Array.isArray(b))return false;
+  var keysA=Object.keys(a).sort(),keysB=Object.keys(b).sort();
+  if(keysA.length!==keysB.length)return false;
+  for(var i=0;i<keysA.length;i++)if(keysA[i]!==keysB[i]||!projectFieldEqual(a[keysA[i]],b[keysB[i]]))return false;
+  return true;
+}
 function persistProjectChanges(record,baseline){
   var ref=col.doc(record.id);
   if(!baseline)return ref.set(record);
   var patch={};
   Object.keys(record).forEach(function(key){
-    if(JSON.stringify(record[key])!==JSON.stringify(baseline[key]))patch[key]=record[key];
+    if(!projectFieldEqual(record[key],baseline[key]))patch[key]=record[key];
   });
   return db.runTransaction(function(tx){
     return tx.get(ref).then(function(doc){
@@ -1387,7 +1396,7 @@ function persistProjectChanges(record,baseline){
       var latest=doc.data();
       Object.keys(patch).forEach(function(key){
         if(key==='updatedAt'||key==='updatedByUid')return;
-        if(JSON.stringify(latest[key])!==JSON.stringify(baseline[key])&&JSON.stringify(latest[key])!==JSON.stringify(patch[key])){
+        if(!projectFieldEqual(latest[key],baseline[key])&&!projectFieldEqual(latest[key],patch[key])){
           throw new Error('Another person changed '+key+'. Reload the project before saving again.');
         }
       });
@@ -3680,7 +3689,7 @@ function renderTabBody(p){
     var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1A1A2E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
-    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><div class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</div><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
+    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><button type="button" role="checkbox" aria-checked="'+(item.done?"true":"false")+'" aria-label="'+(item.done?"Reopen punch item":"Mark punch item complete")+'" class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</button><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
     html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
     html+='<button class="btn-dashed" style="flex:1" ontouchend="event.preventDefault();showForm(\'punchForm\');" onclick="showForm(\'punchForm\');">+ Add Item</button>';
     html+='<button id="punchAIBtn" class="btn-dark" style="flex:1;background:#2B3990" ontouchend="event.preventDefault();generatePunchListAI(this);" onclick="generatePunchListAI(this);">&#10024; AI Generate</button>';

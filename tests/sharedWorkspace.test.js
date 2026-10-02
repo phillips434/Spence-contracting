@@ -37,7 +37,7 @@ function fixture(uid = 'office') {
   c.ger = () => c.estimates.find(e => e.id === c.currentEstId);
   c.gpr = () => c.projects.find(p => p.id === c.currentId);
   vm.createContext(c);
-  for (const name of ['rememberProjectSnapshot','persistProjectChanges','normalizeProjectClass', 'resolveCurrentOwnerUid', 'withSharedOwnerMetadata', 'saveEstimate', 'saveProject', '_startSyncWithOwner']) vm.runInContext(source(name), c);
+  for (const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','normalizeProjectClass', 'resolveCurrentOwnerUid', 'withSharedOwnerMetadata', 'saveEstimate', 'saveProject', '_startSyncWithOwner']) vm.runInContext(source(name), c);
   return { c, records, nodes };
 }
 describe('shared company workspace save and visibility', () => {
