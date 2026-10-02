@@ -1,0 +1,16 @@
+const assert=require('assert');
+const fs=require('fs');
+const vm=require('vm');
+const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
+function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);return html.slice(a,b);}
+function fixture(p){const c={gpr:()=>p,saveP(){},confirm:()=>true};vm.createContext(c);for(const name of ['prepareProjectCostLedger','linkProjectCost','syncProjectCostLedger','reconcileProjectSpent','updateCostAmt','delCost'])vm.runInContext(source(name),c);return c;}
+describe('one project cost ledger',()=>{
+  it('does not attach a manual expense edit to an older selection',()=>{const p={spent:100,costs:[{actualAmt:100}],choices:[{item:'Old tile',actualAmt:300}]};const c=fixture(p);c.updateCostAmt(0,'actualAmt','125');assert.strictEqual(p.choices[0].actualAmt,300);});
+  it('preserves an explicitly edited total through later saves',()=>{const p={spent:100,costs:[{actualAmt:100}]};const c=fixture(p);c.prepareProjectCostLedger(p);p.spent=175;c.reconcileProjectSpent(p);c.syncProjectCostLedger(p);assert.strictEqual(p.spent,175);assert.strictEqual(p.costLedgerOpeningBalance,75);});
+  it('counts a new scope expense once through repeated saves',()=>{const p={spent:100,costs:[{actualAmt:100}],scopeItems:[{desc:'Framing',budget:500,actual:200}]};const c=fixture(p);c.linkProjectCost(p,p.scopeItems[0],'scope');c.syncProjectCostLedger(p);assert.strictEqual(p.spent,300);assert.strictEqual(p.costs.length,2);});
+  it('preserves an existing manually recorded balance and does not merge old selections',()=>{const p={spent:750,costs:[{actualAmt:100}],choices:[{item:'Existing',actualAmt:300},{item:'New',actualAmt:50}]};const c=fixture(p);c.linkProjectCost(p,p.choices[1],'selection');assert.strictEqual(p.spent,800);assert.strictEqual(p.costs.length,2);assert.strictEqual(p.costLedgerOpeningBalance,650);});
+  it('updates the source and total when a linked expense is edited in Budget',()=>{const p={spent:0,scopeItems:[{desc:'Framing',actual:200,budget:500}]};const c=fixture(p);c.linkProjectCost(p,p.scopeItems[0],'scope');c.updateCostAmt(0,'actualAmt','240.25');assert.strictEqual(p.scopeItems[0].actual,240.25);assert.strictEqual(p.spent,240.25);});
+  it('updates the same expense when the selection cost changes',()=>{const p={spent:0,choices:[{category:'Tile',item:'Porcelain',actualAmt:300,budgetAmt:500}]};const c=fixture(p);c.linkProjectCost(p,p.choices[0],'selection');p.choices[0].actualAmt=325;c.syncProjectCostLedger(p);assert.strictEqual(p.spent,325);assert.strictEqual(p.costs.length,1);});
+  it('keeps recorded expenses when a scope is removed',()=>{const p={spent:0,scopeItems:[{desc:'Framing',actual:200}]};const c=fixture(p);c.linkProjectCost(p,p.scopeItems[0],'scope');p.scopeItems=[];c.syncProjectCostLedger(p);assert.strictEqual(p.spent,200);});
+  it('clears the linked cost fields when the expense is explicitly removed',()=>{const p={spent:0,choices:[{item:'Tile',actualAmt:200,budgetAmt:300}]};const c=fixture(p);c.linkProjectCost(p,p.choices[0],'selection');c.delCost(0);c.syncProjectCostLedger(p);assert.strictEqual(p.spent,0);assert.strictEqual(p.costs.length,0);assert.strictEqual(p.choices[0].actualAmt,0);});
+});
