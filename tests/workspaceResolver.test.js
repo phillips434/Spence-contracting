@@ -25,6 +25,20 @@ describe('resolveWorkspaceUidForSession', () => {
     assert.strictEqual(context.nextEstNumber(), 'EST-0161');
     assert.strictEqual(context.nextEstNumber(), 'EST-0162');
   });
+  it('does not allocate a number before the initial estimates snapshot is ready', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    const start = html.indexOf('function nextEstNumber(');
+    const end = html.indexOf('\nfunction ', start + 1);
+    let message;
+    const context = { estimatesSyncReady: false, DD: { nextEstNum: 1 }, estimates: [], T: value => { message = value; }, saveSettingsSilent: async () => {} };
+    vm.runInNewContext(html.slice(start, end), context);
+    assert.strictEqual(context.nextEstNumber(), null);
+    assert.strictEqual(context.DD.nextEstNum, 1);
+    assert.match(message, /still syncing/);
+    context.estimatesSyncReady = true;
+    context.estimates = [{ estNum: 'EST-0160' }];
+    assert.strictEqual(context.nextEstNumber(), 'EST-0161');
+  });
   it('returns the owner uid for team users and the user uid for owners', async () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
     const start = html.indexOf('function resolveWorkspaceUidForSession(');
