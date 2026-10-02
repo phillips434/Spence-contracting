@@ -151,3 +151,27 @@ describe('estimate browser request routing',()=>{
     assert.deepStrictEqual(e.lineItems,before.lineItems);assert.deepStrictEqual(e.customerScope,before.customerScope);
   });
 });
+
+
+describe('safe project attachment saves',()=>{
+  it('retains older daily photos when saving a large project',async()=>{
+    const record={dailyLogs:Array.from({length:4},()=>({photos:['x'.repeat(180000)]}))};let saved;
+    const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async value=>{saved=clone(value);return value;},rememberProjectSnapshot(){},T(){}};
+    vm.runInNewContext(source('saveP'),c);await c.saveP(record);
+    assert.strictEqual(saved.dailyLogs.length,4);assert(saved.dailyLogs.every(log=>log.photos[0].length===180000));
+  });
+  it('rejects an oversized project without removing any photo or writing it',async()=>{
+    const record={dailyLogs:[{photos:['x'.repeat(960000)]}]};let writes=0;
+    const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async()=>writes++,T(){}};
+    vm.runInNewContext(source('saveP'),c);await assert.rejects(c.saveP(record),/too large/);
+    assert.strictEqual(writes,0);assert.strictEqual(record.dailyLogs[0].photos[0].length,960000);
+  });
+});
+describe('estimate sending without a recipient',()=>{
+  it('keeps a draft unsent and does not save when contact details are missing',()=>{
+    const record={id:'qa',status:'Draft',type:'Test'};let writes=0,alerts=0;
+    const c={ger:()=>record,window:{location:{href:'https://example.com'}},calcEstimate:()=>({grandTotal:500}),DD:{},alert:()=>alerts++,eCol:{doc:()=>({set:()=>writes++})}};
+    vm.runInNewContext(source('sendEstimate'),c);c.sendEstimate();
+    assert.strictEqual(record.status,'Draft');assert.strictEqual(writes,0);assert.strictEqual(alerts,1);
+  });
+});
