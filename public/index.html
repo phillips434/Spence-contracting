@@ -403,7 +403,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       <button class="btn-orange" id="btnNew">+ New project</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v211</span></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v212</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v12H3Z"/></svg> Projects</button>
     <button class="nav-tab" id="navEstimates"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg> Estimates</button>
@@ -1184,20 +1184,48 @@ document.addEventListener('click',function(ev){
   else if(action==='hide-excl-form'){var f2=document.getElementById('exclForm');if(f2)f2.style.display='none';}
   else if(action==='add-excl'){addExclusion();}
 },true);
-function pushNotification(text,proj){
-  var uid=currentUser?currentUser.uid:null;
-  if(!uid)return;
-  nCol.add({text:text,project:proj||"",ts:Date.now(),read:false,userId:uid});
+function pushNotification(text,proj,projectId){
+  var actor=currentUser,uid=actor?actor.uid:null;
+  if(!uid)return Promise.resolve();
+  return resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
+    if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
+    return nCol.add({text:text,project:proj||"",projectId:projectId||"",ts:Date.now(),workspaceUid:workspaceUid,actorUid:uid,actorName:actor.displayName||actor.email||'Team member',readBy:{},hiddenBy:{}});
+  }).catch(function(err){console.error('Notification could not be saved',err);T('Work saved, but the team alert could not be sent.');});
+}
+function notificationForUser(n,uid){
+  if(n.hiddenBy&&n.hiddenBy[uid])return null;
+  return Object.assign({},n,{read:n.workspaceUid?!!(n.readBy&&n.readBy[uid]):!!n.read});
+}
+function updateNotificationForUser(n,field){
+  var uid=currentUser&&currentUser.uid;if(!uid)return Promise.resolve();
+  var patch={};patch[n.workspaceUid?field+'.'+uid:(field==='readBy'?'read':'hiddenBy.'+uid)]=true;
+  return nCol.doc(n.id).update(patch);
 }
 function showBanner(text){var b=document.getElementById("notifBanner");document.getElementById("notifBannerText").textContent=text;b.classList.add("show");setTimeout(function(){b.classList.remove("show");},4000);}
 function dismissBanner(){document.getElementById("notifBanner").classList.remove("show");}
 function startNotifSync(){
-  var uid=currentUser?currentUser.uid:null;
-  if(!uid)return;
+  var uid=currentUser?currentUser.uid:null;if(!uid)return;
   if(unsubNotifs){unsubNotifs();unsubNotifs=null;}
-  unsubNotifs=nCol.where('userId','==',uid).orderBy("ts","desc").limit(50).onSnapshot(function(snap){notifications=[];snap.forEach(function(d){notifications.push(Object.assign({id:d.id},d.data()));});unreadCount=notifications.filter(function(n){return!n.read;}).length;var badge=document.getElementById("bellBadge");if(unreadCount>0){badge.style.display="flex";badge.textContent=unreadCount>9?"9+":unreadCount;}else{badge.style.display="none";}});}
-function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n,i){return'<div class="notif-item'+(n.read?'':' unread')+'" onclick="notifTap('+i+')" style="cursor:pointer"><div style="font-size:13px;font-weight:'+(n.read?'400':'700')+';color:#1C1C1E">'+n.text+'</div>'+(n.project?'<div style="font-size:11px;color:#2858BD;margin-top:3px">'+n.project+'</div>':'')+(n.detail?'<div style="font-size:12px;color:#555;margin-top:3px;line-height:1.4">'+n.detail+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join('');notifications.forEach(function(n){if(!n.read)nCol.doc(n.id).update({read:true});});}document.getElementById("notifsPage").classList.add("show");}
-function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){nCol.doc(n.id).delete();});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
+  var stopped=false,stops=[],buckets={personal:[],company:[]};
+  unsubNotifs=function(){stopped=true;stops.forEach(function(stop){stop();});};
+  function receive(key,snap){
+    if(stopped||!currentUser||currentUser.uid!==uid)return;
+    buckets[key]=[];snap.forEach(function(d){buckets[key].push(Object.assign({id:d.id},d.data()));});
+    var byId={};buckets.personal.concat(buckets.company).forEach(function(n){var visible=notificationForUser(n,uid);if(visible)byId[n.id]=visible;});
+    notifications=Object.keys(byId).map(function(id){return byId[id];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,50);
+    unreadCount=notifications.filter(function(n){return!n.read;}).length;
+    var badge=document.getElementById('bellBadge');badge.style.display=unreadCount?'flex':'none';badge.textContent=unreadCount>9?'9+':unreadCount;
+  }
+  function failed(err){if(!stopped){console.error('Notification sync failed',err);T('Team alerts could not load. Please refresh and try again.');}}
+  stops.push(nCol.where('userId','==',uid).onSnapshot(function(snap){receive('personal',snap);},failed));
+  resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
+    if(stopped||!currentUser||currentUser.uid!==uid||!workspaceUid)return;
+    // Single-field query keeps existing deployments working without a new compound index.
+    stops.push(nCol.where('workspaceUid','==',workspaceUid).onSnapshot(function(snap){receive('company',snap);},failed));
+  }).catch(failed);
+}
+function openNotifications(){var el=document.getElementById("notifsList");if(!notifications.length){el.innerHTML='<div class="empty">No notifications yet.</div>';}else{el.innerHTML=notifications.map(function(n,i){return'<div class="notif-item'+(n.read?'':' unread')+'" onclick="notifTap('+i+')" style="cursor:pointer"><div style="font-size:13px;font-weight:'+(n.read?'400':'700')+';color:#1C1C1E">'+escapeHtmlText(n.text)+'</div>'+(n.project?'<div style="font-size:11px;color:#2858BD;margin-top:3px">'+escapeHtmlText(n.project)+'</div>':'')+(n.detail?'<div style="font-size:12px;color:#555;margin-top:3px;line-height:1.4">'+escapeHtmlText(n.detail)+'</div>':'')+'<div class="notif-time">'+fmtTS(n.ts)+'</div></div>';}).join('');notifications.forEach(function(n){if(!n.read)updateNotificationForUser(n,'readBy').catch(function(){T('Could not mark alert as read.');});});}document.getElementById("notifsPage").classList.add("show");}
+function clearAllNotifs(){if(!confirm("Clear all?"))return;notifications.forEach(function(n){updateNotificationForUser(n,'hiddenBy').catch(function(){T('Could not clear alert.');});});document.getElementById("notifsList").innerHTML='<div class="empty">No notifications yet.</div>';}
 function clearBellBadge(){document.getElementById("bellBadge").style.display="none";}
 function loadSettings(cb){
   var uid=currentUser?currentUser.uid:null;
@@ -1545,7 +1573,7 @@ function saveP(p,notifText){
     return persistProjectChanges(record,saveBaseline).then(function(saved){
       rememberProjectSnapshot(Object.assign(p,saved||record));
       T("Saved!");
-      if(notifText){pushNotification(notifText,record.client);showBanner(notifText);}
+      pushNotification(notifText||('Project updated: '+record.client),record.client,record.id);if(notifText)showBanner(notifText);
       setSS("live");
     }).catch(function(err){
       // Retry once after 2s on network errors — set() is idempotent, no duplicates
@@ -1554,7 +1582,7 @@ function saveP(p,notifText){
         setTimeout(function(){
           persistProjectChanges(record,saveBaseline).then(function(saved){
             rememberProjectSnapshot(Object.assign(p,saved||record));
-            T('Saved.');setSS('live');
+            T('Saved.');setSS('live');pushNotification(notifText||('Project updated: '+record.client),record.client,record.id);
           }).catch(function(){
             T('Save failed — check your connection.');setSS('error');
           });
@@ -4825,7 +4853,7 @@ function saveProject(){var client=document.getElementById("fClient").value.trim(
     record=rememberProjectSnapshot(saved||record);
     var savedIndex=projects.findIndex(function(project){return project.id===record.id;});
     if(savedIndex>=0) projects[savedIndex]=record; else projects.push(record);
-    T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
+    T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client,client,id);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
     // Existing edit flow should keep its current behavior.
   } else {
     openDetail(id);
