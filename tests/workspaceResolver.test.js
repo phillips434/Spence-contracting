@@ -6,7 +6,7 @@ const vm = require('vm');
 describe('resolveWorkspaceUidForSession', () => {
   it('returns the owner uid for team users and the user uid for owners', async () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-    const start = html.indexOf('function resolveWorkspaceUidForSession(uid){');
+    const start = html.indexOf('function resolveWorkspaceUidForSession(');
     const end = html.indexOf('function normalizeInviteEmail', start);
     const source = html.slice(start, end);
 
@@ -39,3 +39,4 @@ describe('resolveWorkspaceUidForSession', () => {
     assert.strictEqual(ownerWorkspaceUid, 'owner');
   });
 });
+

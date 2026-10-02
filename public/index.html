@@ -592,7 +592,7 @@ body.client-mode .phead { display:none !important; }
       </div>
       <div class="wcard" style="border:1.5px solid #2B3990">
         <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#129302; Test AI Connection</div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px">Check if your Replit server and Anthropic API are working.</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Check if the app server and AI provider are working.</div>
         <button class="btn-navy" onclick="testAIConnection()">Test Connection</button>
         <div id="aiTestResult" style="font-size:13px;margin-top:8px;line-height:1.6;display:none"></div>
       </div>
@@ -990,12 +990,18 @@ function ger(){return estimates.find(function(x){return x.id===currentEstId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
 function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#2B3990">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
-function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent();return "JOB-"+String(n).padStart(4,"0");}
-function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent();return "EST-"+String(n).padStart(4,"0");}
+function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent().catch(function(){});return "JOB-"+String(n).padStart(4,"0");}
+function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
+function workspaceSettingsDoc(workspaceUid){
+  return workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':workspaceUid;
+}
 function saveSettingsSilent(){
   var uid=currentUser?currentUser.uid:null;
-  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).set(DD);
+  if(!uid)return Promise.resolve();
+  return resolveWorkspaceUidForSession(uid,true).then(function(workspaceUid){
+    if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
+    return sCol.doc(workspaceSettingsDoc(workspaceUid)).set(DD);
+  }).catch(function(err){T('Settings save failed: '+err.message);throw err;});
 }
 function migratePhases(p){if((p.scopeItems&&p.scopeItems.length>0)||!p.phases||!p.phases.length)return false;p.scopeItems=p.phases.map(function(ph){return{desc:ph.name||ph.desc||"Untitled Phase",start:ph.start||ph.startDate||"",end:ph.end||ph.endDate||"",budget:parseFloat(ph.phaseBudget||ph.budget)||0,actual:parseFloat(ph.phaseActual||ph.actual)||0,complete:ph.complete||ph.status||"Not Started",assignTo:ph.assignTo||ph.subcontractor||"",assignPhone:ph.assignPhone||ph.phone||"",assignEmail:ph.assignEmail||ph.email||"",category:ph.category||ph.type||""};});return true;}
 function forceLoadTeam(){
@@ -1116,7 +1122,7 @@ function loadSettings(cb){
   if(!uid){if(cb)cb();return;} // Never fall back to owner settings if uid missing
   resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
     var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var settingsDoc = isOwner ? 'dropdowns' : (workspaceUid || uid || 'dropdowns');
+    var settingsDoc = workspaceSettingsDoc(workspaceUid || uid);
     sCol.doc(settingsDoc).get().then(function(d){
       if(d.exists) DD=Object.assign({},DD,d.data());
       // Apply saved logo to topbar if it exists, else use CD_LOGO default
@@ -1156,24 +1162,14 @@ function applyTradeTemplate(trade){
   T("Trade template applied: "+trade);
 }
 function saveSettings(){
-  var uid=currentUser?currentUser.uid:null;
-  if(!uid){return;}
-  resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
-    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var doc=isOwner?'dropdowns':(workspaceUid || uid || 'dropdowns');
-    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
-  }).catch(function(){
-    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var doc=isOwner?'dropdowns':(uid||'dropdowns');
-    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
-  });
+  return saveSettingsSilent().then(function(){if(currentUser)T('Saved!');}).catch(function(){});
 }
 function testAIConnection(){
   var el=document.getElementById('aiTestResult');
   el.style.display='block';
   el.style.color='#2B3990';
   var t0=Date.now();
-  el.textContent='Testing... (connecting to Replit server)';
+  el.textContent='Testing... (connecting to app server)';
 
   // Step 1: Try a simple HEAD/GET to see if server is alive at all
   var pingCtrl=new AbortController();
@@ -1189,7 +1185,7 @@ fetch('/api/estimate',{
     var elapsed=Date.now()-t0;
     if(!r.ok){
       el.style.color='#E83A6C';
-      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check Replit console for errors.';
+      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check server logs for errors.';
       return null;
     }
     el.textContent='Connected ('+elapsed+'ms) — parsing AI response...';
@@ -1217,9 +1213,9 @@ fetch('/api/estimate',{
     el.style.color='#E83A6C';
     var diagnosis='';
     if(err.name==='AbortError'){
-      diagnosis='Server did not respond in 8 seconds — server is likely SLEEPING on Replit free tier.';
+      diagnosis='Server did not respond in 8 seconds. Check server status and try again.';
     } else if(err.message==='Load failed'||err.message==='Failed to fetch'){
-      diagnosis='Cannot reach server — Replit server is asleep or crashed. Open Replit and start the server.';
+      diagnosis='Cannot reach the app server. Check your connection and server status.';
     } else {
       diagnosis='Error: '+err.message;
     }
@@ -1252,7 +1248,7 @@ function resolveCurrentOwnerUid(){
     return uid;
   });
 }
-function resolveWorkspaceUidForSession(uid){
+function resolveWorkspaceUidForSession(uid,failClosed){
   var activeUid = uid || (currentUser && currentUser.uid) || null;
   if(!activeUid){return Promise.resolve(null);}
 
@@ -1266,7 +1262,8 @@ function resolveWorkspaceUidForSession(uid){
     }
 
     return activeUid;
-  }).catch(function(){
+  }).catch(function(err){
+    if(failClosed)throw err;
     return activeUid;
   });
 }
@@ -1370,7 +1367,34 @@ function withSharedOwnerMetadata(record){
     return nextRecord;
   });
 }
+function rememberProjectSnapshot(p){
+  Object.defineProperty(p,'_savedProjectSnapshot',{value:JSON.parse(JSON.stringify(p)),writable:true,configurable:true,enumerable:false});
+  return p;
+}
+function persistProjectChanges(record,baseline){
+  var ref=col.doc(record.id);
+  if(!baseline)return ref.set(record);
+  var patch={};
+  Object.keys(record).forEach(function(key){
+    if(JSON.stringify(record[key])!==JSON.stringify(baseline[key]))patch[key]=record[key];
+  });
+  return db.runTransaction(function(tx){
+    return tx.get(ref).then(function(doc){
+      if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
+      var latest=doc.data();
+      Object.keys(patch).forEach(function(key){
+        if(key==='updatedAt'||key==='updatedByUid')return;
+        if(JSON.stringify(latest[key])!==JSON.stringify(baseline[key])&&JSON.stringify(latest[key])!==JSON.stringify(patch[key])){
+          throw new Error('Another person changed '+key+'. Reload the project before saving again.');
+        }
+      });
+      if(Object.keys(patch).length)tx.update(ref,patch);
+      return Object.assign({},latest,patch);
+    });
+  });
+}
 function saveP(p,notifText){
+  var saveBaseline=p._savedProjectSnapshot;
   setSS("saving");
   return withSharedOwnerMetadata(p).then(function(record){
     var testStr=JSON.stringify(record);
@@ -1405,7 +1429,8 @@ function saveP(p,notifText){
       setSS("error");
       return Promise.reject(new Error("Project too large to save with all attachments."));
     }
-    return col.doc(record.id).set(record).then(function(){
+    return persistProjectChanges(record,saveBaseline).then(function(saved){
+      rememberProjectSnapshot(Object.assign(p,saved||record));
       T("Saved!");
       if(notifText){pushNotification(notifText,record.client);showBanner(notifText);}
       setSS("live");
@@ -1414,7 +1439,8 @@ function saveP(p,notifText){
       if(err.code==='unavailable'||err.message.indexOf('network')!==-1||err.message.indexOf('Network')!==-1){
         setSS('error');
         setTimeout(function(){
-          col.doc(record.id).set(record).then(function(){
+          persistProjectChanges(record,saveBaseline).then(function(saved){
+            rememberProjectSnapshot(Object.assign(p,saved||record));
             T('Saved.');setSS('live');
           }).catch(function(){
             T('Save failed — check your connection.');setSS('error');
@@ -1456,17 +1482,13 @@ function editTeamMember(i){
   var trade=prompt("Trade / Role:",m.trade||"");if(trade===null)return;
   var phone=prompt("Phone:",m.phone||"");if(phone===null)return;
   var email=prompt("Email:",m.email||"");if(email===null)return;
-  DD.team[i]={name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"};
-  var _u3=currentUser?currentUser.uid:null;sCol.doc(_u3==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u3||'dropdowns')).set(DD);
-  renderTeamList();
-  T("Updated: "+name.trim());
+  DD.team[i]=Object.assign({},m,{name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"});
+  saveSettingsSilent().then(function(){renderTeamList();T("Updated: "+name.trim());}).catch(function(){});
 }
 function delTeamMember(i){
   if(!confirm("Remove this team member?"))return;
   DD.team.splice(i,1);
-  var _u4=currentUser?currentUser.uid:null;sCol.doc(_u4==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u4||'dropdowns')).set(DD);
-  renderTeamList();
-  T("Removed.");
+  saveSettingsSilent().then(function(){renderTeamList();T("Removed.");}).catch(function(){});
 }
 
 function startSync(){
@@ -1497,7 +1519,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
     }
     projects=[];
     snap.forEach(function(d){
-      var p=d.data();
+      var p=rememberProjectSnapshot(d.data());
       // Strict isolation: user sees ONLY their own projects
       // Team members see their owner's projects (p.userId===ownerUid)
       // NO global seeAll bypass — no account can see all companies
@@ -1944,13 +1966,26 @@ function normalizeProjectClass(value){var raw=(value==null?'':String(value)).tri
 function resolveEstimateProjectClass(e){if(!e)return null;var explicit=normalizeProjectClass(e.projectClass||e.projectType||e.type);if(explicit)return explicit;var raw=((e.notes||'')+' '+(Array.isArray(e.lineItems)?e.lineItems.map(function(li){return (li&&li.desc)||'';}).join(' '):'')).toLowerCase();if(/residential|home|house|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|remodel|renovation/.test(raw))return 'residential';if(/commercial|tenant improvement|office|retail|industrial|warehouse|buildout|tenant/.test(raw))return 'commercial';return null;}
 function sanitizeScopeText(value){if(value==null)return '';return String(value).replace(/\s+/g,' ').replace(/\s*[-–—]\s*\d+(?:\.\d+)?\s*(?:ft|lf|ea|hrs?|days?|weeks?)\s*$/i,'').trim();}
 function addUniqueScopeItem(list, value){var normalized=sanitizeScopeText(value);if(!normalized)return list;if(list.indexOf(normalized)!==-1)return list;list.push(normalized);return list;}
-function buildCanonicalCustomerScope(e){var estimate=e||{};var projectClass=resolveEstimateProjectClass(estimate)||'commercial';var lineItems=Array.isArray(estimate.lineItems)?estimate.lineItems.filter(function(li){return li&&(li.desc||'').trim();}):[];var noteText=(typeof estimate.notes==='string'&&estimate.notes.trim())?estimate.notes.trim():'';var sentences=noteText?noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean):lineItems.map(function(li){return sanitizeScopeText(li.desc);}).filter(Boolean);var scope='';var workIncluded=[];var conditions=[];var exclusions=Array.isArray(estimate.exclusions)?estimate.exclusions.map(function(ex){return sanitizeScopeText(ex);}).filter(Boolean):[];sentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!scope&&!/excluded|exclusions|not included|outside of scope|not included in this estimate/i.test(lowered)){scope=sentence;}if(/excluded|exclusions|not included|not included in this estimate|outside of scope/i.test(lowered)){return;}if(/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){addUniqueScopeItem(conditions,sentence);}if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch|demo|finish|hang|route|terminate/i.test(lowered)){addUniqueScopeItem(workIncluded,sentence);}});if(!scope){if(noteText){scope=sanitizeScopeText(noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)[0]||'Scope of work');}else if(lineItems.length){scope=sanitizeScopeText(lineItems[0].desc)||'Scope of work';}else{scope='Scope of work';}}if(!workIncluded.length){lineItems.forEach(function(li){var cleaned=sanitizeScopeText(li.desc);if(!cleaned||cleaned===scope)return;if(/labor|hours|markup|rate|unit cost|unitcost|material cost|cost\s*\$|\$\d+/i.test(cleaned))return;addUniqueScopeItem(workIncluded,cleaned);});}if(workIncluded.length&&workIncluded[0]===scope){workIncluded.shift();}var canonical={projectClass:projectClass,projectScope:scope||'Scope of work',workIncluded:workIncluded,conditionsAssumptions:conditions.slice(0,3),exclusions:exclusions.slice(0,5)};estimate.customerScope=canonical;return canonical;}
-function buildCanonicalCustomerScope(e){var estimate=e||{};var projectClass=resolveEstimateProjectClass(estimate)||'commercial';var lineItems=Array.isArray(estimate.lineItems)?estimate.lineItems.filter(function(li){return li&&(li.desc||'').trim();}):[];var noteText=(typeof estimate.notes==='string'&&estimate.notes.trim())?estimate.notes.trim():'';var exclusions=Array.isArray(estimate.exclusions)?estimate.exclusions.map(function(ex){return sanitizeScopeText(ex);}).filter(Boolean):[];var scope='';var workIncluded=[];var conditions=[];var finalLineItems=lineItems.map(function(li){return sanitizeScopeText(li.desc);}).filter(Boolean);if(finalLineItems.length){scope=finalLineItems.join(' — ');var seen={};finalLineItems.forEach(function(item){if(!item||seen[item])return;seen[item]=true;if(/labor|hours|markup|rate|unit cost|unitcost|material cost|cost\s*\$|\$\d+/i.test(item))return;addUniqueScopeItem(workIncluded,item);});}else if(noteText){var noteSentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean);noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!scope&&!/excluded|exclusions|not included|outside of scope|not included in this estimate/i.test(lowered)){scope=sentence;}if(/excluded|exclusions|not included|not included in this estimate|outside of scope/i.test(lowered)){return;}if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch|demo|finish|hang|route|terminate/i.test(lowered)){addUniqueScopeItem(workIncluded,sentence);}});if(!scope){scope=sanitizeScopeText(noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)[0]||'Scope of work')||'Scope of work';}}if(!scope){scope='Scope of work';}if(finalLineItems.length){var explicitConditions=[];var noteSentences=noteText?noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean):[];noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){return;}if(/existing|condition|conditions|site access|panel capacity|weather|permit|access|provided|available|remains/i.test(lowered) && sentence.length>18){addUniqueScopeItem(explicitConditions,sentence);}});conditions=explicitConditions;}else if(noteText){var noteSentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean);noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){addUniqueScopeItem(conditions,sentence);}});}return {projectClass:projectClass,projectScope:scope,workIncluded:workIncluded,conditionsAssumptions:conditions,exclusions:exclusions};}
-function getCanonicalCustomerScope(e){if(!e)return null;if(e.customerScope&&e.customerScope.projectScope)return e.customerScope;return buildCanonicalCustomerScope(e);}
+function buildCanonicalCustomerScope(e){var estimate=e||{};var projectClass=resolveEstimateProjectClass(estimate)||'commercial';var lineItems=Array.isArray(estimate.lineItems)?estimate.lineItems.filter(function(li){return li&&(li.desc||'').trim();}):[];var noteText=(typeof estimate.notes==='string'&&estimate.notes.trim())?estimate.notes.trim():'';var exclusions=Array.isArray(estimate.exclusions)?estimate.exclusions.map(function(ex){return sanitizeScopeText(ex);}).filter(Boolean):[];var scope='';var workIncluded=[];var conditions=[];var finalLineItems=lineItems.map(function(li){return sanitizeScopeText(li.desc);}).filter(Boolean);if(finalLineItems.length){scope=finalLineItems.join(' — ');var seen={};finalLineItems.forEach(function(item){if(!item||seen[item])return;seen[item]=true;if(/labor|hours|markup|rate|unit cost|unitcost|material cost|cost\s*\$|\$\d+/i.test(item))return;addUniqueScopeItem(workIncluded,item);});}else if(noteText){var noteSentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean);noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!scope&&!/excluded|exclusions|not included|outside of scope|not included in this estimate/i.test(lowered)){scope=sentence;}if(/excluded|exclusions|not included|not included in this estimate|outside of scope/i.test(lowered)){return;}if(/install|replace|remove|run|repair|upgrade|add|new|pull|mount|wire|box|cabinet|paint|drywall|reconnect|disconnect|trim|patch|demo|finish|hang|route|terminate/i.test(lowered)){addUniqueScopeItem(workIncluded,sentence);}});if(!scope){scope=sanitizeScopeText(noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)[0]||'Scope of work')||'Scope of work';}}if(!scope){scope='Scope of work';}if(finalLineItems.length){var explicitConditions=[];var noteSentences=noteText?noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean):[];noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(!/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){return;}if(/existing|condition|conditions|site access|panel capacity|weather|permit|access|provided|available|remains/i.test(lowered) && sentence.length>18){addUniqueScopeItem(explicitConditions,sentence);}});conditions=explicitConditions;}else if(noteText){var noteSentences=noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/).map(function(s){return sanitizeScopeText(s);}).filter(Boolean);noteSentences.forEach(function(sentence){if(!sentence)return;var lowered=sentence.toLowerCase();if(/assume|assumption|existing|remains|provided|available|condition|conditions|site|access|panel capacity|weather|permit|if /i.test(lowered)){addUniqueScopeItem(conditions,sentence);}});}var summary=noteText?sanitizeScopeText(noteText.split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)[0]):scope;
+if(summary===scope || workIncluded.some(function(item){return item.replace(/[.!?]+$/,'').toLowerCase()===summary.replace(/[.!?]+$/,'').toLowerCase();})){
+  summary='Project work: '+(estimate.type||'construction improvements')+'.';
+}
+return {projectClass:projectClass,residentialSummary:summary,projectScope:scope,workIncluded:workIncluded,conditionsAssumptions:conditions.filter(function(item){return !/^(?:replace|install|remove|repair|add|paint|finish|hang|run)\b/i.test(item);}),exclusions:exclusions};}
+function getCanonicalCustomerScope(e){
+  if(!e)return null;
+  var existing=e.customerScope;
+  if(existing&&existing.projectScope){
+    var fallback=buildCanonicalCustomerScope(e);
+    var scope=Object.assign({},fallback,existing);
+    if(!existing.residentialSummary)scope.residentialSummary=existing.projectScope;
+    return scope;
+  }
+  return buildCanonicalCustomerScope(e);
+}
 function renderCommercialNarrativeBlock(e, isClientMode){var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return '';var html='';html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2B3990;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Commercial</div>';html+='<div style="font-size:15px;font-weight:700;color:#1A1A2E;line-height:1.5;margin-bottom:8px">'+scope.projectScope+'</div>';html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">SCOPE OF WORK</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.projectScope+'</div></div>';if(scope.workIncluded&&scope.workIncluded.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">WORK INCLUDED</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.workIncluded.join('; ')+'</div></div>';}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">PROJECT CONDITIONS / ASSUMPTIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.conditionsAssumptions.join('; ')+'</div></div>';}if(scope.exclusions&&scope.exclusions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">EXCLUSIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+scope.exclusions.join('; ')+'</div></div>';}html+='</div>';return html;}
 function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";var scope=getCanonicalCustomerScope(e)||{projectScope:(e&&(e.notes||e.type))||'Scope of work',workIncluded:[],conditionsAssumptions:[],exclusions:Array.isArray(e&&e.exclusions)?e.exclusions:[]};var projectClass=resolveEstimateProjectClass(e)||'commercial';var projectScopeText=scope.projectScope||'Scope of work';var workIncludedText=(scope.workIncluded&&scope.workIncluded.length)?scope.workIncluded.join('; '):(e&&e.notes?e.notes:'');var conditionsText=(scope.conditionsAssumptions&&scope.conditionsAssumptions.length)?scope.conditionsAssumptions.join('; '):'';var exclusionsText=(scope.exclusions&&scope.exclusions.length)?scope.exclusions.join('; '):'';var contractBody=co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\n";if(projectClass==='residential'){contractBody += "PROJECT SCOPE:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}else{contractBody += "SCOPE OF WORK:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}contractBody += "CONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";return contractBody;}
 function isResidentialEstimate(e){if(!e)return false;return resolveEstimateProjectClass(e)==='residential' || /residential|house|home|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|renovation|remodel/i.test((e.type||'')+' '+(e.notes||''));}
-function buildResidentialEstimateDescription(e){if(!isResidentialEstimate(e))return null;var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return null;var sections=[];sections.push({key:'projectScope',label:'PROJECT SCOPE',value:scope.projectScope});if(scope.workIncluded&&scope.workIncluded.length){sections.push({key:'workIncluded',label:'WORK INCLUDED',value:scope.workIncluded.join('; ')});}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){sections.push({key:'conditionsAssumptions',label:'PROJECT CONDITIONS / ASSUMPTIONS',value:scope.conditionsAssumptions.join('; ')});}if(scope.exclusions&&scope.exclusions.length){sections.push({key:'exclusions',label:'EXCLUSIONS',value:scope.exclusions.join('; ')});}var heading=(resolveEstimateProjectClass(e)==='residential'?'Residential':((e.type||'').toString().trim()||'Residential'));var summaryValue=(scope.residentialSummary && String(scope.residentialSummary).trim()) ? String(scope.residentialSummary).trim() : (scope.projectScope || '');return {heading:heading,summary:summaryValue,sections:sections,detailText:sections.map(function(section){return section.label+': '+section.value;}).join('\n\n')};}
+function buildResidentialEstimateDescription(e){if(!isResidentialEstimate(e))return null;var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return null;var sections=[];var displayScope=scope.projectScope;if(!e.customerScope&&scope.workIncluded&&scope.workIncluded.length&&scope.workIncluded.every(function(item){return scope.projectScope.indexOf(item)!==-1;})){displayScope=e.type||'Construction improvements described below.';}sections.push({key:'projectScope',label:'PROJECT SCOPE',value:displayScope});if(scope.workIncluded&&scope.workIncluded.length){sections.push({key:'workIncluded',label:'WORK INCLUDED',value:scope.workIncluded.join('; ')});}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){sections.push({key:'conditionsAssumptions',label:'PROJECT CONDITIONS / ASSUMPTIONS',value:scope.conditionsAssumptions.join('; ')});}if(scope.exclusions&&scope.exclusions.length){sections.push({key:'exclusions',label:'EXCLUSIONS',value:scope.exclusions.join('; ')});}var heading=(resolveEstimateProjectClass(e)==='residential'?'Residential':((e.type||'').toString().trim()||'Residential'));var summaryValue=(scope.residentialSummary && String(scope.residentialSummary).trim()) ? String(scope.residentialSummary).trim() : (scope.projectScope || '');return {heading:heading,summary:summaryValue,sections:sections,detailText:sections.map(function(section){return section.label+': '+section.value;}).join('\n\n')};}
 function getScopeSectionText(scope, key){if(!scope)return '';if(key==='residentialSummary')return String(scope.residentialSummary||scope.projectScope||'');if(key==='projectScope')return String(scope.projectScope||'');if(key==='workIncluded')return Array.isArray(scope.workIncluded)?scope.workIncluded.join('; '):String(scope.workIncluded||'');if(key==='conditionsAssumptions')return Array.isArray(scope.conditionsAssumptions)?scope.conditionsAssumptions.join('; '):String(scope.conditionsAssumptions||'');if(key==='exclusions')return Array.isArray(scope.exclusions)?scope.exclusions.join('; '):String(scope.exclusions||'');return '';} 
 function parseScopeSectionText(key, value){if(key==='projectScope'||key==='residentialSummary'){return String(value==null?'':value).trim();}var text=String(value==null?'':value);if(!text.trim())return [];return text.split(/\n+|;\s*|\s*•\s*/).map(function(part){return sanitizeScopeText(part);}).filter(Boolean);} 
 function setScopeSectionValue(e, key, value){if(!e)return;var scope=e.customerScope=e.customerScope||{};var savedValue=value==null?'':value;if(key==='residentialSummary'){scope.residentialSummary=savedValue.trim();return;}if(key==='projectScope'){scope.projectScope=savedValue.trim();return;}scope[key]=parseScopeSectionText(key, savedValue);}
@@ -2096,23 +2131,6 @@ function delExclusion(i){
   eCol.doc(e.id).set(e).then(function(){T('Deleted!');renderEstDetailBody(e);});
 }
 
-function saveEstimate(e, msg){
-  if(!e||!e.id) return Promise.reject(new Error('No estimate to save'));
-  // Snapshot contractor branding so public share view shows company logo/name
-  if(DD.logoData&&DD.logoData.length>10) e.logoData=DD.logoData;
-  if(DD.companyName) e.companyName=DD.companyName;
-  setSS('saving');
-  return withSharedOwnerMetadata(e).then(function(record){
-    return eCol.doc(record.id).set(record).then(function(){
-      setSS('live');
-      if(msg) T(msg);
-    }).catch(function(err){
-      setSS('error');
-      T('Save failed: '+err.message);
-      throw err;
-    });
-  });
-}
 function shouldUseIntakeGate(prompt){
   var text=(prompt||'').toLowerCase();
   if(!text){return false;}
@@ -2143,7 +2161,7 @@ function generateAIEstimate(){
     var _slowWarn=setTimeout(function(){
       var el=document.getElementById('aiLoading');
       if(el&&el.style.display!=='none'){
-        _aiStatus('⏳ Still working... Replit server warming up (up to 30s)');
+        _aiStatus('⏳ Still working... waiting for the app server (up to 30s)');
       }
     },10000);
 
@@ -2175,7 +2193,7 @@ function generateAIEstimate(){
     var blockType=(data.content&&data.content[0]?data.content[0].type:'none');
     if(!text){
       _aiDone();
-      T('AI empty response ('+blockType+') — check Replit logs');
+      T('AI empty response ('+blockType+') — check server logs');
       console.error('[AI] Empty. Response:',JSON.stringify(data).slice(0,300));
       return null;
     }
@@ -2400,7 +2418,9 @@ function generateAIEstimate(){
     questionContext:questionContext,
     messages:[{role:'user',content:originalPrompt}]};
 
-  var shouldGate=isQuestionFlow||shouldUseIntakeGate(originalPrompt);
+  var exclusionsOnly=/^generate\s+(?:standard\s+)?exclusions\b/i.test(originalPrompt);
+  if(exclusionsOnly)generationPayload.mode='estimate-exclusions';
+  var shouldGate=!exclusionsOnly&&(isQuestionFlow||!(e.lineItems||[]).length||shouldUseIntakeGate(originalPrompt));
   if(shouldGate){
     runEstimateRequest(intakePayload).then(function(data){
       if(!data){return;}
@@ -2443,6 +2463,17 @@ function generateAIEstimate(){
     if(!data){return;}
     var parsed=parseAIResponse(data);
     if(!parsed){return;}
+    if(exclusionsOnly){
+      if(parsed.action!=='exclusions'||!Array.isArray(parsed.exclusions)||parsed.exclusions.some(function(x){return typeof x!=='string';}))throw new Error('Invalid exclusions response. Nothing was changed.');
+      var updatedExclusions=(e.exclusions||[]).slice();
+      parsed.exclusions.forEach(function(text){
+        var value=text.trim();if(value&&!updatedExclusions.some(function(old){return normalizeExclusionText(old)===normalizeExclusionText(value);}))updatedExclusions.push(value);
+      });
+      return eCol.doc(e.id).update({exclusions:updatedExclusions}).then(function(){
+        e.exclusions=updatedExclusions;document.getElementById('aiPrompt').value='';
+        renderEstDetailBody(e);T('Proposed exclusions added. Review them before sending the estimate.');
+      });
+    }
     applyEstimateChanges(parsed);
   }).catch(handleAIError);
 }
@@ -2532,9 +2563,13 @@ function closeEditLineItem(){document.getElementById("editLineItemModal").classL
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
 function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
 function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
-function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});withSharedOwnerMetadata(est).then(function(record){
+function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose a project class: Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});withSharedOwnerMetadata(est).then(function(record){
   record.userId = record.ownerUid;
-  return eCol.doc(record.id).set(record).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
+  return eCol.doc(record.id).set(record).then(function(){
+    var savedIndex=estimates.findIndex(function(item){return item.id===record.id;});
+    if(savedIndex>=0)estimates[savedIndex]=record;else estimates.push(record);
+    renderEstCards();
+    T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
 }).catch(function(err){console.error('Estimate save error:', err);T('Error saving estimate: '+(err&&err.message?err.message:err));});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
@@ -2919,7 +2954,7 @@ function checkClientView(){
     // Real-time listener — portal updates automatically when contractor changes data
     col.doc(portalId).onSnapshot(function(doc){
       if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
-      var p=doc.data();
+      var p=rememberProjectSnapshot(doc.data());
 
       // Load owner's settings to get company logo (settings are public-readable for branding)
       function renderWithLogo(est){
@@ -2952,7 +2987,7 @@ function checkClientView(){
     }, function(err){
       col.doc(portalId).get().then(function(doc){
         if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
-        var p=doc.data();
+        var p=rememberProjectSnapshot(doc.data());
         renderProjectPortal(p, null, wrapper);
       });
     });
@@ -3238,7 +3273,7 @@ function openDetail(id){
   document.getElementById("dName").textContent="Loading...";
   col.doc(id).get().then(function(doc){
     if(!doc.exists){document.getElementById("dName").textContent="Not found";return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var i=projects.findIndex(function(x){return x.id===id;});
     if(i>=0)projects[i]=p; else projects.push(p);
     _renderDetail(p);
@@ -3462,7 +3497,7 @@ function updateCombinedWOButton(){
   }
   btn.style.display=n>=2?'block':'none';
   var b=document.getElementById('combinedWOButton');
-  if(b)b.textContent='\u128279 Send Combined Work Order ('+n+' items)';
+  if(b)b.textContent='🔗 Send Combined Work Order ('+n+' items)';
 }
 function doSendCombined(){
   if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
@@ -3476,7 +3511,7 @@ function doSendCombined(){
 function renderTabBody(p){
   var html="";
   if(currentTab==="scope"){
-    var wasMigrated=migratePhases(p);if(wasMigrated){col.doc(p.id).set(p);}
+    var wasMigrated=migratePhases(p);if(wasMigrated){persistProjectChanges(p,p._savedProjectSnapshot);}
     var items=p.scopeItems||[];var tB=0,tA=0;items.forEach(function(it){tB+=(parseFloat(it.budget)||0);tA+=(parseFloat(it.actual)||0);});
     if(wasMigrated)html+='<div class="migrate-banner">&#9989; Restored '+items.length+' scope item'+(items.length!==1?"s":"")+'from your previous phase data. Budgets and assigned contractors recovered.</div>';
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
@@ -3780,7 +3815,7 @@ function renderTabBody(p){
     if(_csb&&_selectedSubItems.length>=2){
       _csb.style.display="block";
       var _cb=_csb.querySelector('button');
-      if(_cb)_cb.textContent='\u128279 Send Combined Work Order ('+_selectedSubItems.length+' items)';
+      if(_cb)_cb.textContent='🔗 Send Combined Work Order ('+_selectedSubItems.length+' items)';
     }
   }
 }
@@ -4066,7 +4101,14 @@ function deriveAuthoritativeLaborFromScope(text, history){
   }).join(' '):'');
   var totalMatch=combined.match(/(\d+(?:\.\d+)?)\s*(?:total\s+)?labor\s*(?:hours?|hrs?)\b/i);
   var crewMatch=combined.match(/(\d+(?:\.\d+)?)\s*(?:workers?|people|crew|electricians?|carpenters?|laborers?|plumbers?|painters?|drywallers?)\b/i);
-  var durationMatch=combined.match(/(\d+(?:\.\d+)?)\s*(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
+  if(!crewMatch && Array.isArray(history)){
+    history.forEach(function(entry){
+      var question=(entry&&Array.isArray(entry.questions)?entry.questions.join(' '):'');
+      var answer=String(entry&&entry.answer!=null?entry.answer:'').trim();
+      if(/how many.*(?:workers|people|crew|electricians|carpenters|laborers|plumbers|painters)/i.test(question) && /^\d+(?:\.\d+)?$/.test(answer))crewMatch=[answer,answer];
+    });
+  }
+  var durationMatch=combined.match(/(\d+(?:\.\d+)?)\s*(?:additional\s+)?(day|days|hour|hours|shift|shifts|week|weeks)\b/i);
   var totalHours=totalMatch?Number(totalMatch[1]):null;
   if(!totalHours && crewMatch && durationMatch){
     var crew=Number(crewMatch[1]);
@@ -4145,7 +4187,8 @@ function generateCOWithAI(btnEl){
           questions:[],
           history:(preservedQuestionState.history || []).slice()
         };
-        runCOGenerationRequest(title, desc, btn, preservedQuestionState);
+        preservedQuestionState.authoritativeLabor=deriveAuthoritativeLaborFromScope(preservedQuestionState.originalPrompt,preservedQuestionState.history);
+      runCOGenerationRequest(title, desc, btn, preservedQuestionState);
         return;
       }
       T('CO intake did not resolve successfully. Please try again.');
@@ -4153,7 +4196,7 @@ function generateCOWithAI(btnEl){
     return;
   }
 
-  state={active:false,originalPrompt:combined,questions:[],history:[]};
+  state={active:false,originalPrompt:state.originalPrompt||combined,questions:[],history:Array.isArray(state.history)?state.history.slice():[]};
   window._aiCOQuestionState=state;
   if(btn){btn.disabled=true;btn.textContent='Checking scope...';}
   fetch('/api/estimate',{
@@ -4166,7 +4209,7 @@ function generateCOWithAI(btnEl){
       title:title,
       description:desc,
       location:profile.location||'',
-      questionContext:{originalPrompt:combined,history:[]},
+      questionContext:{originalPrompt:state.originalPrompt,history:state.history.slice()},
       messages:[{role:'user',content:combined}]
     })
   }).then(function(r){return r.json();}).then(function(data){
@@ -4194,6 +4237,7 @@ function generateCOWithAI(btnEl){
         questions:[],
         history:(preservedQuestionState.history || []).slice()
       };
+      preservedQuestionState.authoritativeLabor=deriveAuthoritativeLaborFromScope(preservedQuestionState.originalPrompt,preservedQuestionState.history);
       runCOGenerationRequest(title, desc, btn, preservedQuestionState);
       return;
     }
@@ -4213,7 +4257,7 @@ function signCOBtn(btn){
   var name=nameEl.value.trim();
   col.doc(projectId).get().then(function(doc){
     if(!doc.exists)return;
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var co=(p.changeOrders||[])[coIdx];if(!co)return;
     // Mark CO approved
     co.status='Approved';
@@ -4244,7 +4288,7 @@ function signCOBtn(btn){
     ensureApprovedCOFinancialAccounting(p, co, clientAmt, { includeBudget: true });
 
     function doSave(){
-      col.doc(projectId).set(p).then(function(){
+      persistProjectChanges(p,p._savedProjectSnapshot).then(function(){
         pushNotification('Change order "'+co.title+'" approved by '+name+'. Budget updated.');
         var wrapper=document.getElementById('clientWrapper');
         if(wrapper)renderProjectPortal(p,null,wrapper);
@@ -4570,14 +4614,18 @@ function toggleNote(i){var p=gpr();p.notesLog[i].resolved=!p.notesLog[i].resolve
 function deleteProject(){if(!confirm("Delete project? Cannot be undone."))return;col.doc(currentId).delete().then(function(){document.getElementById("detailPage").classList.remove("show");T("Deleted");});}
 function populateStatus(val){document.getElementById("fStatus").innerHTML=DD.projectStatuses.map(function(x){return'<option'+(x===(val||DD.projectStatuses[0])?" selected":"")+'>'+x+'</option>';}).join("");}
 function renderCP(){document.getElementById("cpick").innerHTML=COLORS.map(function(c,i){return'<div class="cdot" style="background:'+c+';border-color:'+(i===selColor?"#1A1A2E":"transparent")+'" data-ci="'+i+'"></div>';}).join("");document.querySelectorAll(".cdot").forEach(function(d){d.onclick=function(){selColor=parseInt(this.getAttribute("data-ci"));renderCP();};});}
-function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
+function openAdd(){editId=null;document.getElementById("addPageTitle").textContent="New Project";["fClient","fClientPhone","fClientEmail","fJobNum","fPO","fType","fAddress","fPm","fStart","fEnd","fBudget","fSpent","fNotes"].forEach(function(id){document.getElementById(id).value="";});populateStatus();selColor=0;renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";if(document.getElementById("fClientPhone"))document.getElementById("fClientPhone").value=p.clientPhone||"";if(document.getElementById("fClientEmail"))document.getElementById("fClientEmail").value=p.clientEmail||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";
   if(document.getElementById("fJobNum"))document.getElementById("fJobNum").value=p.jobNum||"";
   if(document.getElementById("fPO"))document.getElementById("fPO").value=p.poNum||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=document.getElementById('fJobNum')&&document.getElementById('fJobNum').value.trim()?document.getElementById('fJobNum').value.trim():(existing.jobNum||nextJobNumber());
-  var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||(currentUser?currentUser.uid:''),ownerUid:existing.ownerUid||existing.userId||(currentUser?currentUser.uid:''),client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});withSharedOwnerMetadata(p).then(function(record){
+  var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});withSharedOwnerMetadata(p).then(function(record){
   record.userId = record.ownerUid;
-  return col.doc(record.id).set(record).then(function(){T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
+  return persistProjectChanges(record,existing._savedProjectSnapshot).then(function(saved){
+    record=rememberProjectSnapshot(saved||record);
+    var savedIndex=projects.findIndex(function(project){return project.id===record.id;});
+    if(savedIndex>=0) projects[savedIndex]=record; else projects.push(record);
+    T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
     // Existing edit flow should keep its current behavior.
   } else {
     openDetail(id);
@@ -4590,7 +4638,7 @@ function openSettings(){
   if(!_uid){renderSettingsForm();return;}
   resolveWorkspaceUidForSession(_uid).then(function(workspaceUid){
     var _isOwner=_uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var _settingsDoc=_isOwner?'dropdowns':(workspaceUid || _uid || 'dropdowns');
+    var _settingsDoc=workspaceSettingsDoc(workspaceUid || _uid);
     sCol.doc(_settingsDoc).get().then(function(d){
       if(d.exists){
         var data=d.data();
@@ -5642,7 +5690,7 @@ function sendProjectInvoice(i){
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
   else if(email){window.location.href='mailto:'+email+'?subject=Invoice from '+encodeURIComponent(co)+': '+encodeURIComponent(m.name)+'&body='+encodeURIComponent(msg);}
-  else{alert('No client contact info. Add phone or email to this project first.');}
+  else{alert('No client contact info. Add phone or email to this project first.');return;}
   p.paymentMilestones[i].sentAt=Date.now();
   saveP(p);
 }
@@ -5815,7 +5863,7 @@ function checkSubView(){
     wrap.innerHTML='<div style="text-align:center;padding:20px;color:#aaa">Loading...</div>';
     col.doc(pid).onSnapshot(function(doc){
       if(!doc.exists){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Work order not found.</div>';return;}
-      var p=doc.data();p.id=pid;
+      var p=rememberProjectSnapshot(doc.data());p.id=pid;
       var items=idxArr.map(function(i){return {item:(p.scopeItems||[])[i],idx:i};}).filter(function(x){return !!x.item;});
       if(!items.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Scope items not found.</div>';return;}
       var totalAmt=items.reduce(function(s,x){return s+(parseFloat(x.item.actual)||0);},0);
@@ -5860,7 +5908,7 @@ function checkSubView(){
   wrap.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading your portal...</div>';
   col.doc(pid).get().then(function(doc){
     if(!doc.exists){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Project not found.</div>';return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var it=(p.scopeItems||[])[sidx];
     if(!it){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Scope item not found.</div>';return;}
     var today=new Date().toISOString().split('T')[0];
@@ -5899,7 +5947,7 @@ function checkSubView(){
       +'<label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px">Issues / Delays</label>'
       +'<textarea id="sIssues" rows="2" placeholder="Any problems..." style="width:100%;padding:10px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;margin-bottom:8px;box-sizing:border-box;resize:vertical"></textarea>'
       +'<label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px">Photos</label>'
-      +'<input type="file" id="sPhoto" accept="image/*" capture="environment" multiple style="margin-bottom:10px;font-size:13px"/>'
+      +'<input type="file" id="sPhoto" accept="image/*" multiple style="margin-bottom:10px;font-size:13px"/>'
       +'<button data-pid="'+pid+'" data-sidx="'+sidx+'" onclick="submitSubLog(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2EAA72;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Save Log</button>'
       +'<div id="sStatus" style="font-size:13px;margin-top:8px;display:none;text-align:center"></div>'
       +'</div>'
@@ -5915,10 +5963,10 @@ function updSubSt(pid,sidx){
   var status=document.getElementById('subSt').value;
   col.doc(pid).get().then(function(doc){
     if(!doc.exists)return;
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     if(p.scopeItems&&p.scopeItems[sidx]){
       p.scopeItems[sidx].complete=status;
-      col.doc(pid).set(p).then(function(){T('Status updated!');});
+      persistProjectChanges(p,p._savedProjectSnapshot).then(function(){T('Status updated!');});
     }
   });
 }
@@ -5931,7 +5979,7 @@ function submitSubLog(pid,sidx){
   var entry={
     date:document.getElementById('sDate').value,
     weather:document.getElementById('sWeather').value.trim(),
-    crew:it&&it.assignTo?it.assignTo:'',
+    crew:'',
     work:work,
     issues:document.getElementById('sIssues').value.trim(),
     photos:[],ts:Date.now(),subScopeIdx:sidx,subEntry:true
@@ -5940,8 +5988,11 @@ function submitSubLog(pid,sidx){
   var files=pi&&pi.files?Array.from(pi.files):[];
   function save(){
     col.doc(pid).get().then(function(doc){
-      if(!doc.exists)return;
-      var p=doc.data();
+      if(!doc.exists)throw new Error('Project not found.');
+      var p=rememberProjectSnapshot(doc.data());
+      var scope=(p.scopeItems||[])[sidx];
+      if(!scope)throw new Error('Assigned scope not found.');
+      entry.crew=scope.assignTo||'';
       p.dailyLogs=p.dailyLogs||[];
       // Check total size — Firestore 1MB limit
       var dataStr=JSON.stringify(p);
@@ -5951,7 +6002,7 @@ function submitSubLog(pid,sidx){
         el.textContent='Saving (photos skipped — project data too large)...';
       }
       p.dailyLogs.push(entry);
-      return col.doc(pid).set(p);
+      return persistProjectChanges(p,p._savedProjectSnapshot);
     }).then(function(){
       el.style.color='#2EAA72';el.textContent='\u2713 Log saved!';
       document.getElementById('sWork').value='';
@@ -6001,7 +6052,7 @@ function checkInvoiceView(){
 
   col.doc(pid).get().then(function(doc){
     if(!doc.exists){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Invoice not found.</div>';return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var m=(p.paymentMilestones||[])[msIdx];
     if(!m){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Milestone not found.</div>';return;}
 
@@ -6253,3 +6304,4 @@ openSettings = function(){
 </script>
 </body>
 </html>
+
