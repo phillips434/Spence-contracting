@@ -80,3 +80,42 @@ describe('shared company workspace save and visibility', () => {
     assert.strictEqual(original.updatedByUid, undefined, 'Metadata must not mutate input');
   });
 });
+
+describe('estimate detail cache after save', () => {
+  it('opens the updated customer record before any snapshot arrives', async () => {
+    const {c,nodes}=fixture();
+    c.estimates=[{id:'existing',client:'Old customer',type:'Kitchen',ownerUid:'company-owner',lineItems:[{desc:'Keep scope'}]}];
+    c.currentEstId=c.editEstId='existing';
+    let opened;
+    c.openEstDetail=id=>{opened=c.estimates.find(e=>e.id===id);};
+    c.saveEstimate();await flush();
+    assert.strictEqual(opened.client,'Office customer');
+    assert.strictEqual(opened.lineItems[0].desc,'Keep scope');
+    assert.strictEqual(c.estimates.length,1);
+  });
+});
+
+describe('company settings persistence', () => {
+  function settingsFixture(owner='L5XUqfnWrrgbAk18X36XcHDJxnz1') {
+    const writes=[];
+    const c={currentUser:{uid:'office'},DD:{companyName:'Saved company',team:[]},Promise,T(){},
+      db:{collection:()=>({doc:()=>({get:async()=>({exists:true,data:()=>({plan:'team',ownerUid:owner})})})})},
+      sCol:{doc:id=>({set:async data=>writes.push({id,data:JSON.parse(JSON.stringify(data))})})}};
+    vm.createContext(c);
+    for(const name of ['resolveWorkspaceUidForSession','workspaceSettingsDoc','saveSettingsSilent','saveSettings'])vm.runInContext(source(name),c);
+    return {c,writes};
+  }
+  it('office writes the same legacy company document used by the owner',async()=>{
+    const {c,writes}=settingsFixture();await c.saveSettings();
+    assert.strictEqual(writes[0].id,'dropdowns');
+  });
+  it('keeps unrelated company settings in its own document',async()=>{
+    const {c,writes}=settingsFixture('another-owner');await c.saveSettingsSilent();
+    assert.strictEqual(writes[0].id,'another-owner');
+  });
+  it('does not write to a personal fallback when workspace lookup fails',async()=>{
+    const {c,writes}=settingsFixture();
+    c.db.collection=()=>({doc:()=>({get:async()=>{throw Error('offline');}})});
+    await assert.rejects(c.saveSettingsSilent(),/offline/);assert.strictEqual(writes.length,0);
+  });
+});

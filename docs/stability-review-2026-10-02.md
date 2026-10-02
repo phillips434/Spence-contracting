@@ -59,3 +59,12 @@ These files are committed on `codex/stability-review-2026-10-02` in draft PR #1.
 ## Reported-bug audit and workspace fix
 
 See `reported-bugs-and-coverage-2026-10-02.md` for 20 report groups and missing coverage. Five shared-workspace regression tests now exercise actual form saves and sync callbacks. Two failed before the fix: new office records were tagged with the office UID. New forms now resolve company ownership before saving; existing ownership and creator metadata remain intact. Older misfiled records require a separate reviewed migration.
+
+
+## Additional reported-bug fixes
+
+- Estimate form saves now update the local estimate cache before reopening details, so edited customer names are immediately available without waiting for Firestore snapshots.
+- Settings writes and reads now use the company workspace document consistently, including the legacy owner's `dropdowns` document. Team edits preserve company and other member metadata. Workspace lookup failures stop settings writes instead of saving into a personal fallback.
+- Added four regressions: edited estimate visibility without a snapshot; legacy shared settings destination; unrelated company isolation; failed workspace lookup without writes.
+- Current local suite: 152 passing. These are local/mocked checks; deployed browser and Firebase permissions validation remain outstanding. The supplied production rules may still reject office writes to company settings.
+- Disappearing Choices, repeated unknown intake answers, and the dedicated AI Exclusions request are still under investigation; this commit does not claim those are fixed.

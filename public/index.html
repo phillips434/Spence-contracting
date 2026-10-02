@@ -990,12 +990,18 @@ function ger(){return estimates.find(function(x){return x.id===currentEstId;});}
 function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_COLORS.length]||"#999";return{bg:c+"22",text:c,dot:c};}
 function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#2B3990">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
-function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent();return "JOB-"+String(n).padStart(4,"0");}
-function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent();return "EST-"+String(n).padStart(4,"0");}
+function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent().catch(function(){});return "JOB-"+String(n).padStart(4,"0");}
+function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
+function workspaceSettingsDoc(workspaceUid){
+  return workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':workspaceUid;
+}
 function saveSettingsSilent(){
   var uid=currentUser?currentUser.uid:null;
-  var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-  sCol.doc(isOwner?'dropdowns':(uid||'dropdowns')).set(DD);
+  if(!uid)return Promise.resolve();
+  return resolveWorkspaceUidForSession(uid,true).then(function(workspaceUid){
+    if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
+    return sCol.doc(workspaceSettingsDoc(workspaceUid)).set(DD);
+  }).catch(function(err){T('Settings save failed: '+err.message);throw err;});
 }
 function migratePhases(p){if((p.scopeItems&&p.scopeItems.length>0)||!p.phases||!p.phases.length)return false;p.scopeItems=p.phases.map(function(ph){return{desc:ph.name||ph.desc||"Untitled Phase",start:ph.start||ph.startDate||"",end:ph.end||ph.endDate||"",budget:parseFloat(ph.phaseBudget||ph.budget)||0,actual:parseFloat(ph.phaseActual||ph.actual)||0,complete:ph.complete||ph.status||"Not Started",assignTo:ph.assignTo||ph.subcontractor||"",assignPhone:ph.assignPhone||ph.phone||"",assignEmail:ph.assignEmail||ph.email||"",category:ph.category||ph.type||""};});return true;}
 function forceLoadTeam(){
@@ -1116,7 +1122,7 @@ function loadSettings(cb){
   if(!uid){if(cb)cb();return;} // Never fall back to owner settings if uid missing
   resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
     var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var settingsDoc = isOwner ? 'dropdowns' : (workspaceUid || uid || 'dropdowns');
+    var settingsDoc = workspaceSettingsDoc(workspaceUid || uid);
     sCol.doc(settingsDoc).get().then(function(d){
       if(d.exists) DD=Object.assign({},DD,d.data());
       // Apply saved logo to topbar if it exists, else use CD_LOGO default
@@ -1156,17 +1162,7 @@ function applyTradeTemplate(trade){
   T("Trade template applied: "+trade);
 }
 function saveSettings(){
-  var uid=currentUser?currentUser.uid:null;
-  if(!uid){return;}
-  resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
-    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var doc=isOwner?'dropdowns':(workspaceUid || uid || 'dropdowns');
-    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
-  }).catch(function(){
-    var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var doc=isOwner?'dropdowns':(uid||'dropdowns');
-    sCol.doc(doc).set(DD).then(function(){T('Saved!');});
-  });
+  return saveSettingsSilent().then(function(){if(currentUser)T('Saved!');}).catch(function(){});
 }
 function testAIConnection(){
   var el=document.getElementById('aiTestResult');
@@ -1252,7 +1248,7 @@ function resolveCurrentOwnerUid(){
     return uid;
   });
 }
-function resolveWorkspaceUidForSession(uid){
+function resolveWorkspaceUidForSession(uid,failClosed){
   var activeUid = uid || (currentUser && currentUser.uid) || null;
   if(!activeUid){return Promise.resolve(null);}
 
@@ -1266,7 +1262,8 @@ function resolveWorkspaceUidForSession(uid){
     }
 
     return activeUid;
-  }).catch(function(){
+  }).catch(function(err){
+    if(failClosed)throw err;
     return activeUid;
   });
 }
@@ -1456,17 +1453,13 @@ function editTeamMember(i){
   var trade=prompt("Trade / Role:",m.trade||"");if(trade===null)return;
   var phone=prompt("Phone:",m.phone||"");if(phone===null)return;
   var email=prompt("Email:",m.email||"");if(email===null)return;
-  DD.team[i]={name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"};
-  var _u3=currentUser?currentUser.uid:null;sCol.doc(_u3==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u3||'dropdowns')).set(DD);
-  renderTeamList();
-  T("Updated: "+name.trim());
+  DD.team[i]=Object.assign({},m,{name:name.trim(),trade:trade.trim(),phone:phone.trim(),email:email.trim(),type:m.type||"Sub"});
+  saveSettingsSilent().then(function(){renderTeamList();T("Updated: "+name.trim());}).catch(function(){});
 }
 function delTeamMember(i){
   if(!confirm("Remove this team member?"))return;
   DD.team.splice(i,1);
-  var _u4=currentUser?currentUser.uid:null;sCol.doc(_u4==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u4||'dropdowns')).set(DD);
-  renderTeamList();
-  T("Removed.");
+  saveSettingsSilent().then(function(){renderTeamList();T("Removed.");}).catch(function(){});
 }
 
 function startSync(){
@@ -2530,7 +2523,11 @@ function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle"
 function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
 function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose a project class: Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();var est=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});withSharedOwnerMetadata(est).then(function(record){
   record.userId = record.ownerUid;
-  return eCol.doc(record.id).set(record).then(function(){T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
+  return eCol.doc(record.id).set(record).then(function(){
+    var savedIndex=estimates.findIndex(function(item){return item.id===record.id;});
+    if(savedIndex>=0)estimates[savedIndex]=record;else estimates.push(record);
+    renderEstCards();
+    T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
 }).catch(function(err){console.error('Estimate save error:', err);T('Error saving estimate: '+(err&&err.message?err.message:err));});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
