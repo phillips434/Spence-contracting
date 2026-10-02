@@ -1498,6 +1498,7 @@ function startSync(){
 }
 
 function recordBelongsToWorkspace(record,uid,ownerUid,memberUids){
+  if((memberUids||[]).indexOf(record.userId)!==-1 && (!record.ownerUid||record.ownerUid===record.userId||record.ownerUid===ownerUid))return true;
   if(record.ownerUid && record.ownerUid!==ownerUid && record.ownerUid!==uid)return false;
   return record.userId===uid || record.userId===ownerUid || record.ownerUid===ownerUid || (memberUids||[]).indexOf(record.userId)!==-1;
 }
