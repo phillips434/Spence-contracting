@@ -6,6 +6,15 @@ const {app,removeAnsweredIntakeQuestions}=require('../server');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);assert(a>=0&&b>a);return html.slice(a,b);}
 const clone=x=>JSON.parse(JSON.stringify(x));
+describe('communication attachment limit',()=>{
+  it('keeps notes and files when more than five screenshots are selected',()=>{
+    const nodes={commNotes:{value:'Keep these notes'},commType:{value:'Call'},commDate:{value:'2026-10-02'},commFollowUp:{value:'Follow up'},commPhotos:{files:Array.from({length:6},()=>({name:'test.png'})),value:'selected'}};
+    const record={commsLog:[]};let notice='',writes=0;
+    const c={document:{getElementById:id=>nodes[id]},gpr:()=>record,T:message=>notice=message,saveP:()=>writes++,alert(){throw Error('Unexpected alert');}};
+    vm.runInNewContext(source('addComm'),c);c.addComm();
+    assert.strictEqual(writes,0);assert.strictEqual(record.commsLog.length,0);assert.strictEqual(nodes.commNotes.value,'Keep these notes');assert.strictEqual(nodes.commPhotos.files.length,6);assert.match(notice,/up to 5/);
+  });
+});
 describe('payment schedule rounding',()=>{
   it('uses the final milestone as the exact remaining balance',async()=>{
     for(const total of [1632,7405.20,53,100.01]){
