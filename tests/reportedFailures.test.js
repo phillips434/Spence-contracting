@@ -6,6 +6,17 @@ const {app,removeAnsweredIntakeQuestions}=require('../server');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);assert(a>=0&&b>a);return html.slice(a,b);}
 const clone=x=>JSON.parse(JSON.stringify(x));
+describe('payment schedule rounding',()=>{
+  it('uses the final milestone as the exact remaining balance',async()=>{
+    for(const total of [1632,7405.20,53,100.01]){
+      const estimate={id:'qa'};let saved;
+      const c={ger:()=>estimate,calcEstimate:()=>({grandTotal:total}),eCol:{doc:()=>({set:async e=>{saved=clone(e);}})},T(){},renderEstDetailBody(){}};
+      vm.createContext(c);vm.runInContext(source('autoGenMilestones'),c);c.autoGenMilestones();
+      await new Promise(resolve=>setImmediate(resolve));
+      assert.strictEqual(Math.round(saved.paymentMilestones.reduce((sum,m)=>sum+m.amount,0)*100),Math.round(total*100));
+    }
+  });
+});
 describe('open estimate recovery after sync loss',()=>{
   function fixture(record){
     const c={currentEstId:'deck',currentUser:{uid:'office'},estimates:[],resolveCurrentOwnerUid:async()=> 'owner',

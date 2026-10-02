@@ -2101,7 +2101,7 @@ function addMilestone(){
   e.paymentMilestones.push({name:name,pct:pct||null,amount:amt,paid:false});
   eCol.doc(e.id).set(e).then(function(){T('Added!');hideForm('msForm');renderEstDetailBody(e);});
 }
-function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).grandTotal;e.paymentMilestones=[{name:"Initial Deposit (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false},{name:"Progress Payment (40%)",amount:Math.round(total*0.40),dueDate:"",paid:false},{name:"Final Payment (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false}];eCol.doc(e.id).set(e).then(function(){T("Milestones generated!");renderEstDetailBody(e);});}
+function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).grandTotal;e.paymentMilestones=[{name:"Initial Deposit (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false},{name:"Progress Payment (40%)",amount:Math.round(total*0.40),dueDate:"",paid:false},{name:"Final Payment (30%)",amount:Math.round((total-Math.round(total*0.30)-Math.round(total*0.40))*100)/100,dueDate:"",paid:false}];eCol.doc(e.id).set(e).then(function(){T("Milestones generated!");renderEstDetailBody(e);});}
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
   var calc=calcEstimate(e);
