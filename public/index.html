@@ -403,7 +403,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       <button class="btn-orange" id="btnNew">+ New project</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v212</span></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v213</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v12H3Z"/></svg> Projects</button>
     <button class="nav-tab" id="navEstimates"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg> Estimates</button>
@@ -2792,7 +2792,7 @@ function saveEstimate(){var client=document.getElementById("efClient").value.tri
     renderEstCards();
     T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
 }).catch(function(err){console.error('Estimate save error:', err);T('Error saving estimate: '+(err&&err.message?err.message:err));});}
-function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();});}
+function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();if(currentEstId===e.id)openEstDetail(e.id);});}
 function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
 function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
@@ -5314,42 +5314,34 @@ function initPWA(){
 // ═══════════════════════════════════════════════════════════════
 
 
-function backupAllData(){
-  var statusEl = document.getElementById('backupStatus');
-  statusEl.style.display = 'block';
-  statusEl.style.color = '#2858BD';
-  statusEl.textContent = 'Gathering your data...';
-  var backup = {
-    exportedAt: new Date().toISOString(),
-    appVersion: 'v72',
-    settings: DD,
-    projects: [],
-    estimates: []
-  };
-  col.get().then(function(snap){
-    snap.forEach(function(d){ backup.projects.push(d.data()); });
-    return eCol.get();
-  }).then(function(snap){
-    snap.forEach(function(d){ backup.estimates.push(d.data()); });
-    var json = JSON.stringify(backup, null, 2);
-    var blob = new Blob([json], {type:'application/json'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'contractordesk-backup-' + new Date().toISOString().split('T')[0] + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    statusEl.style.color = '#2EAA72';
-    statusEl.textContent = '\u2713 Done! ' + backup.projects.length + ' projects + ' + backup.estimates.length + ' estimates saved.';
-    T('Backup downloaded!');
-  }).catch(function(err){
-    statusEl.style.color = '#E83A6C';
-    statusEl.textContent = 'Error: ' + err.message;
-  });
+var backupDownloadUrl=null;
+function companyBackupRecords(snap,uid,workspaceUid,memberUids){
+  var records=[];snap.forEach(function(doc){var record=doc.data();if(recordBelongsToWorkspace(record,uid,workspaceUid,memberUids))records.push(Object.assign({},record,{id:doc.id}));});return records;
 }
-
+function backupAllData(){
+  var statusEl=document.getElementById('backupStatus'),uid=currentUser&&currentUser.uid;
+  statusEl.style.display='block';statusEl.style.color='#2858BD';statusEl.textContent='Preparing your company backup...';
+  if(!uid){statusEl.textContent='Sign in before making a backup.';return Promise.resolve();}
+  return resolveWorkspaceUidForSession(uid,true).then(function(workspaceUid){
+    if(!workspaceUid||workspaceUid!==uid)throw new Error('Only the company owner can export a full backup.');
+    return db.collection('userProfiles').where('ownerUid','==',workspaceUid).get().then(function(membersSnap){
+      var memberUids=[];membersSnap.forEach(function(doc){memberUids.push(doc.id);});
+      return Promise.all([col.get(),eCol.get(),sCol.doc(workspaceSettingsDoc(workspaceUid)).get()]).then(function(results){
+        if(!currentUser||currentUser.uid!==uid)throw new Error('Your session changed. Sign in and try again.');
+        if(!results[2].exists)throw new Error('Company settings could not be found. Backup was not created.');
+        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v213',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
+        var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+        if(backupDownloadUrl)URL.revokeObjectURL(backupDownloadUrl);
+        backupDownloadUrl=URL.createObjectURL(blob);
+        statusEl.replaceChildren();statusEl.style.color='#1A7A4E';
+        var label=document.createElement('div');label.textContent='Ready: '+backup.projects.length+' projects and '+backup.estimates.length+' estimates, including archived and converted records. Save the file below.';
+        var link=document.createElement('a');link.href=backupDownloadUrl;link.download='contractordesk-backup-'+new Date().toISOString().split('T')[0]+'.json';link.className='btn-green';link.textContent='Save backup file';link.style.cssText='display:inline-flex;margin-top:10px;text-decoration:none';
+        statusEl.appendChild(label);statusEl.appendChild(link);
+        return backup;
+      });
+    });
+  }).catch(function(err){statusEl.style.color='#B12A3B';statusEl.textContent='Backup not created: '+err.message;});
+}
 
 // ═══════════════════════════════════════════════════════════════
 // PHASE 3 — Authentication & Multi-tenant
