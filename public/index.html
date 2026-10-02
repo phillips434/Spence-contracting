@@ -991,7 +991,7 @@ function sc(s){var i=DD.projectStatuses.indexOf(s);var c=STATUS_COLORS[i%STATUS_
 function bvaHtml(b,a){var b2=parseFloat(b)||0,a2=parseFloat(a)||0,diff=b2-a2,over=diff<0;var dc=over?"#E83A6C":"#2EAA72",dl=over?"$"+Math.abs(diff).toLocaleString()+" over":"$"+Math.abs(diff).toLocaleString()+" under";return'<div class="bva-row"><div class="bva-box"><div class="bva-label">Budget</div><div class="bva-val" style="color:#1A1A2E">$'+b2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Actual</div><div class="bva-val" style="color:#2B3990">$'+a2.toLocaleString()+'</div></div><div class="bva-box"><div class="bva-label">Variance</div><div class="bva-val" style="color:'+dc+'">'+dl+'</div></div></div>';}
 function setSS(s){var dot=document.getElementById("syncDot"),lbl=document.getElementById("syncLabel");if(s==="live"){dot.style.background="#2EAA72";lbl.textContent="Live sync on";}else if(s==="saving"){dot.style.background="#E8B43A";lbl.textContent="Saving...";}else if(s==="error"){dot.style.background="#E83A6C";lbl.textContent="Sync error";}}
 function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent().catch(function(){});return "JOB-"+String(n).padStart(4,"0");}
-function nextEstNumber(){var n=DD.nextEstNum||1;DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
+function nextEstNumber(){var n=Math.max(1,parseInt(DD.nextEstNum,10)||1);(estimates||[]).forEach(function(e){var match=/^EST-(\d+)$/.exec(e.estNum||'');if(match)n=Math.max(n,Number(match[1])+1);});DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
 function workspaceSettingsDoc(workspaceUid){
   return workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':workspaceUid;
 }
@@ -1241,6 +1241,7 @@ function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocat
 function resolveCurrentOwnerUid(){
   var uid=currentUser&&currentUser.uid?currentUser.uid:null;
   if(!uid){return Promise.resolve(null);}
+  if(uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(uid);}
   return db.collection('userProfiles').doc(uid).get().then(function(doc){
     var data=doc.exists?doc.data():{};
     return (data && data.ownerUid) || uid;
@@ -1251,6 +1252,7 @@ function resolveCurrentOwnerUid(){
 function resolveWorkspaceUidForSession(uid,failClosed){
   var activeUid = uid || (currentUser && currentUser.uid) || null;
   if(!activeUid){return Promise.resolve(null);}
+  if(activeUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(activeUid);}
 
   return db.collection('userProfiles').doc(activeUid).get().then(function(doc){
     var data = doc.exists ? (doc.data() || {}) : {};
