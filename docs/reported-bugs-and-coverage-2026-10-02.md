@@ -45,3 +45,8 @@ Historical unscoped Save/back buttons, overlays intercepting clicks, re-clicking
 New forms now leave ownership fields empty until the existing owner resolver supplies the company owner. Existing record ownership is preserved; `createdByUid`/`updatedByUid` identify the actual actor. The test also verifies unrelated-company rows do not enter either user's local list. This is client behavior testing, not server authorization; Firestore rules still require separate repair.
 
 Previously misfiled records are not automatically moved by this change. Review record ownership, invitation/profile linkage and backups before any migration. No production data, access rules or deployment was changed during this audit.
+
+
+### Subsequent fix pass
+
+See `stability-review-2026-10-02.md` for the second pass (164 passing local tests). Selections now have transactional change-only saves and conflict rejection; repeated answered intake questions are filtered; new kitchen scopes always run intake; exclusions use a separate schema and update only their own field; subcontractor daily-log crew lookup no longer crashes; invoice no-contact sends no longer mark records sent. These checks do not substitute for deployed browser, Firebase security, or real-provider acceptance tests.

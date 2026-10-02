@@ -592,7 +592,7 @@ body.client-mode .phead { display:none !important; }
       </div>
       <div class="wcard" style="border:1.5px solid #2B3990">
         <div style="font-size:14px;font-weight:700;color:#2B3990;margin-bottom:6px">&#129302; Test AI Connection</div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px">Check if your Replit server and Anthropic API are working.</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Check if the app server and AI provider are working.</div>
         <button class="btn-navy" onclick="testAIConnection()">Test Connection</button>
         <div id="aiTestResult" style="font-size:13px;margin-top:8px;line-height:1.6;display:none"></div>
       </div>
@@ -1169,7 +1169,7 @@ function testAIConnection(){
   el.style.display='block';
   el.style.color='#2B3990';
   var t0=Date.now();
-  el.textContent='Testing... (connecting to Replit server)';
+  el.textContent='Testing... (connecting to app server)';
 
   // Step 1: Try a simple HEAD/GET to see if server is alive at all
   var pingCtrl=new AbortController();
@@ -1185,7 +1185,7 @@ fetch('/api/estimate',{
     var elapsed=Date.now()-t0;
     if(!r.ok){
       el.style.color='#E83A6C';
-      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check Replit console for errors.';
+      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check server logs for errors.';
       return null;
     }
     el.textContent='Connected ('+elapsed+'ms) — parsing AI response...';
@@ -1213,9 +1213,9 @@ fetch('/api/estimate',{
     el.style.color='#E83A6C';
     var diagnosis='';
     if(err.name==='AbortError'){
-      diagnosis='Server did not respond in 8 seconds — server is likely SLEEPING on Replit free tier.';
+      diagnosis='Server did not respond in 8 seconds. Check server status and try again.';
     } else if(err.message==='Load failed'||err.message==='Failed to fetch'){
-      diagnosis='Cannot reach server — Replit server is asleep or crashed. Open Replit and start the server.';
+      diagnosis='Cannot reach the app server. Check your connection and server status.';
     } else {
       diagnosis='Error: '+err.message;
     }
@@ -1367,7 +1367,34 @@ function withSharedOwnerMetadata(record){
     return nextRecord;
   });
 }
+function rememberProjectSnapshot(p){
+  Object.defineProperty(p,'_savedProjectSnapshot',{value:JSON.parse(JSON.stringify(p)),writable:true,configurable:true,enumerable:false});
+  return p;
+}
+function persistProjectChanges(record,baseline){
+  var ref=col.doc(record.id);
+  if(!baseline)return ref.set(record);
+  var patch={};
+  Object.keys(record).forEach(function(key){
+    if(JSON.stringify(record[key])!==JSON.stringify(baseline[key]))patch[key]=record[key];
+  });
+  return db.runTransaction(function(tx){
+    return tx.get(ref).then(function(doc){
+      if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
+      var latest=doc.data();
+      Object.keys(patch).forEach(function(key){
+        if(key==='updatedAt'||key==='updatedByUid')return;
+        if(JSON.stringify(latest[key])!==JSON.stringify(baseline[key])&&JSON.stringify(latest[key])!==JSON.stringify(patch[key])){
+          throw new Error('Another person changed '+key+'. Reload the project before saving again.');
+        }
+      });
+      if(Object.keys(patch).length)tx.update(ref,patch);
+      return Object.assign({},latest,patch);
+    });
+  });
+}
 function saveP(p,notifText){
+  var saveBaseline=p._savedProjectSnapshot;
   setSS("saving");
   return withSharedOwnerMetadata(p).then(function(record){
     var testStr=JSON.stringify(record);
@@ -1402,7 +1429,8 @@ function saveP(p,notifText){
       setSS("error");
       return Promise.reject(new Error("Project too large to save with all attachments."));
     }
-    return col.doc(record.id).set(record).then(function(){
+    return persistProjectChanges(record,saveBaseline).then(function(saved){
+      rememberProjectSnapshot(Object.assign(p,saved||record));
       T("Saved!");
       if(notifText){pushNotification(notifText,record.client);showBanner(notifText);}
       setSS("live");
@@ -1411,7 +1439,8 @@ function saveP(p,notifText){
       if(err.code==='unavailable'||err.message.indexOf('network')!==-1||err.message.indexOf('Network')!==-1){
         setSS('error');
         setTimeout(function(){
-          col.doc(record.id).set(record).then(function(){
+          persistProjectChanges(record,saveBaseline).then(function(saved){
+            rememberProjectSnapshot(Object.assign(p,saved||record));
             T('Saved.');setSS('live');
           }).catch(function(){
             T('Save failed — check your connection.');setSS('error');
@@ -1490,7 +1519,7 @@ function _startSyncWithOwner(ownerUid, seeAll){
     }
     projects=[];
     snap.forEach(function(d){
-      var p=d.data();
+      var p=rememberProjectSnapshot(d.data());
       // Strict isolation: user sees ONLY their own projects
       // Team members see their owner's projects (p.userId===ownerUid)
       // NO global seeAll bypass — no account can see all companies
@@ -2132,7 +2161,7 @@ function generateAIEstimate(){
     var _slowWarn=setTimeout(function(){
       var el=document.getElementById('aiLoading');
       if(el&&el.style.display!=='none'){
-        _aiStatus('⏳ Still working... Replit server warming up (up to 30s)');
+        _aiStatus('⏳ Still working... waiting for the app server (up to 30s)');
       }
     },10000);
 
@@ -2164,7 +2193,7 @@ function generateAIEstimate(){
     var blockType=(data.content&&data.content[0]?data.content[0].type:'none');
     if(!text){
       _aiDone();
-      T('AI empty response ('+blockType+') — check Replit logs');
+      T('AI empty response ('+blockType+') — check server logs');
       console.error('[AI] Empty. Response:',JSON.stringify(data).slice(0,300));
       return null;
     }
@@ -2389,7 +2418,9 @@ function generateAIEstimate(){
     questionContext:questionContext,
     messages:[{role:'user',content:originalPrompt}]};
 
-  var shouldGate=isQuestionFlow||shouldUseIntakeGate(originalPrompt);
+  var exclusionsOnly=/^generate\s+(?:standard\s+)?exclusions\b/i.test(originalPrompt);
+  if(exclusionsOnly)generationPayload.mode='estimate-exclusions';
+  var shouldGate=!exclusionsOnly&&(isQuestionFlow||!(e.lineItems||[]).length||shouldUseIntakeGate(originalPrompt));
   if(shouldGate){
     runEstimateRequest(intakePayload).then(function(data){
       if(!data){return;}
@@ -2432,6 +2463,17 @@ function generateAIEstimate(){
     if(!data){return;}
     var parsed=parseAIResponse(data);
     if(!parsed){return;}
+    if(exclusionsOnly){
+      if(parsed.action!=='exclusions'||!Array.isArray(parsed.exclusions)||parsed.exclusions.some(function(x){return typeof x!=='string';}))throw new Error('Invalid exclusions response. Nothing was changed.');
+      var updatedExclusions=(e.exclusions||[]).slice();
+      parsed.exclusions.forEach(function(text){
+        var value=text.trim();if(value&&!updatedExclusions.some(function(old){return normalizeExclusionText(old)===normalizeExclusionText(value);}))updatedExclusions.push(value);
+      });
+      return eCol.doc(e.id).update({exclusions:updatedExclusions}).then(function(){
+        e.exclusions=updatedExclusions;document.getElementById('aiPrompt').value='';
+        renderEstDetailBody(e);T('Proposed exclusions added. Review them before sending the estimate.');
+      });
+    }
     applyEstimateChanges(parsed);
   }).catch(handleAIError);
 }
@@ -2912,7 +2954,7 @@ function checkClientView(){
     // Real-time listener — portal updates automatically when contractor changes data
     col.doc(portalId).onSnapshot(function(doc){
       if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
-      var p=doc.data();
+      var p=rememberProjectSnapshot(doc.data());
 
       // Load owner's settings to get company logo (settings are public-readable for branding)
       function renderWithLogo(est){
@@ -2945,7 +2987,7 @@ function checkClientView(){
     }, function(err){
       col.doc(portalId).get().then(function(doc){
         if(!doc.exists){wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Project not found.</div>';return;}
-        var p=doc.data();
+        var p=rememberProjectSnapshot(doc.data());
         renderProjectPortal(p, null, wrapper);
       });
     });
@@ -3231,7 +3273,7 @@ function openDetail(id){
   document.getElementById("dName").textContent="Loading...";
   col.doc(id).get().then(function(doc){
     if(!doc.exists){document.getElementById("dName").textContent="Not found";return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var i=projects.findIndex(function(x){return x.id===id;});
     if(i>=0)projects[i]=p; else projects.push(p);
     _renderDetail(p);
@@ -3455,7 +3497,7 @@ function updateCombinedWOButton(){
   }
   btn.style.display=n>=2?'block':'none';
   var b=document.getElementById('combinedWOButton');
-  if(b)b.textContent='\u128279 Send Combined Work Order ('+n+' items)';
+  if(b)b.textContent='🔗 Send Combined Work Order ('+n+' items)';
 }
 function doSendCombined(){
   if(_selectedSubItems.length<2){T('Select at least 2 items to send combined.');return;}
@@ -3469,7 +3511,7 @@ function doSendCombined(){
 function renderTabBody(p){
   var html="";
   if(currentTab==="scope"){
-    var wasMigrated=migratePhases(p);if(wasMigrated){col.doc(p.id).set(p);}
+    var wasMigrated=migratePhases(p);if(wasMigrated){persistProjectChanges(p,p._savedProjectSnapshot);}
     var items=p.scopeItems||[];var tB=0,tA=0;items.forEach(function(it){tB+=(parseFloat(it.budget)||0);tA+=(parseFloat(it.actual)||0);});
     if(wasMigrated)html+='<div class="migrate-banner">&#9989; Restored '+items.length+' scope item'+(items.length!==1?"s":"")+'from your previous phase data. Budgets and assigned contractors recovered.</div>';
     html+='<div class="iboxes"><div class="ibox"><div class="ibl">Start</div><div class="ibv">'+fmt(p.startDate)+'</div></div><div class="ibox"><div class="ibl">Target End</div><div class="ibv">'+fmt(p.endDate)+'</div></div></div>';
@@ -3773,7 +3815,7 @@ function renderTabBody(p){
     if(_csb&&_selectedSubItems.length>=2){
       _csb.style.display="block";
       var _cb=_csb.querySelector('button');
-      if(_cb)_cb.textContent='\u128279 Send Combined Work Order ('+_selectedSubItems.length+' items)';
+      if(_cb)_cb.textContent='🔗 Send Combined Work Order ('+_selectedSubItems.length+' items)';
     }
   }
 }
@@ -4215,7 +4257,7 @@ function signCOBtn(btn){
   var name=nameEl.value.trim();
   col.doc(projectId).get().then(function(doc){
     if(!doc.exists)return;
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var co=(p.changeOrders||[])[coIdx];if(!co)return;
     // Mark CO approved
     co.status='Approved';
@@ -4246,7 +4288,7 @@ function signCOBtn(btn){
     ensureApprovedCOFinancialAccounting(p, co, clientAmt, { includeBudget: true });
 
     function doSave(){
-      col.doc(projectId).set(p).then(function(){
+      persistProjectChanges(p,p._savedProjectSnapshot).then(function(){
         pushNotification('Change order "'+co.title+'" approved by '+name+'. Budget updated.');
         var wrapper=document.getElementById('clientWrapper');
         if(wrapper)renderProjectPortal(p,null,wrapper);
@@ -4579,7 +4621,8 @@ function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addP
 function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=document.getElementById('fJobNum')&&document.getElementById('fJobNum').value.trim()?document.getElementById('fJobNum').value.trim():(existing.jobNum||nextJobNumber());
   var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});withSharedOwnerMetadata(p).then(function(record){
   record.userId = record.ownerUid;
-  return col.doc(record.id).set(record).then(function(){
+  return persistProjectChanges(record,existing._savedProjectSnapshot).then(function(saved){
+    record=rememberProjectSnapshot(saved||record);
     var savedIndex=projects.findIndex(function(project){return project.id===record.id;});
     if(savedIndex>=0) projects[savedIndex]=record; else projects.push(record);
     T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
@@ -4595,7 +4638,7 @@ function openSettings(){
   if(!_uid){renderSettingsForm();return;}
   resolveWorkspaceUidForSession(_uid).then(function(workspaceUid){
     var _isOwner=_uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-    var _settingsDoc=_isOwner?'dropdowns':(workspaceUid || _uid || 'dropdowns');
+    var _settingsDoc=workspaceSettingsDoc(workspaceUid || _uid);
     sCol.doc(_settingsDoc).get().then(function(d){
       if(d.exists){
         var data=d.data();
@@ -5647,7 +5690,7 @@ function sendProjectInvoice(i){
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
   else if(email){window.location.href='mailto:'+email+'?subject=Invoice from '+encodeURIComponent(co)+': '+encodeURIComponent(m.name)+'&body='+encodeURIComponent(msg);}
-  else{alert('No client contact info. Add phone or email to this project first.');}
+  else{alert('No client contact info. Add phone or email to this project first.');return;}
   p.paymentMilestones[i].sentAt=Date.now();
   saveP(p);
 }
@@ -5820,7 +5863,7 @@ function checkSubView(){
     wrap.innerHTML='<div style="text-align:center;padding:20px;color:#aaa">Loading...</div>';
     col.doc(pid).onSnapshot(function(doc){
       if(!doc.exists){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Work order not found.</div>';return;}
-      var p=doc.data();p.id=pid;
+      var p=rememberProjectSnapshot(doc.data());p.id=pid;
       var items=idxArr.map(function(i){return {item:(p.scopeItems||[])[i],idx:i};}).filter(function(x){return !!x.item;});
       if(!items.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:#E83A6C">Scope items not found.</div>';return;}
       var totalAmt=items.reduce(function(s,x){return s+(parseFloat(x.item.actual)||0);},0);
@@ -5865,7 +5908,7 @@ function checkSubView(){
   wrap.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading your portal...</div>';
   col.doc(pid).get().then(function(doc){
     if(!doc.exists){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Project not found.</div>';return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var it=(p.scopeItems||[])[sidx];
     if(!it){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Scope item not found.</div>';return;}
     var today=new Date().toISOString().split('T')[0];
@@ -5904,7 +5947,7 @@ function checkSubView(){
       +'<label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px">Issues / Delays</label>'
       +'<textarea id="sIssues" rows="2" placeholder="Any problems..." style="width:100%;padding:10px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;margin-bottom:8px;box-sizing:border-box;resize:vertical"></textarea>'
       +'<label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px">Photos</label>'
-      +'<input type="file" id="sPhoto" accept="image/*" capture="environment" multiple style="margin-bottom:10px;font-size:13px"/>'
+      +'<input type="file" id="sPhoto" accept="image/*" multiple style="margin-bottom:10px;font-size:13px"/>'
       +'<button data-pid="'+pid+'" data-sidx="'+sidx+'" onclick="submitSubLog(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2EAA72;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Save Log</button>'
       +'<div id="sStatus" style="font-size:13px;margin-top:8px;display:none;text-align:center"></div>'
       +'</div>'
@@ -5920,10 +5963,10 @@ function updSubSt(pid,sidx){
   var status=document.getElementById('subSt').value;
   col.doc(pid).get().then(function(doc){
     if(!doc.exists)return;
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     if(p.scopeItems&&p.scopeItems[sidx]){
       p.scopeItems[sidx].complete=status;
-      col.doc(pid).set(p).then(function(){T('Status updated!');});
+      persistProjectChanges(p,p._savedProjectSnapshot).then(function(){T('Status updated!');});
     }
   });
 }
@@ -5936,7 +5979,7 @@ function submitSubLog(pid,sidx){
   var entry={
     date:document.getElementById('sDate').value,
     weather:document.getElementById('sWeather').value.trim(),
-    crew:it&&it.assignTo?it.assignTo:'',
+    crew:'',
     work:work,
     issues:document.getElementById('sIssues').value.trim(),
     photos:[],ts:Date.now(),subScopeIdx:sidx,subEntry:true
@@ -5945,8 +5988,11 @@ function submitSubLog(pid,sidx){
   var files=pi&&pi.files?Array.from(pi.files):[];
   function save(){
     col.doc(pid).get().then(function(doc){
-      if(!doc.exists)return;
-      var p=doc.data();
+      if(!doc.exists)throw new Error('Project not found.');
+      var p=rememberProjectSnapshot(doc.data());
+      var scope=(p.scopeItems||[])[sidx];
+      if(!scope)throw new Error('Assigned scope not found.');
+      entry.crew=scope.assignTo||'';
       p.dailyLogs=p.dailyLogs||[];
       // Check total size — Firestore 1MB limit
       var dataStr=JSON.stringify(p);
@@ -5956,7 +6002,7 @@ function submitSubLog(pid,sidx){
         el.textContent='Saving (photos skipped — project data too large)...';
       }
       p.dailyLogs.push(entry);
-      return col.doc(pid).set(p);
+      return persistProjectChanges(p,p._savedProjectSnapshot);
     }).then(function(){
       el.style.color='#2EAA72';el.textContent='\u2713 Log saved!';
       document.getElementById('sWork').value='';
@@ -6006,7 +6052,7 @@ function checkInvoiceView(){
 
   col.doc(pid).get().then(function(doc){
     if(!doc.exists){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Invoice not found.</div>';return;}
-    var p=doc.data();
+    var p=rememberProjectSnapshot(doc.data());
     var m=(p.paymentMilestones||[])[msIdx];
     if(!m){wrap.innerHTML='<div style="text-align:center;padding:40px;color:#E83A6C">Milestone not found.</div>';return;}
 

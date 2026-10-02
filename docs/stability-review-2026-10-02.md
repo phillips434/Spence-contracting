@@ -68,3 +68,20 @@ See `reported-bugs-and-coverage-2026-10-02.md` for 20 report groups and missing 
 - Added four regressions: edited estimate visibility without a snapshot; legacy shared settings destination; unrelated company isolation; failed workspace lookup without writes.
 - Current local suite: 152 passing. These are local/mocked checks; deployed browser and Firebase permissions validation remain outstanding. The supplied production rules may still reject office writes to company settings.
 - Disappearing Choices, repeated unknown intake answers, and the dedicated AI Exclusions request are still under investigation; this commit does not claim those are fixed.
+
+
+## Reported failures: second fix pass
+
+Local verification now passes 164 tests. JavaScript syntax checks pass. The browser test fixtures have been updated for the new persistence helpers, but the Chromium installation again returned a truncated archive; actual browser execution remains blocked.
+
+Changes:
+- Loaded project records retain an internal, nonserialized baseline. Existing project saves transact only changed fields and reject concurrent edits to the same field. Notes or portal updates preserve newer Choices. This includes project form edits, scope migration, client CO approval, subcontractor status and daily logs. New project creation still creates the whole document.
+- Selection regression fixtures cover cabinet/countertop/backsplash persistence, stale notes saves, and conflicting selection edits. Conflicts require a reload instead of silently overwriting data.
+- New, empty estimates run intake even when their scope begins with `Add`, `Remove`, or another edit word. A kitchen-addition fixture verifies this routing.
+- Intake removes exactly repeated, previously answered questions (ignoring punctuation/case). Unknown answers remain in history for generation assumptions. Semantically different rewordings still require provider/browser validation.
+- AI Exclusions uses its own strict response schema and endpoint mode. The client writes only exclusions, deduplicates suggestions, preserves existing prices/scope/assumptions, and asks the contractor to review proposed exclusions before sending.
+- Subcontractor daily logs no longer reference an undefined `it` variable. Crew comes from the assigned scope; missing projects/scopes report errors. Photo input allows library selection instead of forcing the camera.
+- Invoices without contact information no longer get marked sent. Combined work-order request construction is covered with both scopes and their combined amount. Sending through the device's mail/SMS application still needs live verification.
+- Removed stale Replit troubleshooting text and corrected the combined-work-order button icon.
+
+Remaining release requirements: full authenticated owner/office/client/sub browser checks; Firebase rules and portal security migration; reviewed legacy employee-owned data migration; real provider acceptance cases. This branch is a draft candidate, not a production release or security clearance.

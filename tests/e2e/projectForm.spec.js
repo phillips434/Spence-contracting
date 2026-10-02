@@ -4,7 +4,11 @@ const path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
 const start = html.indexOf('function openAdd(){');
 const end = html.indexOf('function openSettings(){', start);
-const source = html.slice(start, end);
+const helpers=['rememberProjectSnapshot','persistProjectChanges'].map(name=>{
+  const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);
+  return html.slice(a,b);
+}).join('\n');
+const source = helpers+'\n'+html.slice(start, end);
 const fields = ['fClient', 'fClientPhone', 'fClientEmail', 'fJobNum', 'fPO', 'fType', 'fAddress', 'fPm', 'fStart', 'fEnd', 'fBudget', 'fSpent', 'fNotes', 'fStatus'];
 
 test.beforeEach(async ({ page }) => {

@@ -14,6 +14,24 @@ const APP_BUILD_INFO = {
 };
 const AI_BREAKDOWN_EXPERIMENT = false;
 
+function removeAnsweredIntakeQuestions(result,questionContext){
+  if(!result||result.action!=='questions'||!Array.isArray(result.questions))return result;
+  const normalized=q=>String(q||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const answered=new Set();
+  for(const entry of (questionContext&&questionContext.history)||[]){
+    if(typeof entry.answer==='string'&&entry.answer.trim()){
+      for(const q of entry.questions||[])answered.add(normalized(q));
+    }
+  }
+  const questions=result.questions.filter(q=>!answered.has(normalized(q)));
+  if(questions.length===result.questions.length)return result;
+  if(questions.length)return Object.assign({},result,{questions});
+  return {action:'ready',message:'Previous answers retained. Unknown details must remain clearly stated assumptions.'};
+}
+function buildEstimateExclusionsSchema(){
+  return {type:'json_schema',json_schema:{name:'estimate_exclusions',strict:true,schema:{type:'object',additionalProperties:false,required:['action','exclusions','message'],properties:{action:{type:'string',enum:['exclusions']},exclusions:{type:'array',items:{type:'string'}},message:{type:'string'}}}}};
+}
+
 function _round2(n){ return Math.round((parseFloat(n)||0)*100)/100; }
 
 function buildMaterialCompletenessContractText(){
@@ -103,7 +121,7 @@ function buildFlatEstimateGenerateSchema(){
 
 function detectGenerationFailure(data, mode){
   if (!data || typeof data !== 'object') return { failed: false };
-  if (mode !== 'estimate-generate' && mode !== 'change-order-generate') return { failed: false };
+  if (mode !== 'estimate-generate' && mode !== 'change-order-generate' && mode !== 'estimate-exclusions') return { failed: false };
 
   const openaiChoice = (data && data._raw && data._raw.choices && data._raw.choices[0]) ||
     (data && data.choices && data.choices[0]) || null;
@@ -1276,7 +1294,7 @@ app.post("/api/estimate", async (req, res) => {
       const isEstimateIntakeRequest = mode === "estimate-intake";
       const isCOIntakeRequest = mode === "change-order-intake";
       const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
-      const isEstimateRequest = mode === "estimate" || mode === "estimate-generate";
+      const isEstimateRequest = mode === "estimate" || mode === "estimate-generate" || mode === "estimate-exclusions";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
       const isOpenAIRequiredRoute = isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
       console.log("STEP 3 - Internal mode determined", {
@@ -1443,6 +1461,9 @@ app.post("/api/estimate", async (req, res) => {
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
           }
+          if(mode==='estimate-exclusions'){
+            systemPrompt='Return only JSON with action:"exclusions", exclusions (array of strings), and message. Draft proposed exclusions for contractor review for the explicitly requested project. Do not change pricing, line items, scope, or assumptions. Do not duplicate current exclusions. Clearly describe suggestions as proposed exclusions requiring contractor review. Current priced items: '+items+'. Existing exclusions: '+existingExcls;
+          }
           anthropicBody = {
             model: model,
             max_tokens: maxTok,
@@ -1479,6 +1500,7 @@ app.post("/api/estimate", async (req, res) => {
             max_tokens: openaiMaxTokens,
             temperature: 0
           };
+          if(mode==='estimate-exclusions')openaiBody.response_format=buildEstimateExclusionsSchema();
           if (mode === "estimate-generate") {
             openaiBody.max_tokens = 8000;
             openaiBody.response_format = buildFlatEstimateGenerateSchema();
@@ -1876,6 +1898,13 @@ app.post("/api/estimate", async (req, res) => {
             message: generationFailure.message
           });
         }
+        if(mode==='estimate-exclusions'){
+          try{
+            const parsed=JSON.parse(data.content[0].text);
+            if(parsed.action!=='exclusions'||!Array.isArray(parsed.exclusions)||parsed.exclusions.some(x=>typeof x!=='string'))throw new Error('Invalid exclusions shape');
+            return res.status(response.status).json({action:'exclusions',exclusions:parsed.exclusions,message:parsed.message||'Review proposed exclusions before sending.'});
+          }catch(err){return res.status(502).json({error:'Invalid exclusions response. No estimate changes were applied.'});}
+        }
         if (isIntakeRequest && data && data.content && data.content[0] && typeof data.content[0].text === "string") {
           try {
             const rawText = data.content[0].text;
@@ -1889,7 +1918,7 @@ app.post("/api/estimate", async (req, res) => {
             }) : null;
             const finalObject = (() => {
               if (parsedText && (parsedText.action === "questions" || parsedText.action === "ready")) {
-                let finalText = parsedText;
+                let finalText = isEstimateIntakeRequest ? removeAnsweredIntakeQuestions(parsedText,body.questionContext) : parsedText;
                 if (isCOIntakeRequest && finalText.action === "ready" && readinessResult) {
                   finalText = readinessResult;
                 }
@@ -2125,6 +2154,8 @@ if (require.main === module) {
 
 module.exports = {
   app,
+  removeAnsweredIntakeQuestions,
+  buildEstimateExclusionsSchema,
   validateCOIntakeReadiness,
   hasLaborDurationStatement,
   hasResolvedCrewOrLaborHoursFact,
