@@ -2136,6 +2136,23 @@ function shouldUseIntakeGate(prompt){
   if(!text){return false;}
   return !/\b(?:add|remove|delete|markup|exclusion|exclusions|update|edit|change order|change markup|modify)\b/.test(text);
 }
+function recoverOpenEstimate(){
+  var id=currentEstId,uid=currentUser&&currentUser.uid;
+  if(!id||!uid)return Promise.reject(new Error('Open the estimate while signed in, then try again.'));
+  return resolveCurrentOwnerUid().then(function(ownerUid){
+    return eCol.doc(id).get().then(function(doc){
+      if(currentEstId!==id||!currentUser||currentUser.uid!==uid)throw new Error('The active estimate changed. Please try again.');
+      if(!doc.exists)throw new Error('This estimate no longer exists.');
+      var record=doc.data();
+      if(record.userId!==uid&&record.userId!==ownerUid)throw new Error('This estimate is not available to your company.');
+      if(record.converted===true||record.status==='Converted')throw new Error('This estimate has already been converted to a project.');
+      record.id=doc.id||id;
+      var index=estimates.findIndex(function(item){return item.id===id;});
+      if(index>=0)estimates[index]=record;else estimates.push(record);
+      return record;
+    });
+  });
+}
 function generateAIEstimate(){
   var prompt,e,profile,dm,lr,existingItems,existingExcls;
 
@@ -2340,7 +2357,10 @@ function generateAIEstimate(){
   try {
     prompt=document.getElementById('aiPrompt').value.trim();
     if(!prompt){T('Enter a command or job description first.');return;}
-    e=ger();if(!e){T('No estimate loaded.');return;}
+    e=ger();if(!e){
+      T('Reloading this estimate…');
+      return recoverOpenEstimate().then(function(){generateAIEstimate();}).catch(function(err){T(err.message);});
+    }
     var explicitProjectClass=normalizeProjectClass(e.projectClass||'');
     if(!explicitProjectClass){
       var projectSelector=document.getElementById('efProjectClass');
@@ -6304,4 +6324,3 @@ openSettings = function(){
 </script>
 </body>
 </html>
-

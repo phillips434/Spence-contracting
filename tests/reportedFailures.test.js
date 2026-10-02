@@ -6,6 +6,24 @@ const {app,removeAnsweredIntakeQuestions}=require('../server');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);assert(a>=0&&b>a);return html.slice(a,b);}
 const clone=x=>JSON.parse(JSON.stringify(x));
+describe('open estimate recovery after sync loss',()=>{
+  function fixture(record){
+    const c={currentEstId:'deck',currentUser:{uid:'office'},estimates:[],resolveCurrentOwnerUid:async()=> 'owner',
+      eCol:{doc:()=>({get:async()=>({id:'deck',exists:!!record,data:()=>clone(record)})})}};
+    vm.createContext(c);vm.runInContext(source('recoverOpenEstimate'),c);return c;
+  }
+  it('restores the visible company estimate after its cached list is cleared',async()=>{
+    const c=fixture({client:'Phillip',type:'Deck',userId:'owner',lineItems:[]});
+    const result=await c.recoverOpenEstimate();assert.strictEqual(result.id,'deck');assert.strictEqual(c.estimates[0].client,'Phillip');
+  });
+  it('refuses another company record even if public Firestore rules return it',async()=>{
+    const c=fixture({userId:'other-company'});await assert.rejects(c.recoverOpenEstimate(),/not available/);assert.strictEqual(c.estimates.length,0);
+  });
+  it('does not restore deleted or converted estimates',async()=>{
+    await assert.rejects(fixture(null).recoverOpenEstimate(),/no longer exists/);
+    await assert.rejects(fixture({userId:'owner',converted:true}).recoverOpenEstimate(),/converted/);
+  });
+});
 describe('reported selection loss',()=>{
   function fixture(){
     let stored={id:'p1',client:'Client',notes:'',choices:[{category:'Cabinet',item:'Oak'},{category:'Countertop',item:'Quartz'}]};
