@@ -5,7 +5,8 @@
   "scripts": {
     "test": "mocha tests/*.test.js --exit",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "db:migrate": "node scripts/db-migrate.js"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +15,11 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "mocha": "^11.8.0"
   }
 }
-
