@@ -13,7 +13,12 @@ const report={
  selections:b.projects.reduce((s,p)=>s+(p.choices||[]).length,0),
  changeOrders:b.projects.reduce((s,p)=>s+(p.changeOrders||[]).length,0),
  dailyLogs:b.projects.reduce((s,p)=>s+(p.dailyLogs||[]).length,0),
- communications:b.projects.reduce((s,p)=>s+(p.communications||p.communicationLog||[]).length,0),
- costs:b.projects.reduce((s,p)=>s+(p.costs||[]).length,0)
+ communications:b.projects.reduce((s,p)=>s+(p.commsLog||p.communications||p.communicationLog||[]).length,0),
+ costs:b.projects.reduce((s,p)=>s+(p.costs||[]).length,0),
+ scopeItems:b.projects.reduce((s,p)=>s+(p.scopeItems||p.phases||[]).length,0),
+ punchItems:b.projects.reduce((s,p)=>s+(p.punchList||[]).length,0),
+ notesLog:b.projects.reduce((s,p)=>s+(p.notesLog||[]).length,0),
+ projectPaymentMilestones:b.projects.reduce((s,p)=>s+(p.paymentMilestones||[]).length,0),
+ estimatePaymentMilestones:b.estimates.reduce((s,e)=>s+(e.paymentMilestones||[]).length,0)
 };
 console.log(JSON.stringify(report,null,2));
