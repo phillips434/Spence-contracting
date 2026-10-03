@@ -789,6 +789,61 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 var db=firebase.firestore(),auth=firebase.auth();
 db.settings({experimentalAutoDetectLongPolling: true});
 var col,sCol,nCol,eCol,currentUser=null;
+var CD_USE_POSTGRES = true;
+
+function pgAuthHeaders(){
+  if(!currentUser)return Promise.reject(new Error('Not signed in'));
+  return currentUser.getIdToken().then(function(token){return {'Content-Type':'application/json','Authorization':'Bearer '+token};});
+}
+function pgDocSnap(data,id){return {exists:!!data,id:id,data:function(){return data?JSON.parse(JSON.stringify(data)):undefined;}};}
+function pgQuerySnap(docs){
+  docs=Array.isArray(docs)?docs:[];
+  return {empty:docs.length===0,size:docs.length,forEach:function(fn){docs.forEach(function(d){fn(pgDocSnap(d,d.id));});}};
+}
+function mergePatch(target,patch){
+  var out=JSON.parse(JSON.stringify(target||{}));
+  Object.keys(patch||{}).forEach(function(key){
+    var parts=key.split('.'),cur=out;
+    for(var i=0;i<parts.length-1;i++){if(!cur[parts[i]]||typeof cur[parts[i]]!=='object')cur[parts[i]]={};cur=cur[parts[i]];}
+    cur[parts[parts.length-1]]=patch[key];
+  });
+  return out;
+}
+function pgFetchJson(url,options){
+  options=options||{};
+  return pgAuthHeaders().then(function(headers){
+    options.headers=Object.assign({},headers,options.headers||{});
+    return fetch(url,options);
+  }).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('Request failed '+r.status));return j;});});
+}
+function postgresCollection(kind){
+  function list(){return pgFetchJson('/api/data/'+kind).then(function(j){return j.documents||[];});}
+  function doc(id){
+    return {
+      id:id,
+      get:function(){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id)).then(function(j){return pgDocSnap(j.document,id);}).catch(function(err){if(/Not found/.test(err.message))return pgDocSnap(null,id);throw err;});},
+      set:function(data,opts){
+        if(opts&&opts.merge)return this.get().then(function(snap){return save(mergePatch(snap.exists?snap.data():{},data));});
+        return save(Object.assign({},data,{id:id}));
+        function save(value){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(Object.assign({},value,{id:id}))});}
+      },
+      update:function(patch){return this.get().then(function(snap){if(!snap.exists)throw new Error('Record not found');return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(mergePatch(snap.data(),patch))});});},
+      delete:function(){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'DELETE'});},
+      onSnapshot:function(ok,fail){
+        var stopped=false,last='';
+        function poll(){if(stopped)return;doc(id).get().then(function(snap){var sig=JSON.stringify(snap.exists?snap.data():null);if(sig!==last){last=sig;ok(snap);}}).catch(function(e){if(fail)fail(e);});}
+        poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};
+      }
+    };
+  }
+  return {
+    path:'postgres/'+kind,
+    doc:doc,
+    get:function(){return list().then(pgQuerySnap);},
+    orderBy:function(field,direction){return {onSnapshot:function(ok,fail){var stopped=false,last='';function poll(){if(stopped)return;list().then(function(docs){docs.sort(function(a,b){var av=a[field]||'',bv=b[field]||'';var c=String(av).localeCompare(String(bv));return direction==='desc'?-c:c;});var sig=JSON.stringify(docs);if(sig!==last){last=sig;ok(pgQuerySnap(docs));}}).catch(function(e){if(fail)fail(e);});}poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};}};}
+  };
+}
+
 var unsubProjects=null,unsubEstimates=null,unsubNotifs=null;
 var _activeUid=null; // UID guard — prevent duplicate listener init
 
@@ -852,10 +907,10 @@ function initUserCollections(uid){
       showTermsGate(uid);
     }
   }).catch(function(){});
-  col=withSaveFeedback(db.collection('projects'));
+  col=CD_USE_POSTGRES?withSaveFeedback(postgresCollection('projects')):withSaveFeedback(db.collection('projects'));
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
-  eCol=withSaveFeedback(db.collection('estimates'));
+  eCol=CD_USE_POSTGRES?withSaveFeedback(postgresCollection('estimates')):withSaveFeedback(db.collection('estimates'));
 }
 var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2858BD","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
@@ -1499,6 +1554,19 @@ function persistProjectChanges(record,baseline){
   Object.keys(record).forEach(function(key){
     if(!projectFieldEqual(record[key],baseline[key]))patch[key]=record[key];
   });
+  if(CD_USE_POSTGRES){
+    return ref.get().then(function(doc){
+      if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
+      var latest=doc.data();
+      Object.keys(patch).forEach(function(key){
+        if(key==='updatedAt'||key==='updatedByUid')return;
+        if(!projectFieldEqual(latest[key],baseline[key])&&!projectFieldEqual(latest[key],patch[key])){
+          throw new Error('Another person changed '+key+'. Reload the project before saving again.');
+        }
+      });
+      return Object.keys(patch).length?ref.update(patch).then(function(){return Object.assign({},latest,patch);}):latest;
+    });
+  }
   return db.runTransaction(function(tx){
     return tx.get(ref).then(function(doc){
       if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
