@@ -832,7 +832,7 @@ function postgresCollection(kind){
       onSnapshot:function(ok,fail){
         var stopped=false,last='';
         function poll(){if(stopped)return;doc(id).get().then(function(snap){var sig=JSON.stringify(snap.exists?snap.data():null);if(sig!==last){last=sig;ok(snap);}}).catch(function(e){if(fail)fail(e);});}
-        poll();var timer=setInterval(poll,5000);return function(){stopped=true;clearInterval(timer);};
+        poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};
       }
     };
   }
@@ -840,7 +840,7 @@ function postgresCollection(kind){
     path:'postgres/'+kind,
     doc:doc,
     get:function(){return list().then(pgQuerySnap);},
-    orderBy:function(field,direction){return {onSnapshot:function(ok,fail){var stopped=false,last='';function poll(){if(stopped)return;list().then(function(docs){docs.sort(function(a,b){var av=a[field]||'',bv=b[field]||'';var c=String(av).localeCompare(String(bv));return direction==='desc'?-c:c;});var sig=JSON.stringify(docs);if(sig!==last){last=sig;ok(pgQuerySnap(docs));}}).catch(function(e){if(fail)fail(e);});}poll();var timer=setInterval(poll,5000);return function(){stopped=true;clearInterval(timer);};}};}
+    orderBy:function(field,direction){return {onSnapshot:function(ok,fail){var stopped=false,last='';function poll(){if(stopped)return;list().then(function(docs){docs.sort(function(a,b){var av=a[field]||'',bv=b[field]||'';var c=String(av).localeCompare(String(bv));return direction==='desc'?-c:c;});var sig=JSON.stringify(docs);if(sig!==last){last=sig;ok(pgQuerySnap(docs));}}).catch(function(e){if(fail)fail(e);});}poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};}};}
   };
 }
 
