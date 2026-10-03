@@ -403,7 +403,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       <button class="btn-orange" id="btnNew">+ New project</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v213</span></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v214</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v12H3Z"/></svg> Projects</button>
     <button class="nav-tab" id="navEstimates"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg> Estimates</button>
@@ -1072,7 +1072,26 @@ function setSS(s){
   if(lbl)lbl.textContent=text;
   document.querySelectorAll('.cd-save-status').forEach(function(node){node.textContent=text;});
 }
-function nextJobNumber(){var n=DD.nextJobNum||1;DD.nextJobNum=n+1;saveSettingsSilent().catch(function(){});return "JOB-"+String(n).padStart(4,"0");}
+async function nextJobNumber(){
+  var uid=currentUser&&currentUser.uid;if(!uid)throw new Error('Sign in before creating a project.');
+  var workspaceUid=await resolveWorkspaceUidForSession(uid,true);
+  if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
+  var membersSnap=await db.collection('userProfiles').where('ownerUid','==',workspaceUid).get(),members=[];
+  membersSnap.forEach(function(doc){members.push(doc.id);});
+  var snap=await col.get(),floor=1;
+  snap.forEach(function(doc){var record=doc.data();if(!recordBelongsToWorkspace(record,uid,workspaceUid,members))return;
+    // Ignore timestamp-based diagnostic numbers; include ordinary manual year/job numbers.
+    var match=/^(?:JOB-)?(\d{1,6})$/.exec(record.jobNum||'');if(match)floor=Math.max(floor,Number(match[1])+1);
+  });
+  var sequence=sCol.doc('job-number-'+workspaceUid);
+  var n=await db.runTransaction(async function(tx){
+    var saved=await tx.get(sequence),data=saved.exists?saved.data():{};
+    if(!currentUser||currentUser.uid!==uid)throw new Error('Your session changed. Try again.');
+    var value=Math.max(floor,Number(data.nextNumber)||1);
+    tx.set(sequence,{ownerUid:workspaceUid,nextNumber:value+1},{merge:true});return value;
+  });
+  DD.nextJobNum=n+1;return 'JOB-'+String(n).padStart(4,'0');
+}
 function nextEstNumber(){if(typeof estimatesSyncReady!=='undefined'&&!estimatesSyncReady){T('Estimates are still syncing. Please try saving again in a moment.');return null;}var n=Math.max(1,parseInt(DD.nextEstNum,10)||1);(estimates||[]).forEach(function(e){var match=/^EST-(\d+)$/.exec(e.estNum||'');if(match)n=Math.max(n,Number(match[1])+1);});DD.nextEstNum=n+1;saveSettingsSilent().catch(function(){});return "EST-"+String(n).padStart(4,"0");}
 function workspaceSettingsDoc(workspaceUid){
   return workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':workspaceUid;
@@ -2800,7 +2819,7 @@ function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
 function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
 function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
-function convertToProject(){
+async function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
   var calc=calcEstimate(e);
@@ -2823,7 +2842,7 @@ function convertToProject(){
     return{name:m.name,amount:m.amount,pct:m.pct||null,paid:false,dueDate:m.dueDate||""};
   });
 
-  var jobNum=nextJobNumber();
+  var jobNum;try{jobNum=await nextJobNumber();}catch(err){T("Project not created: "+err.message);return;}
   var uid=auth.currentUser?auth.currentUser.uid:"";
   var resolvedProjectOwnerUid = e.ownerUid || e.userId || (currentUser&&currentUser.uid) || uid || "L5XUqfnWrrgbAk18X36XcHDJxnz1";
 
@@ -4846,7 +4865,7 @@ function openAdd(){editId=null;document.getElementById("addPageTitle").textConte
 function openEditProject(){var p=gpr();editId=p.id;document.getElementById("addPageTitle").textContent="Edit Project";document.getElementById("fClient").value=p.client||"";if(document.getElementById("fClientPhone"))document.getElementById("fClientPhone").value=p.clientPhone||"";if(document.getElementById("fClientEmail"))document.getElementById("fClientEmail").value=p.clientEmail||"";document.getElementById("fType").value=p.type||"";document.getElementById("fAddress").value=p.address||"";document.getElementById("fPm").value=p.pm||"";
   if(document.getElementById("fJobNum"))document.getElementById("fJobNum").value=p.jobNum||"";
   if(document.getElementById("fPO"))document.getElementById("fPO").value=p.poNum||"";document.getElementById("fStart").value=p.startDate||"";document.getElementById("fEnd").value=p.endDate||"";document.getElementById("fBudget").value=p.budget||"";document.getElementById("fSpent").value=p.spent||"";document.getElementById("fNotes").value=p.notes||"";populateStatus(p.status);selColor=Math.max(0,COLORS.indexOf(p.color));renderCP();var ap=document.getElementById("addPage");ap.classList.add("show");ap.scrollTop=0;}
-function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=document.getElementById('fJobNum')&&document.getElementById('fJobNum').value.trim()?document.getElementById('fJobNum').value.trim():(existing.jobNum||nextJobNumber());
+async function saveProject(){var client=document.getElementById("fClient").value.trim(),type=document.getElementById("fType").value.trim();if(!client||!type){alert("Client name and project type required.");return;}var id=editId||("p"+Date.now()),existing=editId?(gpr()||{}):{};var jobNum=document.getElementById('fJobNum')&&document.getElementById('fJobNum').value.trim()?document.getElementById('fJobNum').value.trim():existing.jobNum; if(!jobNum){try{jobNum=await nextJobNumber();}catch(err){T('Project not saved: '+err.message);return;}}
   var poNum=document.getElementById('fPO')?document.getElementById('fPO').value.trim():(existing.poNum||'');var p=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',client:client,type:type,address:document.getElementById("fAddress").value.trim(),pm:document.getElementById("fPm").value.trim(),startDate:document.getElementById("fStart").value,endDate:document.getElementById("fEnd").value,budget:parseFloat(document.getElementById("fBudget").value.replace(/,/g,""))||0,spent:parseFloat(document.getElementById("fSpent").value.replace(/,/g,""))||0,status:document.getElementById("fStatus").value,notes:document.getElementById("fNotes").value.trim(),clientPhone:(document.getElementById("fClientPhone")?document.getElementById("fClientPhone").value.trim():""),clientEmail:(document.getElementById("fClientEmail")?document.getElementById("fClientEmail").value.trim():""),color:COLORS[selColor],jobNum:jobNum,poNum:poNum,companyName:DD.companyName||'',companyPhone:DD.companyPhone||'',companyEmail:DD.companyEmail||'',companyAddress:DD.companyAddress||'',companyPaymentInstructions:DD.companyPaymentInstructions||'',logoData:DD.logoData||'',choices:existing.choices||[],scopeItems:existing.scopeItems||[],costs:existing.costs||[],punchList:existing.punchList||[],changeOrders:existing.changeOrders||[],dailyLogs:existing.dailyLogs||[],notesLog:existing.notesLog||[]});reconcileProjectSpent(p);syncProjectCostLedger(p);withSharedOwnerMetadata(p).then(function(record){
   record.userId = record.ownerUid;
   return persistProjectChanges(record,existing._savedProjectSnapshot).then(function(saved){
@@ -5329,7 +5348,7 @@ function backupAllData(){
       return Promise.all([col.get(),eCol.get(),sCol.doc(workspaceSettingsDoc(workspaceUid)).get()]).then(function(results){
         if(!currentUser||currentUser.uid!==uid)throw new Error('Your session changed. Sign in and try again.');
         if(!results[2].exists)throw new Error('Company settings could not be found. Backup was not created.');
-        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v213',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
+        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v214',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
         var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
         if(backupDownloadUrl)URL.revokeObjectURL(backupDownloadUrl);
         backupDownloadUrl=URL.createObjectURL(blob);
