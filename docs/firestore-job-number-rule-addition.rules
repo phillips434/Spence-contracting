@@ -1,17 +1,16 @@
 // Contractor Desk Firestore rule addition for transactional company job numbers.
 //
-// Add this helper and the nested settings match to the existing production
-// ruleset. This is intentionally NOT a complete replacement ruleset because
-// the production rules also contain client-portal and legacy compatibility
-// behavior that must remain intact.
+// IMPORTANT: merge this into the existing production ruleset. Do not deploy
+// this file by itself: production also has client-portal and legacy rules that
+// must remain in place.
 //
-// Purpose:
-// - owner can reserve their company job number
-// - an active linked team member can reserve the same company sequence
-// - nobody from another workspace can read/write that sequence
-// - the sequence document cannot be repurposed for arbitrary settings data
+// Place the helper inside:
+// match /databases/{database}/documents { ... }
 //
-// Expected document:
+// Then place the /settings/{sequenceId} match below alongside the existing
+// top-level collection matches.
+//
+// Expected sequence document:
 // settings/job-number-<ownerUid>
 // { ownerUid: "<ownerUid>", nextNumber: <integer> }
 
@@ -31,16 +30,8 @@ function isActiveWorkspaceMember(ownerUid) {
     );
 }
 
-match /settings/{docId} {
-  // Keep the existing settings rules here.
-
-  match /{ignored=**} {
-    allow read, write: if false;
-  }
-}
-
-// This block belongs at the database document level alongside the existing
-// /settings/{docId} rule. Firestore ORs overlapping match allow expressions.
+// Firestore ORs allow expressions from overlapping match statements, so this
+// can sit beside the existing /settings/{docId} rule without replacing it.
 match /settings/{sequenceId} {
   allow get: if resource.data.ownerUid is string
     && sequenceId == 'job-number-' + resource.data.ownerUid
