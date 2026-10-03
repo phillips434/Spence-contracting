@@ -6,7 +6,9 @@
     "test": "mocha tests/*.test.js --exit",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "db:migrate": "node scripts/db-migrate.js"
+    "db:migrate": "node scripts/db-migrate.js",
+    "db:import-backup": "node scripts/import-company-backup.js",
+    "db:summarize-backup": "node scripts/summarize-company-backup.js"
   },
   "keywords": [],
   "author": "",
