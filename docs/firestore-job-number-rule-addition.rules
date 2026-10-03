@@ -1,0 +1,64 @@
+// Contractor Desk Firestore rule addition for transactional company job numbers.
+//
+// Add this helper and the nested settings match to the existing production
+// ruleset. This is intentionally NOT a complete replacement ruleset because
+// the production rules also contain client-portal and legacy compatibility
+// behavior that must remain intact.
+//
+// Purpose:
+// - owner can reserve their company job number
+// - an active linked team member can reserve the same company sequence
+// - nobody from another workspace can read/write that sequence
+// - the sequence document cannot be repurposed for arbitrary settings data
+//
+// Expected document:
+// settings/job-number-<ownerUid>
+// { ownerUid: "<ownerUid>", nextNumber: <integer> }
+
+function isActiveWorkspaceMember(ownerUid) {
+  return request.auth != null
+    && (
+      request.auth.uid == ownerUid
+      || (
+        exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.ownerUid == ownerUid
+        && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.plan == 'team'
+        && (
+          !('status' in get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data)
+          || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.status == 'active'
+        )
+      )
+    );
+}
+
+match /settings/{docId} {
+  // Keep the existing settings rules here.
+
+  match /{ignored=**} {
+    allow read, write: if false;
+  }
+}
+
+// This block belongs at the database document level alongside the existing
+// /settings/{docId} rule. Firestore ORs overlapping match allow expressions.
+match /settings/{sequenceId} {
+  allow get: if resource.data.ownerUid is string
+    && sequenceId == 'job-number-' + resource.data.ownerUid
+    && isActiveWorkspaceMember(resource.data.ownerUid);
+
+  allow create: if request.resource.data.keys().hasOnly(['ownerUid', 'nextNumber'])
+    && request.resource.data.ownerUid is string
+    && request.resource.data.nextNumber is int
+    && request.resource.data.nextNumber >= 1
+    && sequenceId == 'job-number-' + request.resource.data.ownerUid
+    && isActiveWorkspaceMember(request.resource.data.ownerUid);
+
+  allow update: if request.resource.data.keys().hasOnly(['ownerUid', 'nextNumber'])
+    && request.resource.data.ownerUid == resource.data.ownerUid
+    && request.resource.data.nextNumber is int
+    && request.resource.data.nextNumber >= resource.data.nextNumber
+    && sequenceId == 'job-number-' + resource.data.ownerUid
+    && isActiveWorkspaceMember(resource.data.ownerUid);
+
+  allow delete: if false;
+}
