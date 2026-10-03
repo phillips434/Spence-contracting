@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
 const app = express();
+const { installPostgresRoutes } = require("./lib/postgresBackend");
 const PORT = process.env.PORT || 5000;
 const APP_BUILD_INFO = {
   environment: process.env.APP_ENVIRONMENT || process.env.NODE_ENV || 'local',
@@ -2141,6 +2142,8 @@ app.post("/api/estimate", async (req, res) => {
     return res.status(500).json({ error: "Failed to reach AI provider." });
   }
 });
+
+installPostgresRoutes(app);
 
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
