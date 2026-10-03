@@ -1554,6 +1554,19 @@ function persistProjectChanges(record,baseline){
   Object.keys(record).forEach(function(key){
     if(!projectFieldEqual(record[key],baseline[key]))patch[key]=record[key];
   });
+  if(CD_USE_POSTGRES){
+    return ref.get().then(function(doc){
+      if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
+      var latest=doc.data();
+      Object.keys(patch).forEach(function(key){
+        if(key==='updatedAt'||key==='updatedByUid')return;
+        if(!projectFieldEqual(latest[key],baseline[key])&&!projectFieldEqual(latest[key],patch[key])){
+          throw new Error('Another person changed '+key+'. Reload the project before saving again.');
+        }
+      });
+      return Object.keys(patch).length?ref.update(patch).then(function(){return Object.assign({},latest,patch);}):latest;
+    });
+  }
   return db.runTransaction(function(tx){
     return tx.get(ref).then(function(doc){
       if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
