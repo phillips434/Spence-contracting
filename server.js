@@ -2144,13 +2144,15 @@ app.post("/api/estimate", async (req, res) => {
   }
 });
 
+// Register data APIs before the SPA fallback so API responses remain JSON.
+installPostgresRoutes(app);
+installDataRoutes(app);
+
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 if (require.main === module) {
-  installPostgresRoutes(app);
-installDataRoutes(app);
 app.listen(PORT, "0.0.0.0", () => {
     console.log("Server running on port", PORT);
   });
