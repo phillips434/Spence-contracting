@@ -1749,7 +1749,7 @@ function _startSyncWithOwner(ownerUid, seeAll, memberUids){
       // Strict isolation: user sees ONLY their own projects
       // Team members see their owner's projects (p.userId===ownerUid)
       // NO global seeAll bypass — no account can see all companies
-      if(recordBelongsToWorkspace(p,uid,ownerUid,memberUids)){
+      if(CD_USE_POSTGRES || recordBelongsToWorkspace(p,uid,ownerUid,memberUids)){
         projects.push(p);
       }
     });
@@ -1769,7 +1769,7 @@ function _startSyncWithOwner(ownerUid, seeAll, memberUids){
       var e=d.data();
       // Exclude converted estimates — they live as projects now
       if(e.converted===true||e.status==='Converted') return;
-      if(recordBelongsToWorkspace(e,uid,ownerUid,memberUids)){
+      if(CD_USE_POSTGRES || recordBelongsToWorkspace(e,uid,ownerUid,memberUids)){
         estimates.push(e);
       }
     });
