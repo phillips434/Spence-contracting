@@ -1703,20 +1703,36 @@ function delTeamMember(i){
 
 function startSync(){
   var uid=currentUser?currentUser.uid:null;
+  if(CD_USE_POSTGRES){
+    if(unsubProjects){unsubProjects();unsubProjects=null;}
+    if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
+    var stopped=false;
+    function poll(){
+      if(stopped)return;
+      Promise.all([pgFetchJson('/api/data/projects'),pgFetchJson('/api/data/estimates')]).then(function(r){
+        if(stopped)return;
+        projects=(r[0].documents||[]).map(function(p){return rememberProjectSnapshot(p);});
+        estimates=(r[1].documents||[]).filter(function(e){return !(e.converted===true||e.status==='Converted');});
+        estimatesSyncReady=true;
+        setSS('live');
+        renderAll();
+        if(mainTabMode==='estimates')renderEstCards();
+      }).catch(function(err){console.error('PostgreSQL sync error:',err);setSS('error');});
+    }
+    poll();
+    var timer=setInterval(poll,15000);
+    unsubProjects=function(){stopped=true;clearInterval(timer);};
+    unsubEstimates=function(){};
+    return;
+  }
   var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
-
-  // Check if user is a team member — if so, load their owner's data
   db.collection('userProfiles').doc(uid).get().then(function(doc){
     var data=doc.exists?doc.data():{};
     var ownerUid=isOwner?uid:(data.ownerUid||uid);
-    // seeAll: only owner OR confirmed plan='team' with ownerUid from that owner
     var isVerifiedTeam=!isOwner&&data.plan==='team'&&data.ownerUid&&data.ownerUid!==uid;
-    _startSyncWithOwner(ownerUid, isOwner||isVerifiedTeam);
-  }).catch(function(){
-    _startSyncWithOwner(uid, isOwner);
-  });
+    _startSyncWithOwner(ownerUid,isOwner||isVerifiedTeam);
+  }).catch(function(){_startSyncWithOwner(uid,isOwner);});
 }
-
 function recordBelongsToWorkspace(record,uid,ownerUid,memberUids){
   if((memberUids||[]).indexOf(record.userId)!==-1 && (!record.ownerUid||record.ownerUid===record.userId||record.ownerUid===ownerUid))return true;
   if(record.ownerUid && record.ownerUid!==ownerUid && record.ownerUid!==uid)return false;
