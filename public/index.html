@@ -5999,9 +5999,9 @@ function showGettingStartedResume(){
 function pauseGettingStarted(){hideGettingStarted();showGettingStartedResume();}
 function tryGettingStartedStep(){
   var target=GETTING_STARTED_STEPS[guideStep].target;pauseGettingStarted();
-  if(target==='settings')openSettings();
+  if(target==='settings'){closePage('addPage');closePage('estFormPage');openSettings();}
   if(target==='project'){closePage('settingsPage');switchMainTab('projects');openAdd();}
-  if(target==='estimates'){closePage('settingsPage');switchMainTab('estimates');}
+  if(target==='estimates'){closePage('settingsPage');closePage('addPage');closePage('estFormPage');switchMainTab('estimates');}
   guideStep=Math.min(guideStep+1,GETTING_STARTED_STEPS.length-1);localStorage.setItem(gettingStartedKey(),String(guideStep));
 }
 function finishGettingStarted(){
