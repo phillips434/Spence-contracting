@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-04T17:12:38.988Z",
+  "runtime": "Playwright 1.55.0 Chromium",
+  "fixtureOnly": true,
+  "liveSignup": false,
+  "checks": [
+    {
+      "name": "mobile signup tab exposes the actual name, company, email, password, and agreement controls",
+      "ok": true
+    },
+    {
+      "name": "agreement gate and required-name validation stop identity-provider calls",
+      "ok": true
+    },
+    {
+      "name": "provider failure is visible and clears the loading state",
+      "ok": true
+    },
+    {
+      "name": "new-owner projects view renders the welcome checklist without stray text",
+      "ok": true
+    },
+    {
+      "name": "checklist actions open company setup and the first-project form",
+      "ok": true
+    },
+    {
+      "name": "saved setup values render completed steps, and skipping retains the first-project action",
+      "ok": true
+    },
+    {
+      "name": "invited teammates and empty filtered views never receive owner onboarding",
+      "ok": true
+    }
+  ],
+  "passed": 7,
+  "failed": 0,
+  "ok": true
+}
