@@ -817,7 +817,7 @@ function pgFetchJson(url,options){
   }).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('Request failed '+r.status));return j;});});
 }
 function postgresCollection(kind){
-  function list(){return pgFetchJson('/api/data/'+kind).then(function(j){return j.documents||[];});}
+  function list(){return pgFetchJson('/api/data/'+kind).then(function(j){var docs=j.documents||[];console.log('[CD PG DIAG]',kind,'received',docs.length);return docs;});}
   function doc(id){
     return {
       id:id,
