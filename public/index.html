@@ -1417,13 +1417,14 @@ function pgCompanySession(force){
 }
 function resolveCurrentOwnerUid(){
   var uid=currentUser&&currentUser.uid?currentUser.uid:null;
-  if(!uid){return Promise.resolve(null);}
-  if(uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(uid);}
-  return db.collection('userProfiles').doc(uid).get().then(function(doc){
-    var data=doc.exists?doc.data():{};
-    return (data && data.ownerUid) || uid;
+  if(!uid)return Promise.resolve(null);
+  return pgCompanySession().then(function(sess){
+    if(sess&&sess.known&&sess.workspaceOwnerUid)return sess.workspaceOwnerUid;
+    if(uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1')return uid;
+    return db.collection('userProfiles').doc(uid).get().then(function(doc){var d=doc.exists?doc.data():{};return (d&&d.ownerUid)||uid;}).catch(function(){return uid;});
   }).catch(function(){
-    return uid;
+    if(uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1')return uid;
+    return db.collection('userProfiles').doc(uid).get().then(function(doc){var d=doc.exists?doc.data():{};return (d&&d.ownerUid)||uid;}).catch(function(){return uid;});
   });
 }
 function resolveWorkspaceUidForSession(uid,failClosed){
