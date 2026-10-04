@@ -1,5 +1,5 @@
 {
-  "runId": "ace2c220149647fe",
+  "runId": "6107e53e49699bf2",
   "identityProvider": "simulated Firebase lookup",
   "database": "real PostgreSQL",
   "agreements": "nonbinding fixtures",
@@ -99,6 +99,14 @@
     {
       "name": "owner reactivation restores the established membership and company",
       "ok": true
+    },
+    {
+      "name": "new trial signup creates its own company with a server-controlled identity and trial expiry",
+      "ok": true
+    },
+    {
+      "name": "new trial reloads isolated empty records and its own settings and numbering",
+      "ok": true
     }
   ],
   "rolledBack": true,
@@ -129,7 +137,7 @@
     "team_invites",
     "users"
   ],
-  "passed": 24,
+  "passed": 26,
   "failed": 0,
   "ok": true
 }

@@ -45,7 +45,7 @@ The company settings `team` roster is empty in the source. This is separate from
 
 ## Validation and limits
 
-`npm test`: **245 passing**. Browser inline JavaScript and changed server modules passed syntax checks. Tests cover decoding fidelity, company isolation, revoked users, invitation identity and roles, signatures, immutable amounts, duplicate change-order accounting, scope restrictions, projections, token revocation, and maintenance payload preservation.
+`npm test`: **249 passing**. Browser inline JavaScript and changed server modules passed syntax checks. Tests cover decoding fidelity, company isolation, revoked users, invitation identity and roles, signatures, immutable amounts, duplicate change-order accounting, scope restrictions, projections, token revocation, and maintenance payload preservation.
 
 Live production browser checks confirmed projects, estimates, Team Access, company settings, and all four existing public page types render. QA estimate total $1,632 and QA invoice amount $100 matched the owner views. The QA subcontractor's unchanged Complete status returned a successful PostgreSQL action response; the subsequent full source comparison remained exact. Share-link creation returned HTTP 200 and the UI reported Link copied.
 
@@ -67,3 +67,12 @@ The actual Express route modules were exercised against the production PostgreSQ
 The first database run exposed an app-field normalization error: `poNum` and `tax` were absent from the normalized PO/tax mapping. Both ordinary saves and the backup importer now support the app fields, preserving empty PO values and zero tax. Migration 007 rebuilt only the two derived columns from preserved payloads. At 15:25:36 UTC it corrected 36 project PO columns and 107 estimate tax columns. Full-table fingerprints excluding only those two columns proved that all payloads, timestamps, child rows and other tables remained unchanged. The final rollback-only route rerun passed all 24 checks, and the full local suite passed 245 tests.
 
 The separate three-test Playwright project-form suite could not launch: its Chromium executable is not installed in this execution environment. These tests were not counted as passes. Live cloud-browser production checks and the local project-form unit coverage remain separate evidence. Live Firebase signup/invitation acceptance with a real new account remains unverified; only the actual application/database acceptance path was exercised with simulated provider identities.
+
+
+## Signup verification follow-up — October 4, 15:50 UTC
+
+The expanded actual-route PostgreSQL run passed **26/26 checks**, including creation of a new trial company, authenticated email binding, server-controlled 14-day expiry, owner membership, initial settings and numbering, isolated empty records on reload, and refusal of access to another company. The transaction rolled back, and every public table retained identical full-row fingerprints and counts. The JSON evidence now contains this latest run.
+
+Four additional frontend signup tests run the app's actual signup functions and PostgreSQL adapters with a simulated Firebase provider. They verify the agreement gate prevents provider calls, invited users bind through auth.currentUser before the session callback, users without invitations save trial profiles through the self-identity endpoint, and provider failures do not write profiles or invitations. The full local suite now passes **249 tests**.
+
+Attempted to install Chromium with the official Playwright installer. The download returned an invalid/truncated archive (ZIP central-directory signature missing), so the separate three-test browser suite remains blocked and is not counted as passing. The same three project-form scenarios pass in the existing Mocha fixture suite. No real new Firebase account was created, and no real signup agreement was accepted. A real account test requires the user to enter a new password and accept the Terms, Privacy Policy and Beta Agreement.
