@@ -7,7 +7,7 @@ function source(name) {
   const start = html.indexOf('function ' + name + '(');
   const end = html.indexOf('\nfunction ', start + 1);
   assert.ok(start >= 0 && end > start, 'Missing function ' + name);
-  return html.slice(start, end);
+  return html.slice(html.slice(start-6,start)==='async '?start-6:start, end);
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function fixture(uid = 'office') {

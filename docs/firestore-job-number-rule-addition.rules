@@ -1,0 +1,55 @@
+// Contractor Desk Firestore rule addition for transactional company job numbers.
+//
+// IMPORTANT: merge this into the existing production ruleset. Do not deploy
+// this file by itself: production also has client-portal and legacy rules that
+// must remain in place.
+//
+// Place the helper inside:
+// match /databases/{database}/documents { ... }
+//
+// Then place the /settings/{sequenceId} match below alongside the existing
+// top-level collection matches.
+//
+// Expected sequence document:
+// settings/job-number-<ownerUid>
+// { ownerUid: "<ownerUid>", nextNumber: <integer> }
+
+function isActiveWorkspaceMember(ownerUid) {
+  return request.auth != null
+    && (
+      request.auth.uid == ownerUid
+      || (
+        exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.ownerUid == ownerUid
+        && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.plan == 'team'
+        && (
+          !('status' in get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data)
+          || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.status == 'active'
+        )
+      )
+    );
+}
+
+// Firestore ORs allow expressions from overlapping match statements, so this
+// can sit beside the existing /settings/{docId} rule without replacing it.
+match /settings/{sequenceId} {
+  allow get: if resource.data.ownerUid is string
+    && sequenceId == 'job-number-' + resource.data.ownerUid
+    && isActiveWorkspaceMember(resource.data.ownerUid);
+
+  allow create: if request.resource.data.keys().hasOnly(['ownerUid', 'nextNumber'])
+    && request.resource.data.ownerUid is string
+    && request.resource.data.nextNumber is int
+    && request.resource.data.nextNumber >= 1
+    && sequenceId == 'job-number-' + request.resource.data.ownerUid
+    && isActiveWorkspaceMember(request.resource.data.ownerUid);
+
+  allow update: if request.resource.data.keys().hasOnly(['ownerUid', 'nextNumber'])
+    && request.resource.data.ownerUid == resource.data.ownerUid
+    && request.resource.data.nextNumber is int
+    && request.resource.data.nextNumber >= resource.data.nextNumber
+    && sequenceId == 'job-number-' + resource.data.ownerUid
+    && isActiveWorkspaceMember(resource.data.ownerUid);
+
+  allow delete: if false;
+}
