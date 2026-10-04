@@ -40,10 +40,13 @@ describe('project form persistence', () => {
   it('preserves selections when editing and updates the existing cached record', async () => {
     const { c, nodes } = fixture();
     c.projects.push({ id: 'existing', client: 'Old name', type: 'Kitchen', choices: [{ category: 'Tile', item: 'Porcelain' }] });
-    c.currentId = 'existing'; c.openEditProject(); nodes.fClient.value = 'Updated client';
+    c.currentId = 'existing'; c.openEditProject(); nodes.fClient.value = 'Updated client'; nodes.fPO.value = 'UPDATED-PO';
     c.saveProject(); await flush();
     assert.strictEqual(c.projects.length, 1);
     assert.strictEqual(c.projects[0].client, 'Updated client');
+    assert.strictEqual(c.openedProject.client, 'Updated client');
+    assert.strictEqual(c.openedProject.poNum, 'UPDATED-PO');
     assert.strictEqual(c.projects[0].choices[0].item, 'Porcelain');
   });
 });
+

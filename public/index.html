@@ -4997,11 +4997,7 @@ function saveProject(){var client=document.getElementById("fClient").value.trim(
     record=rememberProjectSnapshot(saved||record);
     var savedIndex=projects.findIndex(function(project){return project.id===record.id;});
     if(savedIndex>=0) projects[savedIndex]=record; else projects.push(record);
-    T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client,client,id);document.getElementById("addPage").classList.remove("show");currentId=id;if(editId){
-    // Existing edit flow should keep its current behavior.
-  } else {
-    openDetail(id);
-  }}).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});
+    T(editId?"Updated!":"Added! "+jobNum);pushNotification(editId?"Project '"+client+"' updated":"New project "+jobNum+": "+client,client,id);document.getElementById("addPage").classList.remove("show");currentId=id;openDetail(id);}).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});
 }).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
