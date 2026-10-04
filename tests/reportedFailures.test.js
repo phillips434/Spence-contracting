@@ -47,7 +47,7 @@ describe('open estimate recovery after sync loss',()=>{
 describe('reported selection loss',()=>{
   function fixture(){
     let stored={id:'p1',client:'Client',notes:'',choices:[{category:'Cabinet',item:'Oak'},{category:'Countertop',item:'Quartz'}]};
-    const c={col:{doc:id=>({id,set:async value=>{stored=clone(value);}})},db:{runTransaction:async fn=>fn({get:async()=>({exists:true,data:()=>clone(stored)}),update:(_ref,patch)=>{stored=Object.assign(stored,clone(patch));}})}};
+    const c={CD_USE_POSTGRES:false,col:{doc:id=>({id,set:async value=>{stored=clone(value);}})},db:{runTransaction:async fn=>fn({get:async()=>({exists:true,data:()=>clone(stored)}),update:(_ref,patch)=>{stored=Object.assign(stored,clone(patch));}})}};
     vm.createContext(c);for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges'])vm.runInContext(source(name),c);
     return {c,read:()=>clone(stored),remote:patch=>{stored=Object.assign(stored,clone(patch));}};
   }
