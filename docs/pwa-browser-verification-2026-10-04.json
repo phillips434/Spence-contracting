@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-04T16:46:52.593Z",
+  "runtime": "Playwright 1.55.0 Chromium",
+  "fixtureOnly": true,
+  "checks": [
+    {
+      "name": "actual registration loads the same-origin worker without discarding an initial draft",
+      "ok": true
+    },
+    {
+      "name": "online API data and shared-link navigation are absent from all shell caches",
+      "ok": true
+    },
+    {
+      "name": "offline root restores only the static shell and API data remains unavailable",
+      "ok": true
+    }
+  ],
+  "passed": 3,
+  "failed": 0,
+  "ok": true
+}
