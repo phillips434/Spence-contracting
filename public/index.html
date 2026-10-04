@@ -5130,6 +5130,8 @@ auth.onAuthStateChanged(function(user){
   // Reset DD before loading new user's settings — prevents prior session bleed
   DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
   projects=[];estimates=[];notifications=[];unreadCount=0;
+  activeFilter='All';projectWorkView='work';estimateWorkView='work';estimatesSyncReady=false;
+  ['searchInput','estimateSearch'].forEach(function(id){var input=document.getElementById(id);if(input)input.value='';});
   initUserCollections(user.uid);
   db.collection('userProfiles').doc(user.uid).get().then(function(doc){
     var data = doc.exists ? (doc.data() || {}) : {};
@@ -5632,26 +5634,24 @@ function checkTrialStatus(user, cb){
     if(!doc.exists){
       if(user.uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){
         // Owner account — create owner profile
-        db.collection('userProfiles').doc(user.uid).set({
+        return db.collection('userProfiles').doc(user.uid).set({
           name: user.displayName||'Phillip',
           company:'Contractor Desk',
           email:user.email||'',
           trialEnd:Date.now()+(365*24*60*60*1000),
           createdAt:Date.now(),
           plan:'owner'
-        });
-        cb(true);
+        }).then(function(){cb(true);}).catch(function(){cb(false,'access-unavailable');});
       } else {
         // New user — create trial profile if not already done by signUp()
-        db.collection('userProfiles').doc(user.uid).set({
+        return db.collection('userProfiles').doc(user.uid).set({
           name:user.displayName||user.email||'',
           company:'',
           email:user.email||'',
           trialEnd:Date.now()+(14*24*60*60*1000),
           createdAt:Date.now(),
           plan:'trial'
-        });
-        cb(true);
+        }).then(function(){cb(true);}).catch(function(){cb(false,'access-unavailable');});
       }
       return;
     }
