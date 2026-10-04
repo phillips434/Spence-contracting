@@ -1428,20 +1428,16 @@ function resolveCurrentOwnerUid(){
   });
 }
 function resolveWorkspaceUidForSession(uid,failClosed){
-  var activeUid = uid || (currentUser && currentUser.uid) || null;
-  if(!activeUid){return Promise.resolve(null);}
-  if(activeUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'){return Promise.resolve(activeUid);}
-
-  return db.collection('userProfiles').doc(activeUid).get().then(function(doc){
-    var data = doc.exists ? (doc.data() || {}) : {};
-    var profilePlan = data && data.plan ? String(data.plan).toLowerCase() : '';
-    var profileOwnerUid = data && data.ownerUid ? data.ownerUid : null;
-
-    if(profilePlan === 'team' && profileOwnerUid && profileOwnerUid !== activeUid){
-      return profileOwnerUid;
-    }
-
-    return activeUid;
+  var activeUid=uid||(currentUser&&currentUser.uid)||null;
+  if(!activeUid)return Promise.resolve(null);
+  return pgCompanySession().then(function(sess){
+    if(sess&&sess.known&&sess.workspaceOwnerUid)return sess.workspaceOwnerUid;
+    if(activeUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1')return activeUid;
+    return db.collection('userProfiles').doc(activeUid).get().then(function(doc){
+      var data=doc.exists?(doc.data()||{}):{};
+      var plan=data.plan?String(data.plan).toLowerCase():'';
+      return (plan==='team'&&data.ownerUid&&data.ownerUid!==activeUid)?data.ownerUid:activeUid;
+    });
   }).catch(function(err){
     if(failClosed)throw err;
     return activeUid;
