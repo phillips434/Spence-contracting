@@ -1,0 +1,6 @@
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+function api(query){const saved=[];const c={module:{exports:{}},require:()=>({transact:async fn=>fn({query}),saveProjectDocument:async(_,cid,p)=>saved.push({cid,p}),saveEstimateDocument:async(_,cid,p)=>saved.push({cid,p})})};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/batchApi'),'utf8'),c);return {...c.module.exports,saved};}
+describe('PostgreSQL maintenance batches',()=>{
+ it('merges record updates inside the authorized company without losing photos or costs',async()=>{const a=api(async(sql,values)=>{assert.deepStrictEqual(Array.from(values),['company','p']);return{rows:[{legacy_payload:{photos:['existing'],costs:[{actualAmt:20}]}}]};});await a.saveBatch('company',[{kind:'projects',method:'update',id:'p',data:{userId:'owner'}}]);assert.strictEqual(a.saved[0].cid,'company');assert.deepStrictEqual(a.saved[0].p.photos,['existing']);assert.deepStrictEqual(a.saved[0].p.costs,[{actualAmt:20}]);});
+ it('rejects unsupported tables and deletion operations before any write',async()=>{const a=api();for(const op of [{kind:'users',method:'set'},{kind:'projects',method:'delete'}])await assert.rejects(a.saveBatch('company',[{...op,id:'p',data:{}}]),/Invalid batch operation/);assert.strictEqual(a.saved.length,0);});
+});

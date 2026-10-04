@@ -679,9 +679,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       </select>
     </div>
     <div class="wcard" id="adminCardRestore" style="display:none;border:2px solid #2858BD;background:#EEF2FF">
-      <div style="font-size:14px;font-weight:700;color:#2858BD;margin-bottom:6px">&#128101; Restore Team from Firebase</div>
-      <div style="font-size:12px;color:#2858BD;margin-bottom:12px;line-height:1.6">If your subs and employees aren't showing, tap below to force-reload your team list directly from Firebase.</div>
-      <button class="btn-dark" style="background:#2858BD;margin-bottom:10px" onclick="forceLoadTeam()">&#128101; Reload Team from Firebase</button>
+      <div style="font-size:14px;font-weight:700;color:#2858BD;margin-bottom:6px">&#128101; Reload Saved Team</div>
+      <div style="font-size:12px;color:#2858BD;margin-bottom:12px;line-height:1.6">If your subs and employees aren't showing, tap below to reload your saved company team list.</div>
+      <button class="btn-dark" style="background:#2858BD;margin-bottom:10px" onclick="forceLoadTeam()">&#128101; Reload Saved Team</button>
       <div id="teamLoadStatus" style="font-size:13px;display:none;margin-top:6px;font-weight:600;line-height:1.5"></div>
     </div>
     <div class="wcard" id="adminCardPhase" style="display:none;border:2px solid #E8B43A;background:#FFFBF0">
@@ -792,8 +792,8 @@ var col,sCol,nCol,eCol,currentUser=null;
 var CD_USE_POSTGRES = true;
 
 function pgAuthHeaders(){
-  if(!currentUser)return Promise.reject(new Error('Not signed in'));
-  return currentUser.getIdToken().then(function(token){return {'Content-Type':'application/json','Authorization':'Bearer '+token};});
+  var user=currentUser||auth.currentUser;if(!user)return Promise.reject(new Error('Not signed in'));
+  return user.getIdToken().then(function(token){return {'Content-Type':'application/json','Authorization':'Bearer '+token};});
 }
 function pgDocSnap(data,id){return {exists:!!data,id:id,data:function(){return data?JSON.parse(JSON.stringify(data)):undefined;}};}
 function pgQuerySnap(docs){
@@ -817,11 +817,25 @@ function pgFetchJson(url,options){
     return fetch(url,options);
   }).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('Request failed '+r.status));return j;});});
 }
+// Public views read PostgreSQL and submit only their permitted action.
+function publicPortalQuery(){
+  var p=new URLSearchParams(window.location.search),mode=['est','portal','sub','invoice'].find(function(k){return p.has(k);});
+  var q=new URLSearchParams({mode:mode||'',root:p.get(mode)||''});
+  ['token','scope','scopes','ms'].forEach(function(k){if(p.has(k))q.set(k,p.get(k));});return q.toString();
+}
+function publicPortalRequest(path,options){return fetch(path+'?'+publicPortalQuery(),Object.assign({cache:'no-store',headers:{'Content-Type':'application/json'}},options||{})).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Shared view unavailable');return j;});});}
+function publicPortalAction(kind,id,body){return publicPortalRequest('/api/public/actions/'+kind+'/'+encodeURIComponent(id),{method:'POST',body:JSON.stringify(body)});}
+function publicPostgresCollection(kind){return {doc:function(id){var ref={get:function(){return publicPortalRequest('/api/public/records/'+kind+'/'+encodeURIComponent(id)).then(function(j){return pgDocSnap(j.document,id);});}};ref.onSnapshot=function(next,error){var stopped=false,busy=false,last='';function poll(){if(stopped||busy)return;busy=true;ref.get().then(function(d){var signature=JSON.stringify(d.data());if(!stopped&&signature!==last){last=signature;next(d);}}).catch(function(e){if(!stopped&&error)error(e);}).finally(function(){busy=false;});}poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};};return ref;}};}
+var preparedSharedLinks={};
+function sharedLinkKey(mode,id,scope){return JSON.stringify([mode,id,scope||{}]);}
+function prepareSharedLink(mode,id,scope,retry){var key=sharedLinkKey(mode,id,scope);if(preparedSharedLinks[key])return false;pgFetchJson('/api/data/share',{method:'POST',body:JSON.stringify({mode:mode,id:id,scope:scope||{}})}).then(function(j){preparedSharedLinks[key]=window.location.origin+window.location.pathname+'?'+j.query;retry();}).catch(function(e){T('Could not create shared link: '+e.message);});return true;}
+function preparedSharedLink(mode,id,scope){return preparedSharedLinks[sharedLinkKey(mode,id,scope)];}
+
 function postgresCollection(kind){
   function list(){return pgFetchJson('/api/data/'+kind).then(function(j){var docs=j.documents||[];var lbl=document.getElementById('syncLabel');if(lbl)lbl.textContent='PG '+kind+': '+docs.length+' received';pgFetchJson('/api/data/client-diagnostic',{method:'POST',body:JSON.stringify({kind:kind,count:docs.length})}).catch(function(){});return docs;}).catch(function(err){var lbl=document.getElementById('syncLabel');if(lbl)lbl.textContent='PG '+kind+' ERROR: '+(err&&err.message?err.message:String(err));pgFetchJson('/api/data/client-diagnostic',{method:'POST',body:JSON.stringify({kind:kind,count:0,error:err&&err.message?err.message:String(err)})}).catch(function(){});throw err;});}
   function doc(id){
     return {
-      id:id,
+      id:id,path:'postgres/'+kind+'/'+id,_pgKind:kind,
       get:function(){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id)).then(function(j){return pgDocSnap(j.document,id);}).catch(function(err){if(/Not found/.test(err.message))return pgDocSnap(null,id);throw err;});},
       set:function(data,opts){
         if(opts&&opts.merge)return this.get().then(function(snap){return save(mergePatch(snap.exists?snap.data():{},data));});
@@ -849,10 +863,12 @@ function postgresCollection(kind){
 function postgresSupportCollection(kind){
   var base='/api/data/support/'+kind;
   function ref(id){
+    var signedIn=currentUser||auth.currentUser;
+    var endpoint=(kind==='userProfiles'&&signedIn&&id===signedIn.uid)?'/api/data/identity/self':(kind==='teamInvites'&&signedIn&&id===normalizeInviteEmail(signedIn.email))?'/api/data/identity/invitation':base+'/'+encodeURIComponent(id);
     var r={id:id,path:'postgres/'+kind+'/'+id};
     function snap(data){var s=pgDocSnap(data,id);s.ref=r;return s;}
-    r.get=function(){return pgFetchJson(base+'/'+encodeURIComponent(id)).then(function(j){return snap(j.document);}).catch(function(e){if(e.message==='Not found')return snap(null);throw e;});};
-    r.set=function(data,opts){return (opts&&opts.merge?r.get().then(function(s){return mergePatch(s.exists?s.data():{},data);}):Promise.resolve(data)).then(function(p){return pgFetchJson(base+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(p)});});};
+    r.get=function(){return pgFetchJson(endpoint).then(function(j){return snap(j.document);}).catch(function(e){if(e.message==='Not found')return snap(null);throw e;});};
+    r.set=function(data,opts){return (opts&&opts.merge?r.get().then(function(s){return mergePatch(s.exists?s.data():{},data);}):Promise.resolve(data)).then(function(p){return pgFetchJson(kind==='userProfiles'&&signedIn&&id===signedIn.uid?endpoint:base+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(p)});});};
     r.update=function(patch){return r.get().then(function(s){if(!s.exists)throw new Error('Record not found');return r.set(mergePatch(s.data(),patch));});};
     return r;
   }
@@ -867,9 +883,20 @@ function postgresSupportCollection(kind){
   }
   return query([],null);
 }
+var originalFirestoreBatch=db.batch.bind(db);
+db.batch=function(){
+  if(!CD_USE_POSTGRES)return originalFirestoreBatch();
+  var operations=[],batch={};
+  ['set','update'].forEach(function(method){batch[method]=function(ref,data,options){if(!ref._pgKind)throw new Error('Only PostgreSQL project and estimate references may be batched');operations.push({kind:ref._pgKind,id:ref.id,method:method,data:data,merge:!!(options&&options.merge)});return batch;};});
+  batch.commit=function(){return operations.length?pgFetchJson('/api/data/batch',{method:'POST',body:JSON.stringify({operations:operations})}):Promise.resolve();};return batch;
+};
 var originalFirestoreCollection=db.collection.bind(db);
 db.collection=function(path){
-  if(CD_USE_POSTGRES&&currentUser&&['settings','notifications','userProfiles','teamInvites'].indexOf(path)!==-1)return postgresSupportCollection(path);
+  if(CD_USE_POSTGRES&&(currentUser||auth.currentUser)){
+    if(['settings','notifications','userProfiles','teamInvites'].indexOf(path)!==-1)return postgresSupportCollection(path);
+    if(['projects','estimates'].indexOf(path)!==-1)return postgresCollection(path);
+    if(path.indexOf('users/')===0)throw new Error('Legacy Firestore migration is disabled for PostgreSQL workspaces');
+  }
   return originalFirestoreCollection(path);
 };
 
@@ -2912,8 +2939,8 @@ function closeAddLineItem(){document.getElementById("addLineItemModal").classLis
 function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
 function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(liTabMode==="detailed"){var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});}else{var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});}eCol.doc(e.id).set(e).then(function(){T("Added!");closeAddLineItem();renderEstDetailBody(e);});}
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
-function shareEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
-function sendEstimate(){var e=ger();if(!e)return;var url=window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
+function shareEstimate(){var e=ger();if(!e)return;if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){shareEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
+function sendEstimate(){var e=ger();if(!e)return;if(!e.clientPhone&&!e.clientEmail){alert('Add a client phone number or email before sending this estimate.');return;}if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){sendEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
 function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
@@ -3001,7 +3028,7 @@ function deleteEstimate(){if(!confirm("Delete?"))return;eCol.doc(currentEstId).d
 
 function shareClientPortal(){
   var p=gpr();if(!p)return;
-  var url=window.location.href.split('?')[0]+'?portal='+p.id;
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('portal',p.id,{},function(){shareClientPortal();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('portal',p.id,{}):window.location.href.split('?')[0]+'?portal='+p.id;
   navigator.clipboard.writeText(url).then(function(){
     T('Portal link copied!');
   }).catch(function(){var d=document.createElement('textarea');d.value=url;document.body.appendChild(d);d.select();try{document.execCommand('copy');T('Portal link copied!');}catch(ex){T('Could not copy — open link manually');}document.body.removeChild(d);});
@@ -3295,7 +3322,7 @@ function checkClientView(){
       // Load owner's settings to get company logo (settings are public-readable for branding)
       function renderWithLogo(est){
         // Use p.logoData first (snapshotted on project), then fetch from settings
-        if(p.logoData && p.logoData.length > 10){
+        if(CD_USE_POSTGRES || (p.logoData && p.logoData.length > 10)){
           renderProjectPortal(p, est, wrapper);
         } else {
           // Try to fetch from owner's settings doc using their UID
@@ -3550,9 +3577,9 @@ function submitSignature(estId){
   if(sigData===blank.toDataURL("image/png")){T("Please sign above before submitting.");return;}
   // Sign in anonymously so Firestore write is allowed
   var doUpdate = function(){
-    db.collection('estimates').doc(estId).update({
+    (CD_USE_POSTGRES?publicPortalAction('estimates',estId,{action:'estimate-sign',name:name,signature:sigData}):db.collection('estimates').doc(estId).update({
       signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"
-    }).then(function(){
+    })).then(function(){
     pushNotification("Estimate signed by "+name);
     var wrapper=document.getElementById("clientWrapper");
     if(wrapper){
@@ -4143,7 +4170,7 @@ function renderTabBody(p){
   var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
   ['adminCardBackup','adminCardMigrate','adminCardTag','adminCardRestore','adminCardPhase'].forEach(function(id){
     var el=document.getElementById(id);
-    if(el)el.style.display=_isOw?'block':'none';
+    if(el)el.style.display=(_isOw&&(!CD_USE_POSTGRES||id!=='adminCardMigrate'))?'block':'none';
   });
   // Ensure combined send button exists directly in detailPage (not inside scroll)
   // Restore checkbox + button state after re-render
@@ -4219,7 +4246,7 @@ function addComm(){
 }
 function shareCommWithPhotos(){
   var p=gpr();if(!p)return;
-  var url=window.location.href.split('?')[0]+'?portal='+p.id;
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('portal',p.id,{},function(){shareCommWithPhotos();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('portal',p.id,{}):window.location.href.split('?')[0]+'?portal='+p.id;
   var msg='Hi '+p.client+',\n\nI\'ve shared our communication log including screenshots at the link below. '+'You can view all notes and images there.\n\n'+url+'\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
@@ -4274,7 +4301,7 @@ function delComm(i){
 function sendCOToClient(i){
   var p=gpr();if(!p)return;
   var co=p.changeOrders[i];if(!co)return;
-  var url=window.location.href.split('?')[0]+'?portal='+p.id;
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('portal',p.id,{},function(){sendCOToClient(i);}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('portal',p.id,{}):window.location.href.split('?')[0]+'?portal='+p.id;
   var msg='Hi '+p.client+',\n\nA change order on your project requires your approval:\n\n'+
     'Change Order: '+co.title+'\n'+
     (co.description?'Details: '+co.description+'\n':'')+
@@ -4601,6 +4628,9 @@ function signCOBtn(btn){
     if(!doc.exists)return;
     var p=rememberProjectSnapshot(doc.data());
     var co=(p.changeOrders||[])[coIdx];if(!co)return;
+    if(CD_USE_POSTGRES){
+      return publicPortalAction('projects',projectId,{action:'co-sign',index:coIdx,coId:co.id||'',title:co.title,amount:Number(co.budgetImpact)||0,name:name,signature:canvas.toDataURL('image/png')}).then(function(j){var wrapper=document.getElementById('clientWrapper');if(wrapper)renderProjectPortal(j.document,null,wrapper);}).catch(function(err){T('Error saving approval: '+err.message);});
+    }
     // Mark CO approved
     co.status='Approved';
     co.clientSignedBy=name;
@@ -5068,10 +5098,10 @@ var _isClientView = _params.get('est') || _params.get('portal');
 var _isSubView = _params.get('sub');
 var _isInvoiceView = _params.get('invoice');
 if(_isClientView || _isSubView || _isInvoiceView || _params.get('est')){
-  col=withSaveFeedback(db.collection('projects'));
+  col=CD_USE_POSTGRES?publicPostgresCollection('projects'):withSaveFeedback(db.collection('projects'));
   sCol=db.collection('settings');
   nCol=db.collection('notifications');
-  eCol=withSaveFeedback(db.collection('estimates'));
+  eCol=CD_USE_POSTGRES?publicPostgresCollection('estimates'):withSaveFeedback(db.collection('estimates'));
   var _as=document.getElementById('authScreen');
   if(_as) _as.style.display='none';
   if(_isClientView) checkClientView();
@@ -5398,7 +5428,7 @@ function applyLogo(dataUrl, statusEl){
   var uid = currentUser ? currentUser.uid : null;
   var isOwner = uid === 'L5XUqfnWrrgbAk18X36XcHDJxnz1';
   var settingsDoc = isOwner ? 'dropdowns' : (uid || 'dropdowns');
-  sCol.doc(settingsDoc).set(DD).then(function(){
+  saveSettingsSilent().then(function(){
     if(statusEl){ statusEl.style.color = '#2EAA72'; statusEl.textContent = '\u2713 Logo saved!'; }
     injectPWAManifest(CD_LOGO); // Always use CD brand icon for PWA
     T('Logo updated!');
@@ -5409,11 +5439,11 @@ function applyLogo(dataUrl, statusEl){
 
 function removeLogo(){
   if(!confirm('Remove your company logo?')) return;
-  delete DD.logoData;
+  DD.logoData='';
   LOGO_SRC = '';
   var tl = document.getElementById('topbarLogo'); if(tl){ tl.src=CD_LOGO; tl.style.display='block'; }
   var wrap = document.getElementById('logoPreviewWrap'); if(wrap) wrap.style.display = 'none';
-  var _u5=currentUser?currentUser.uid:null;sCol.doc(_u5==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':(_u5||'dropdowns')).set(DD).then(function(){ injectPWAManifest(CD_LOGO); T('Logo removed.'); });
+  saveSettingsSilent().then(function(){ injectPWAManifest(CD_LOGO); T('Logo removed.'); });
 }
 
 var _origOpenSettings = openSettings;
@@ -5674,7 +5704,7 @@ function checkTrialStatus(user, cb){
     if(Date.now() < data.trialEnd){ cb(true); return; }
     // Trial expired
     cb(false, 'expired');
-  }).catch(function(){ cb(true); }); // fail open
+  }).catch(function(){ cb(false,'access-unavailable'); });
 }
 
 function contactForSubscription(){
@@ -5751,6 +5781,7 @@ if(_origRenderSettings){
 // DATA MIGRATION — Move old shared data to user account
 // ═══════════════════════════════════════════════════════════════
 function migrateMyData(){
+  if(CD_USE_POSTGRES){T('Your company uses PostgreSQL. Use Verify migration in Settings.');return;}
   var statusEl = document.getElementById('migrateMyStatus');
   statusEl.style.display = 'block';
   statusEl.style.color = '#2858BD';
@@ -6022,7 +6053,7 @@ function sendProjectInvoice(i){
   var m=(p.paymentMilestones||[])[i];if(!m)return;
   var co=DD.companyName||'Contractor Desk';
   var baseUrl=window.location.origin+window.location.pathname;
-  var invoiceLink=baseUrl+'?invoice='+p.id+'&ms='+i;
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('invoice',p.id,{ms:i},function(){sendProjectInvoice(i);}))return;var invoiceLink=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('invoice',p.id,{ms:i}):baseUrl+'?invoice='+p.id+'&ms='+i;
   var msg='Hi '+p.client+',\n\n'
     +'Please find your invoice from '+co+' at the link below.\n\n'
     +invoiceLink+'\n\n'
@@ -6121,7 +6152,7 @@ function sendSubPortalLink(scopeIdx){
   var it=(p.scopeItems||[])[scopeIdx];if(!it)return;
   var co=DD.companyName||'Contractor Desk';
   var baseUrl=window.location.origin+window.location.pathname;
-  var link=baseUrl+'?sub='+p.id+'&scope='+scopeIdx;
+  if(!(parseFloat(it.actual)||0)){T('No subcontract amount set for this item. Enter actual cost before sending.');return;}if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('sub',p.id,{scope:scopeIdx},function(){sendSubPortalLink(scopeIdx);}))return;var link=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('sub',p.id,{scope:scopeIdx}):baseUrl+'?sub='+p.id+'&scope='+scopeIdx;
   var name=it.assignTo||'Team';
   var dates='';
   if(it.start&&it.end)dates='Start: '+fmt(it.start)+' | End: '+fmt(it.end)+'\n';
@@ -6166,7 +6197,7 @@ function sendCombinedSubPortalLink(idxArr){
   var co=DD.companyName||'Contractor Desk';
   var name=items[0].assignTo||'Team';
   var baseUrl=window.location.origin+window.location.pathname;
-  var link=baseUrl+'?sub='+p.id+'&scopes='+idxArr.join(',');
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('sub',p.id,{scopes:idxArr.join(',')},function(){sendCombinedSubPortalLink(idxArr);}))return;var link=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('sub',p.id,{scopes:idxArr.join(',')}):baseUrl+'?sub='+p.id+'&scopes='+idxArr.join(',');
   var scopeList=items.map(function(it){return '- '+it.desc;}).join('\n');
   var msg='Hi '+name+',\n\n'
     +'You have been assigned the following scope on '+p.client+':\n\n'
@@ -6305,6 +6336,7 @@ function checkSubView(){
 
 function updSubSt(pid,sidx){
   var status=document.getElementById('subSt').value;
+  if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES){publicPortalAction('projects',pid,{action:'sub-status',index:sidx,status:status}).then(function(){T('Status updated!');}).catch(function(e){T('Could not update status: '+e.message);});return;}
   col.doc(pid).get().then(function(doc){
     if(!doc.exists)return;
     var p=rememberProjectSnapshot(doc.data());
@@ -6331,6 +6363,7 @@ function submitSubLog(pid,sidx){
   var pi=document.getElementById('sPhoto');
   var files=pi&&pi.files?Array.from(pi.files):[];
   function save(){
+    if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES){publicPortalAction('projects',pid,{action:'sub-log',index:sidx,entry:entry}).then(function(){el.style.color='#2EAA72';el.textContent='✓ Log saved!';document.getElementById('sWork').value='';document.getElementById('sIssues').value='';if(pi)pi.value='';}).catch(function(e){el.style.color='#E83A6C';el.textContent='Error: '+e.message;});return;}
     col.doc(pid).get().then(function(doc){
       if(!doc.exists)throw new Error('Project not found.');
       var p=rememberProjectSnapshot(doc.data());
