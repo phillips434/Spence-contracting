@@ -4952,6 +4952,8 @@ function openSettings(){
     var auditResult=document.createElement('pre');auditResult.id='migrationAuditResult';auditResult.style.cssText='white-space:pre-wrap;font-size:12px';
     auditBtn.onclick=function(){auditBtn.disabled=true;auditResult.textContent='Checking source records...';pgFetchJson('/api/data/migration/audit').then(function(j){auditResult.textContent=JSON.stringify(j.report,null,2);}).catch(function(e){auditResult.textContent=e.message;}).finally(function(){auditBtn.disabled=false;});};
     auditBox.appendChild(auditBtn);auditBox.appendChild(auditResult);document.getElementById('settingsPage').appendChild(auditBox);
+    var migrateBtn=document.createElement('button');migrateBtn.id='migrationSupportButton';migrateBtn.className='btn-sm';migrateBtn.textContent='Complete verified support import';
+    migrateBtn.onclick=function(){migrateBtn.disabled=true;auditResult.textContent='Copying verified company records...';pgFetchJson('/api/data/migration/support',{method:'POST',body:'{}'}).then(function(j){auditResult.textContent=JSON.stringify(j.report,null,2);}).catch(function(e){auditResult.textContent=e.message;}).finally(function(){migrateBtn.disabled=false;});};auditBox.appendChild(migrateBtn);
   }
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   var _uid=currentUser?currentUser.uid:null;
