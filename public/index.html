@@ -4946,6 +4946,13 @@ function saveProject(){var client=document.getElementById("fClient").value.trim(
 }).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
+  if(currentUser&&currentUser.uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'&&!document.getElementById('migrationAuditButton')){
+    var auditBox=document.createElement('div');auditBox.style.cssText='padding:16px;margin:16px;border:1px solid #ddd;border-radius:12px';
+    var auditBtn=document.createElement('button');auditBtn.id='migrationAuditButton';auditBtn.className='btn-sm';auditBtn.textContent='Verify migration';
+    var auditResult=document.createElement('pre');auditResult.id='migrationAuditResult';auditResult.style.cssText='white-space:pre-wrap;font-size:12px';
+    auditBtn.onclick=function(){auditBtn.disabled=true;auditResult.textContent='Checking source records...';pgFetchJson('/api/data/migration/audit').then(function(j){auditResult.textContent=JSON.stringify(j.report,null,2);}).catch(function(e){auditResult.textContent=e.message;}).finally(function(){auditBtn.disabled=false;});};
+    auditBox.appendChild(auditBtn);auditBox.appendChild(auditResult);document.getElementById('settingsPage').appendChild(auditBox);
+  }
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   var _uid=currentUser?currentUser.uid:null;
   if(!_uid){renderSettingsForm();return;}
