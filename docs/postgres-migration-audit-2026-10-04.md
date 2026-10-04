@@ -51,7 +51,7 @@ Live production browser checks confirmed projects, estimates, Team Access, compa
 
 The cloud browser's clipboard read returned an empty string, so opening the newly copied token URL was not verified in that browser. Token access, stored scope, revocation, and related-record restrictions are covered by fixture tests. Existing public links were verified live.
 
-No real contract was signed, no client message was sent, and no existing source or destination business record was deleted or reimported. Signature/change-order actions were tested with fixtures, not real approvals. Live signup/invitation acceptance was not exercised by creating a real account.
+No real contract was signed, no client message was sent, and no existing source or destination business record was deleted or reimported. Signature/change-order actions were tested with fixtures, not real approvals. At this initial checkpoint, live signup/invitation acceptance had not yet been exercised by creating a real account; live owner signup was subsequently verified below.
 
 Production code deployment: `2db1b5636a64464153011539ac702cc8e6f55bdb`, Railway deployment `b198b141-e02e-43e9-94e6-be0d20e8294c`, SUCCESS. Prior cutover deployment: `cc526063fbe75c5e6d2d908c5c80e262e4262b23`.
 
@@ -76,3 +76,20 @@ The expanded actual-route PostgreSQL run passed **26/26 checks**, including crea
 Four additional frontend signup tests run the app's actual signup functions and PostgreSQL adapters with a simulated Firebase provider. They verify the agreement gate prevents provider calls, invited users bind through auth.currentUser before the session callback, users without invitations save trial profiles through the self-identity endpoint, and provider failures do not write profiles or invitations. The full local suite now passes **249 tests**.
 
 Attempted to install Chromium with the official Playwright installer. The download returned an invalid/truncated archive (ZIP central-directory signature missing), so the separate three-test browser suite remains blocked and is not counted as passing. The same three project-form scenarios pass in the existing Mocha fixture suite. No real new Firebase account was created, and no real signup agreement was accepted. A real account test requires the user to enter a new password and accept the Terms, Privacy Policy and Beta Agreement.
+
+
+## Live account onboarding and Chromium follow-up — October 4, 16:27–16:32 UTC
+
+The user explicitly authorized creating a password and a new test user/profile. A live Firebase account and PostgreSQL trial company were created through the actual frontend signup functions and PostgreSQL adapters, with a native Firebase REST provider wrapper. No browser credential entry or visual signup automation was performed. The actual onboarding renderer was evaluated against the live saved settings.
+
+The completed QA account is `onboarding-qa-20261004-3f14a9e5-full@example.invalid`, Firebase UID `CxwBGvyyJkbhcG48NlyaTsR3As73`, company `18dc4035-9a49-4174-9607-ed2ce068b45d`. It owns one clearly labeled nonbinding QA project and one Draft QA estimate. The `.invalid` address is test-only; no email or SMS was sent.
+
+**14/14 live onboarding checks passed**: real Firebase registration, PostgreSQL profile and agreement-field persistence, a server-issued 14-day trial, active owner membership, isolated empty initial data, rejection of access to migrated Spence records, company name/logo/test roster setup, onboarding-renderer completion states, first-project and first-estimate save/reload, numbering persistence, a fresh real password sign-in, a real Firebase token refresh, and normalized PO/tax fields. See `live-onboarding-verification-2026-10-04.json` and `scripts/check-live-onboarding.js`.
+
+Passwords and tokens existed only in memory during the run and were discarded. Automatic review rejected an unnecessary attempt to store a password in Railway configuration; the successful run did not persist credentials. The first QA account (`onboarding-qa-20261004-3f14a9e5@example.invalid`, UID `FAu200DttbeJ3FRidVlwRNDKvE83`) also created its profile and empty trial company correctly. That first runner timed out because of completion detection; a read-only database query confirmed its successful profile/membership creation. It remains clearly labeled as an empty QA workspace. The corrected runner completed all checks with the full QA account.
+
+Before/after full-row MD5 multisets across all 24 public tables prove every pre-existing row remained unchanged; only explicitly authorized QA rows were added. No real customer contract, change order, payment, email, SMS, or invitation to the Spence workspace was submitted.
+
+The three existing project-form scenarios were run in an isolated Railway Chromium runner with **Playwright 1.55.0: 3/3 passed**. They cover clearing contact/job/PO fields, making a new save available before a snapshot, and preserving selections while updating the cache without duplication. The fixture now includes the two real cost-ledger helpers used by project saving. The local Playwright 1.62.1 download still returned an invalid archive, so this is independent Chromium evidence for the same scenarios, not a claim that the local npm browser command succeeded. See `chromium-fixture-verification-2026-10-04.json`.
+
+Final local Mocha suite: **249 passing**. Prior rollback-only real PostgreSQL route run: **26/26 passing**. Live new-owner registration/onboarding: **14/14 passing**. Isolated Chromium project-form scenarios: **3/3 passing**. A full visual walkthrough of the live new-account UI and live invitation acceptance with a real additional teammate remain separate from these verified paths. The diagnostic service was restored to its read-only audit source after testing.

@@ -1,0 +1,102 @@
+{
+  "at": "2026-10-04T16:27:45.621Z",
+  "email": "onboarding-qa-20261004-3f14a9e5-full@example.invalid",
+  "provider": "live Firebase",
+  "application": "live production HTTP API",
+  "browserUI": false,
+  "credentialsStored": false,
+  "checks": [
+    {
+      "name": "actual frontend signup creates a real Firebase identity and saves through PostgreSQL adapters",
+      "ok": true
+    },
+    {
+      "name": "new profile reloads with trial, identity, and signup agreement fields",
+      "ok": true
+    },
+    {
+      "name": "new session has its own active owner company",
+      "ok": true
+    },
+    {
+      "name": "fresh company starts with no projects, estimates, notifications, or invitations",
+      "ok": true
+    },
+    {
+      "name": "company isolation blocks reading migrated Spence records",
+      "ok": true
+    },
+    {
+      "name": "company setup saves and reloads name, logo, and a test-only roster",
+      "ok": true
+    },
+    {
+      "name": "actual onboarding renderer marks account, company, logo, and roster steps complete",
+      "ok": true
+    },
+    {
+      "name": "first project saves, lists, and reloads in the new workspace",
+      "ok": true
+    },
+    {
+      "name": "first estimate saves and reloads without changing its line items or tax",
+      "ok": true
+    },
+    {
+      "name": "company numbering settings persist after onboarding",
+      "ok": true
+    },
+    {
+      "name": "password sign-in obtains a fresh real session and reloads the same company and records",
+      "ok": true
+    },
+    {
+      "name": "Firebase refresh obtains a valid session that reloads the PostgreSQL profile",
+      "ok": true
+    },
+    {
+      "name": "PostgreSQL normalized fields preserve first-project PO and first-estimate tax",
+      "ok": true
+    },
+    {
+      "name": "company sequence row reloads the saved initial numbering",
+      "ok": true
+    }
+  ],
+  "firebaseUid": "CxwBGvyyJkbhcG48NlyaTsR3As73",
+  "firebaseAccountCreated": true,
+  "profileCreated": true,
+  "companyId": "18dc4035-9a49-4174-9607-ed2ce068b45d",
+  "projectId": "qa-onboarding-project-CxwBGvyyJkbhcG48NlyaTsR3As73",
+  "estimateId": "qa-onboarding-estimate-CxwBGvyyJkbhcG48NlyaTsR3As73",
+  "preexistingRowsUnchanged": true,
+  "checkedTables": [
+    "attachments",
+    "change_orders",
+    "clients",
+    "communications",
+    "companies",
+    "company_memberships",
+    "company_sequences",
+    "company_settings",
+    "daily_logs",
+    "estimate_items",
+    "estimate_payment_milestones",
+    "estimates",
+    "notification_user_state",
+    "notifications",
+    "project_costs",
+    "project_notes_log",
+    "project_payment_milestones",
+    "project_punch_items",
+    "project_scope_items",
+    "project_selections",
+    "projects",
+    "public_share_links",
+    "team_invites",
+    "users"
+  ],
+  "passed": 14,
+  "failed": 0,
+  "ok": true
+}

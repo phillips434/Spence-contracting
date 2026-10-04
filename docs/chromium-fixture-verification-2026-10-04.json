@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-04T16:32:41.818Z",
+  "runtime": "Playwright 1.55.0 Chromium",
+  "fixtureOnly": true,
+  "liveAccountUI": false,
+  "checks": [
+    {
+      "name": "new project clears contact, job number and PO from the previous edit",
+      "ok": true
+    },
+    {
+      "name": "saved new project is available immediately without waiting for a database snapshot",
+      "ok": true
+    },
+    {
+      "name": "editing a project preserves selections and updates the cache without duplicates",
+      "ok": true
+    }
+  ],
+  "passed": 3,
+  "failed": 0,
+  "ok": true
+}

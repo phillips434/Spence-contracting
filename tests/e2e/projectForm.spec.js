@@ -4,7 +4,7 @@ const path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
 const start = html.indexOf('function openAdd(){');
 const end = html.indexOf('function openSettings(){', start);
-const helpers=['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges'].map(name=>{
+const helpers=['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','reconcileProjectSpent','syncProjectCostLedger'].map(name=>{
   const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);
   return html.slice(a,b);
 }).join('\n');
