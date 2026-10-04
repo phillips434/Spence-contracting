@@ -1138,9 +1138,6 @@ function saveSettingsSilent(){
   if(!uid)return Promise.resolve();
   return resolveWorkspaceUidForSession(uid,true).then(function(workspaceUid){
     if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
-    if(workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'&&CD_USE_POSTGRES){
-      return pgFetchJson('/api/data/settings',{method:'PUT',body:JSON.stringify(DD)});
-    }
     return sCol.doc(workspaceSettingsDoc(workspaceUid)).set(DD);
   }).catch(function(err){T('Settings save failed: '+err.message);throw err;});
 }
@@ -1292,13 +1289,14 @@ function loadSettings(cb){
   resolveWorkspaceUidForSession(uid).then(function(workspaceUid){
     var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
     var settingsDoc = workspaceSettingsDoc(workspaceUid || uid);
-    var settingsRead=(workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'&&CD_USE_POSTGRES)
-      ? pgFetchJson('/api/data/settings').then(function(j){return {exists:true,data:function(){return j.document||{};}};})
-      : sCol.doc(settingsDoc).get();
-    settingsRead.then(function(d){
+    sCol.doc(settingsDoc).get().then(function(d){
       if(d.exists) DD=Object.assign({},DD,d.data());
+      // Apply saved logo to topbar if it exists, else use CD_LOGO default
       var tl=document.getElementById('topbarLogo');
-      if(tl){tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;tl.style.display='block';}
+      if(tl){
+        tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;
+        tl.style.display='block';
+      }
       if(cb)cb();
     }).catch(function(){if(cb)cb();});
   }).catch(function(){if(cb)cb();});
@@ -1749,7 +1747,7 @@ function _startSyncWithOwner(ownerUid, seeAll, memberUids){
       // Strict isolation: user sees ONLY their own projects
       // Team members see their owner's projects (p.userId===ownerUid)
       // NO global seeAll bypass — no account can see all companies
-      if(CD_USE_POSTGRES || recordBelongsToWorkspace(p,uid,ownerUid,memberUids)){
+      if(recordBelongsToWorkspace(p,uid,ownerUid,memberUids)){
         projects.push(p);
       }
     });
@@ -1769,7 +1767,7 @@ function _startSyncWithOwner(ownerUid, seeAll, memberUids){
       var e=d.data();
       // Exclude converted estimates — they live as projects now
       if(e.converted===true||e.status==='Converted') return;
-      if(CD_USE_POSTGRES || recordBelongsToWorkspace(e,uid,ownerUid,memberUids)){
+      if(recordBelongsToWorkspace(e,uid,ownerUid,memberUids)){
         estimates.push(e);
       }
     });
