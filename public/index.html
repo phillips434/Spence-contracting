@@ -798,7 +798,8 @@ function pgAuthHeaders(){
 function pgDocSnap(data,id){return {exists:!!data,id:id,data:function(){return data?JSON.parse(JSON.stringify(data)):undefined;}};}
 function pgQuerySnap(docs){
   docs=Array.isArray(docs)?docs:[];
-  return {empty:docs.length===0,size:docs.length,forEach:function(fn){docs.forEach(function(d){fn(pgDocSnap(d,d.id));});}};
+  var snaps=docs.map(function(d){return pgDocSnap(d,d.id);});
+  return {empty:docs.length===0,size:docs.length,docs:snaps,forEach:function(fn){snaps.forEach(fn);}};
 }
 function mergePatch(target,patch){
   var out=JSON.parse(JSON.stringify(target||{}));
@@ -843,6 +844,34 @@ function postgresCollection(kind){
     orderBy:function(field,direction){return {onSnapshot:function(ok,fail){var stopped=false,last='';function poll(){if(stopped)return;list().then(function(docs){docs.sort(function(a,b){var av=a[field]||'',bv=b[field]||'';var c=String(av).localeCompare(String(bv));return direction==='desc'?-c:c;});var sig=JSON.stringify(docs);if(sig!==last){last=sig;ok(pgQuerySnap(docs));}}).catch(function(e){if(fail)fail(e);});}poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};}};}
   };
 }
+
+// The migrated company uses PostgreSQL for all internal support documents.
+function postgresSupportCollection(kind){
+  var base='/api/data/support/'+kind;
+  function ref(id){
+    var r={id:id,path:'postgres/'+kind+'/'+id};
+    function snap(data){var s=pgDocSnap(data,id);s.ref=r;return s;}
+    r.get=function(){return pgFetchJson(base+'/'+encodeURIComponent(id)).then(function(j){return snap(j.document);}).catch(function(e){if(e.message==='Not found')return snap(null);throw e;});};
+    r.set=function(data,opts){return (opts&&opts.merge?r.get().then(function(s){return mergePatch(s.exists?s.data():{},data);}):Promise.resolve(data)).then(function(p){return pgFetchJson(base+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(p)});});};
+    r.update=function(patch){return r.get().then(function(s){if(!s.exists)throw new Error('Record not found');return r.set(mergePatch(s.data(),patch));});};
+    return r;
+  }
+  function query(filters,order){
+    var q={path:'postgres/'+kind,doc:ref};
+    q.where=function(field,op,value){if(op!=='==')throw new Error('Unsupported query');return query(filters.concat([{field:field,value:value}]),order);};
+    q.orderBy=function(field,direction){return query(filters,{field:field,direction:direction});};
+    q.get=function(){return pgFetchJson(base).then(function(j){var docs=(j.documents||[]).filter(function(d){return filters.every(function(f){return d[f.field]===f.value;});});if(order)docs.sort(function(a,b){var av=a[order.field],bv=b[order.field];var cmp=av<bv?-1:av>bv?1:0;return order.direction==='desc'?-cmp:cmp;});var snaps=docs.map(function(d){var s=pgDocSnap(d,d.id);s.ref=ref(d.id);return s;});return {empty:!snaps.length,size:snaps.length,docs:snaps,forEach:function(fn){snaps.forEach(fn);}};});};
+    q.onSnapshot=function(ok,fail){var stopped=false,last='';function poll(){if(stopped)return;q.get().then(function(s){if(stopped)return;var next=JSON.stringify(s.docs.map(function(d){return d.data();}));if(next!==last){last=next;ok(s);}}).catch(function(e){if(!stopped&&fail)fail(e);});}poll();var timer=setInterval(poll,15000);return function(){stopped=true;clearInterval(timer);};};
+    q.add=function(data){if(kind!=='notifications')return Promise.reject(new Error('Unsupported collection'));return pgFetchJson(base,{method:'POST',body:JSON.stringify(data)}).then(function(j){return ref(j.id);});};
+    return q;
+  }
+  return query([],null);
+}
+var originalFirestoreCollection=db.collection.bind(db);
+db.collection=function(path){
+  if(CD_USE_POSTGRES&&currentUser&&['settings','notifications','userProfiles','teamInvites'].indexOf(path)!==-1)return postgresSupportCollection(path);
+  return originalFirestoreCollection(path);
+};
 
 
 var unsubProjects=null,unsubEstimates=null,unsubNotifs=null;
