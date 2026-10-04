@@ -1406,6 +1406,15 @@ function saveCompanyInfo(){
   T('Company info saved!');
 }
 function saveAIProfile(){DD.aiProfile={location:document.getElementById("aiLocation").value.trim(),markup:parseFloat(document.getElementById("aiMarkup").value)||20,laborRate:parseFloat(document.getElementById("aiLaborRate").value)||85,instructions:document.getElementById("aiInstructions").value.trim()};saveSettings();T("AI profile saved!");}
+var _pgSessionCache=null;
+function pgCompanySession(force){
+  if(_pgSessionCache&&!force)return Promise.resolve(_pgSessionCache);
+  return pgFetchJson('/api/data/session').then(function(j){
+    var sess=j.session||{};
+    if(sess.known){_pgSessionCache=sess;return sess;}
+    return sess;
+  });
+}
 function resolveCurrentOwnerUid(){
   var uid=currentUser&&currentUser.uid?currentUser.uid:null;
   if(!uid){return Promise.resolve(null);}
