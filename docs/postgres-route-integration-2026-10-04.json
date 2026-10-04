@@ -1,0 +1,135 @@
+{
+  "runId": "ace2c220149647fe",
+  "identityProvider": "simulated Firebase lookup",
+  "database": "real PostgreSQL",
+  "agreements": "nonbinding fixtures",
+  "checks": [
+    {
+      "name": "rejects missing and invalid Firebase sessions",
+      "ok": true
+    },
+    {
+      "name": "denies a valid identity without company membership",
+      "ok": true
+    },
+    {
+      "name": "owner lists only the trusted company and cannot read another company project",
+      "ok": true
+    },
+    {
+      "name": "new scoped estimate link reads PostgreSQL without any Firestore document",
+      "ok": true
+    },
+    {
+      "name": "invoice and subcontractor tokens return only assigned data",
+      "ok": true
+    },
+    {
+      "name": "query tampering cannot expand a stored subcontractor token scope",
+      "ok": true
+    },
+    {
+      "name": "a token cannot be used to access another record",
+      "ok": true
+    },
+    {
+      "name": "estimate signing persists then reloads without changing prices, photos or contract",
+      "ok": true
+    },
+    {
+      "name": "duplicate estimate signatures are rejected without replacing the first signature",
+      "ok": true
+    },
+    {
+      "name": "client signatures create a shared PostgreSQL notification",
+      "ok": true
+    },
+    {
+      "name": "changed change-order amounts are refused and rolled back",
+      "ok": true
+    },
+    {
+      "name": "change-order approval persists financial accounting exactly once and retains unrelated records",
+      "ok": true
+    },
+    {
+      "name": "subcontractor status and photo log survive owner and public reloads",
+      "ok": true
+    },
+    {
+      "name": "share revocation blocks reads and writes without a Firestore fallback",
+      "ok": true
+    },
+    {
+      "name": "normalized project PO and estimate tax preserve the app fields",
+      "ok": true
+    },
+    {
+      "name": "owner invitation save is readable by the matching signed-in email",
+      "ok": true
+    },
+    {
+      "name": "a new identity cannot assign itself to an arbitrary company",
+      "ok": true
+    },
+    {
+      "name": "invitation acceptance creates the profile and membership, preserving the server role",
+      "ok": true
+    },
+    {
+      "name": "accepted members reload the same company projects, estimates, settings and shared notifications",
+      "ok": true
+    },
+    {
+      "name": "members cannot edit their company, access status or invitation role",
+      "ok": true
+    },
+    {
+      "name": "member notification read state does not mark owner notifications read",
+      "ok": true
+    },
+    {
+      "name": "company settings reload after member save and counters never move backward",
+      "ok": true
+    },
+    {
+      "name": "owner revocation blocks saved sessions and self reactivation",
+      "ok": true
+    },
+    {
+      "name": "owner reactivation restores the established membership and company",
+      "ok": true
+    }
+  ],
+  "rolledBack": true,
+  "productionUnchanged": true,
+  "checkedTables": [
+    "attachments",
+    "change_orders",
+    "clients",
+    "communications",
+    "companies",
+    "company_memberships",
+    "company_sequences",
+    "company_settings",
+    "daily_logs",
+    "estimate_items",
+    "estimate_payment_milestones",
+    "estimates",
+    "notification_user_state",
+    "notifications",
+    "project_costs",
+    "project_notes_log",
+    "project_payment_milestones",
+    "project_punch_items",
+    "project_scope_items",
+    "project_selections",
+    "projects",
+    "public_share_links",
+    "team_invites",
+    "users"
+  ],
+  "passed": 24,
+  "failed": 0,
+  "ok": true
+}

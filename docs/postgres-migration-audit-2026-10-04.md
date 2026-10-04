@@ -45,7 +45,7 @@ The company settings `team` roster is empty in the source. This is separate from
 
 ## Validation and limits
 
-`npm test`: **242 passing**. Browser inline JavaScript and changed server modules passed syntax checks. Tests cover decoding fidelity, company isolation, revoked users, invitation identity and roles, signatures, immutable amounts, duplicate change-order accounting, scope restrictions, projections, token revocation, and maintenance payload preservation.
+`npm test`: **245 passing**. Browser inline JavaScript and changed server modules passed syntax checks. Tests cover decoding fidelity, company isolation, revoked users, invitation identity and roles, signatures, immutable amounts, duplicate change-order accounting, scope restrictions, projections, token revocation, and maintenance payload preservation.
 
 Live production browser checks confirmed projects, estimates, Team Access, company settings, and all four existing public page types render. QA estimate total $1,632 and QA invoice amount $100 matched the owner views. The QA subcontractor's unchanged Complete status returned a successful PostgreSQL action response; the subsequent full source comparison remained exact. Share-link creation returned HTTP 200 and the UI reported Link copied.
 
@@ -56,3 +56,14 @@ No real contract was signed, no client message was sent, and no existing source 
 Production code deployment: `2db1b5636a64464153011539ac702cc8e6f55bdb`, Railway deployment `b198b141-e02e-43e9-94e6-be0d20e8294c`, SUCCESS. Prior cutover deployment: `cc526063fbe75c5e6d2d908c5c80e262e4262b23`.
 
 Firestore has **not** been disabled or deleted, and production Firestore rules were not changed. Source audits and old-link validation still read it; Firebase Auth intentionally remains. This verifies the current company migration and deployed app paths, not an administrative export of every historical Firebase namespace or unrelated company account.
+
+
+## Actual route and database verification follow-up
+
+The actual Express route modules were exercised against the production PostgreSQL database using synthetic companies, simulated Firebase identity lookup, and explicitly nonbinding fixture agreements. Every test write was confined to a single outer transaction; route transactions used savepoints. The outer transaction was rolled back, and row counts plus full-row fingerprints were identical before and after for all 24 public tables. Firebase account creation and legal acceptance were not performed. See `postgres-route-integration-2026-10-04.json` and `scripts/check-postgres-migration-integration.js` for reproducible checks and evidence.
+
+**24/24 route checks passed**, including estimate signature save/reload and duplicate prevention; change-order amount validation and once-only accounting; subcontractor status/photo logs; new token access, stored scope tampering, revocation, and cross-record isolation; invitation acceptance and server-derived roles; member reloads; revoked-session blocking and owner reactivation; independent notification read state; and settings counters.
+
+The first database run exposed an app-field normalization error: `poNum` and `tax` were absent from the normalized PO/tax mapping. Both ordinary saves and the backup importer now support the app fields, preserving empty PO values and zero tax. Migration 007 rebuilt only the two derived columns from preserved payloads. At 15:25:36 UTC it corrected 36 project PO columns and 107 estimate tax columns. Full-table fingerprints excluding only those two columns proved that all payloads, timestamps, child rows and other tables remained unchanged. The final rollback-only route rerun passed all 24 checks, and the full local suite passed 245 tests.
+
+The separate three-test Playwright project-form suite could not launch: its Chromium executable is not installed in this execution environment. These tests were not counted as passes. Live cloud-browser production checks and the local project-form unit coverage remain separate evidence. Live Firebase signup/invitation acceptance with a real new account remains unverified; only the actual application/database acceptance path was exercised with simulated provider identities.
