@@ -6291,7 +6291,7 @@ function checkSubView(){
     var prevLogs=(p.dailyLogs||[]).filter(function(l){return l.subScopeIdx===sidx;}).slice().reverse();
     wrap.innerHTML=
       '<div style="background:#1C1C1E;padding:16px;border-radius:12px;margin-bottom:16px;color:#fff">'
-      +'<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px">'+(DD.companyName||'Contractor Desk')+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px">'+(p.companyName||DD.companyName||'Contractor Desk')+'</div>'
       +'<div style="font-size:18px;font-weight:800">'+p.client+'</div>'
       +'<div style="font-size:13px;color:rgba(255,255,255,0.7)">'+p.type+(p.address?' &middot; '+p.address:'')+'</div>'
       +'</div>'
