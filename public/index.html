@@ -810,7 +810,7 @@ function mergePatch(target,patch){
   return out;
 }
 function pgFetchJson(url,options){
-  options=options||{};
+  options=Object.assign({cache:'no-store'},options||{});
   return pgAuthHeaders().then(function(headers){
     options.headers=Object.assign({},headers,options.headers||{});
     return fetch(url,options);
