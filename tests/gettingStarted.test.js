@@ -1,0 +1,15 @@
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+const html=fs.readFileSync(require.resolve('../public/index.html'),'utf8');
+const source=html.slice(html.indexOf('var guideAutoShown=false,guideStep=0;'),html.indexOf('function renderOnboarding(){'));
+function fixture({plan='trial',type='owner',done=false,fail=false}={}){
+ const nodes={},storage={},actions=[];const node=()=>({style:{},setAttribute(){},focus(){},disabled:false});
+ nodes.gettingStartedNext=node();nodes.gettingStartedError=node();
+ const c={currentUser:{uid:'qa'},window:{_sessionPlan:plan,_sessionWorkspaceType:type},DD:done?{gettingStartedVersion:1}:{},Number,Math,document:{getElementById:id=>nodes[id]||null,createElement:()=>node(),body:{appendChild:el=>{nodes[el.id]=el;}}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},saveSettingsSilent:()=>fail?Promise.reject(Error('offline')):Promise.resolve(),T:()=>{},openSettings:()=>actions.push('settings'),closePage:()=>{},switchMainTab:t=>actions.push(t),openAdd:()=>actions.push('project')};vm.createContext(c);vm.runInContext(source,c);return{c,nodes,storage,actions};
+}
+describe('guided getting started walkthrough',()=>{
+ it('automatically starts once for an unfinished trial, including one with an existing first project',()=>{const {c,nodes}=fixture();c.projects=[{id:'first'}];c.maybeStartGettingStarted();assert(nodes.gettingStartedDialog.innerHTML.includes('Welcome to Contractor Desk'));c.openGettingStarted(2);c.maybeStartGettingStarted();assert.strictEqual(c.guideStep,2);});
+ it('does not interrupt paid owners, invited members or completed trials',()=>{for(const opt of [{plan:'paid'},{plan:'owner'},{type:'team'},{done:true}]){const {c,nodes}=fixture(opt);c.maybeStartGettingStarted();assert(!nodes.gettingStartedDialog);}});
+ it('opens the chosen app task and leaves a way to resume at the next step',()=>{const {c,nodes,actions,storage}=fixture();c.openGettingStarted(1);c.tryGettingStartedStep();assert.deepStrictEqual(actions,['settings']);assert.strictEqual(nodes.gettingStartedDialog.style.display,'none');assert.strictEqual(nodes.gettingStartedResume.style.display,'block');assert.strictEqual(storage['cdGettingStarted:qa'],'2');nodes.gettingStartedResume.onclick();assert(nodes.gettingStartedDialog.innerHTML.includes('Create your first project'));});
+ it('persists completion only after the settings save succeeds and allows replay',async()=>{const {c,nodes}=fixture();c.openGettingStarted(5);c.finishGettingStarted();await new Promise(setImmediate);assert.strictEqual(c.DD.gettingStartedVersion,1);assert.strictEqual(nodes.gettingStartedDialog.style.display,'none');c.openGettingStarted(0);assert.strictEqual(nodes.gettingStartedDialog.style.display,'flex');});
+ it('keeps completion retryable when saving fails',async()=>{const {c,nodes}=fixture({fail:true});c.openGettingStarted(5);c.finishGettingStarted();await new Promise(setImmediate);assert.strictEqual(c.DD.gettingStartedVersion,undefined);assert.strictEqual(nodes.gettingStartedNext.disabled,false);assert(nodes.gettingStartedError.textContent.includes('Could not save'));});
+});
