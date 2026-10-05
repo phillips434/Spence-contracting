@@ -1723,11 +1723,11 @@ function renderTeamList(){
       +'<div style="flex:1">'
       +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
       +'<span style="background:'+tc+'22;color:'+tc+';font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+(m.type||"Sub")+'</span>'
-      +'<span style="font-size:14px;font-weight:700;color:#1C1C1E">'+m.name+'</span>'
+      +'<span style="font-size:14px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</span>'
       +'</div>'
-      +(m.trade?'<div style="font-size:12px;color:#888">'+m.trade+'</div>':'')
-      +(m.phone?'<div style="font-size:12px;color:#555">&#128222; '+m.phone+'</div>':'')
-      +(m.email?'<div style="font-size:12px;color:#555">&#128140; '+m.email+'</div>':'')
+      +(m.trade?'<div style="font-size:12px;color:#888">'+escapeHtmlText(m.trade)+'</div>':'')
+      +(m.phone?'<div style="font-size:12px;color:#555">&#128222; '+escapeHtmlText(m.phone)+'</div>':'')
+      +(m.email?'<div style="font-size:12px;color:#555">&#128140; '+escapeHtmlText(m.email)+'</div>':'')
       +'</div>'
       +'<div style="display:flex;gap:6px">'
       +'<button ontouchend="event.preventDefault();editTeamMember('+i+');" onclick="editTeamMember('+i+');" style="background:#2858BD;border:none;border-radius:8px;color:#fff;padding:6px 12px;font-size:12px;cursor:pointer;min-height:36px">&#9999;</button>'
@@ -2076,9 +2076,9 @@ function renderEstDetailBody(e){
 
   // Header info
   html+='<div class="wcard">';
-  html+='<div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+e.client+'</div></div>';
+  html+='<div class="fr2"><div><div class="ibl">Client</div><div class="ibv">'+escapeHtmlText(e.client)+'</div></div>';
   html+='<div><div class="ibl">Date</div><div class="ibv">'+fmt(e.date)+'</div></div></div>';
-  if(e.address) html+='<div style="font-size:12px;color:#888;margin-top:8px">&#128205; '+e.address+'</div>';
+  if(e.address) html+='<div style="font-size:12px;color:#888;margin-top:8px">&#128205; '+escapeHtmlText(e.address)+'</div>';
   if(e.validUntil) html+='<div style="font-size:12px;color:#888;margin-top:4px">Valid until: '+fmt(e.validUntil)+'</div>';
   html+='</div>';
 
@@ -2108,7 +2108,7 @@ function renderEstDetailBody(e){
   if(e.status==='Approved') html+='<button class="btn-sm" style="background:#1C1C1E" onclick="convertToProject()">Create project</button>';
   html+=archiveControls('estimate',e)+'</div></details>';
 
-  if(e.signedAt) html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+e.signedBy+' &middot; '+fmtTS(e.signedAt)+'</div>';
+  if(e.signedAt) html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+escapeHtmlText(e.signedBy)+' &middot; '+fmtTS(e.signedAt)+'</div>';
 
   // Status
   html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label>';
@@ -2125,14 +2125,14 @@ function renderEstDetailBody(e){
     (e.lineItems||[]).forEach(function(li,i){var cat=li.category||'Other';if(!byCategory[cat])byCategory[cat]=[];byCategory[cat].push({li:li,i:i});});
     html+='<div>';
     Object.keys(byCategory).forEach(function(cat){
-      html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;padding:10px 0 6px;letter-spacing:.05em">'+cat+'</div>';
+      html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;padding:10px 0 6px;letter-spacing:.05em">'+escapeHtmlText(cat)+'</div>';
       byCategory[cat].forEach(function(obj){
         var li=obj.li,i=obj.i;
         var cost=parseFloat(li.total)||0,markup=parseFloat(li.markup)||0,clientAmt=cost*(1+markup/100);
         html+='<div style="background:#F8F9FF;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #E0E8FF">';
         html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">';
-        html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+li.desc+'</div>';
-        if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+li.unit+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
+        html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(li.desc)+'</div>';
+        if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+escapeHtmlText(li.unit)+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
         html+='</div>';
         html+='<div style="display:flex;gap:6px;flex-shrink:0">';
         html+='<button ontouchend="event.preventDefault();openEditLineItem('+i+');" onclick="openEditLineItem('+i+');" style="background:#2858BD;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
@@ -2167,7 +2167,7 @@ function renderEstDetailBody(e){
     milestones.forEach(function(m,i){
       html+='<div class="pay-mile'+(m.paid?' paid':'')+'">';
       html+='<div class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone('+i+')">'+(m.paid?'&#10003;':'')+'</div>';
-      html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+m.name+'</div>';
+      html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>';
       html+='<div style="font-size:12px;color:#aaa;margin-top:2px">$'+m.amount.toLocaleString()+(m.pct?' ('+m.pct+'%)':'')+'</div></div>';
       html+='<button class="del-btn" onclick="delMilestone('+i+')">&#215;</button></div>';
     });
@@ -2197,7 +2197,7 @@ function renderEstDetailBody(e){
   html+='<button class="btn-sm" style="background:#2858BD;flex:1" onclick="printContract()">&#128438; Print</button>';
   html+='<button class="btn-sm" style="background:#888;flex:1" onclick="resetContract()">&#8635; Regenerate</button>';
   html+='</div>';
-  html+='<textarea class="fi" id="contractTA" rows="18" style="font-family:Georgia,serif;font-size:12px;line-height:1.8;color:#333">'+contractText+'</textarea>';
+  html+='<textarea class="fi" id="contractTA" rows="18" style="font-family:Georgia,serif;font-size:12px;line-height:1.8;color:#333">'+escapeHtmlText(contractText)+'</textarea>';
   html+='<button class="btn-green" style="margin-top:10px" onclick="saveContract()">Save Contract</button>';
   html+='</div>';
 
@@ -2207,7 +2207,7 @@ function renderEstDetailBody(e){
   if(e.contractorSignedAt){
     html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:12px;margin-bottom:10px">';
     html+='<div style="font-size:13px;font-weight:700;color:#2EAA72">&#10003; Signed as Contractor</div>';
-    html+='<div style="font-size:12px;color:#888;margin-top:4px">By: '+e.contractorName+' &middot; '+fmtTS(e.contractorSignedAt)+'</div>';
+    html+='<div style="font-size:12px;color:#888;margin-top:4px">By: '+escapeHtmlText(e.contractorName)+' &middot; '+fmtTS(e.contractorSignedAt)+'</div>';
     if(e.contractorSigData) html+='<img src="'+e.contractorSigData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px;display:block"/>';
     html+='</div>';
     html+='<button class="btn-ghost" onclick="clearContractorSig()">Clear &amp; Re-sign</button>';
@@ -2231,7 +2231,7 @@ function renderEstDetailBody(e){
   if(e.signedAt){
     html+='<div class="sec-label" style="margin-top:4px">Client Signature</div>';
     html+='<div class="wcard" style="text-align:center"><div style="font-size:13px;font-weight:700;color:#2EAA72;margin-bottom:8px">&#10003; Signed by Client</div>';
-    html+='<div style="font-size:12px;color:#888">By: '+e.signedBy+'</div>';
+    html+='<div style="font-size:12px;color:#888">By: '+escapeHtmlText(e.signedBy)+'</div>';
     html+='<div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>';
     if(e.signatureData) html+='<img src="'+e.signatureData+'" style="max-width:200px;margin-top:8px;border:1px solid #EEE;border-radius:8px"/>';
     html+='</div>';
@@ -2252,7 +2252,7 @@ function renderEstDetailBody(e){
     excls.forEach(function(ex,xi){
       html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="width:8px;height:8px;border-radius:50%;background:#E83A6C;flex-shrink:0"></div>';
-      html+='<div style="flex:1;font-size:13px;color:#333">'+ex+'</div>';
+      html+='<div style="flex:1;font-size:13px;color:#333">'+escapeHtmlText(ex)+'</div>';
       html+='<button ontouchend="event.preventDefault();delExclusion('+xi+');" onclick="delExclusion('+xi+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
       html+='</div>';
     });
@@ -2438,13 +2438,13 @@ function renderPortalBody(e){
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
   var logoSrc=(p&&p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL));
   var html="";
-  html+='<div class="portal-header"><img src="'+logoSrc+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+e.client+'</div></div>';
-  html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2858BD">'+(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+e.status+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1C1C1E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
+  html+='<div class="portal-header"><img src="'+logoSrc+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+escapeHtmlText(e.client)+'</div></div>';
+  html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2858BD">'+(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+escapeHtmlText(e.status)+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1C1C1E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
-  if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2858BD"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+it.desc+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+it.complete+'</div></div>';}).join("")+'</div></div>';}
+  if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2858BD"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+escapeHtmlText(it.desc)+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+it.complete+'</div></div>';}).join("")+'</div></div>';}
   var milestones=e.paymentMilestones||[];
-  if(milestones.length){var totalPaid2=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128176; Payment Schedule</div>'+milestones.map(function(m){return'<div class="payment-milestone'+(m.paid?" pm-paid":"")+'"><div class="pm-cb'+(m.paid?" paid":"")+'">'+(m.paid?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+m.name+'</div><div style="font-size:12px;color:#aaa">$'+m.amount.toLocaleString()+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div><div style="font-size:12px;font-weight:700;color:'+(m.paid?"#2EAA72":"#aaa")+'">'+(m.paid?"Paid":"Pending")+'</div></div>';}).join("")+'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:13px"><span style="color:#aaa">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+totalPaid2.toLocaleString()+'</span></div></div>';}
-  if(p&&(p.choices||[]).length){html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127912; Your Selections</div>'+(p.choices||[]).map(function(ch){var clr=["Confirmed","Installed","Delivered"].includes(ch.status)?"#2EAA72":ch.status==="Ordered"?"#E8B43A":"#aaa";return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5F5F5"><div><div style="font-size:13px;font-weight:600;color:#333">'+ch.category+'</div><div style="font-size:12px;color:#888">'+ch.item+'</div></div><span style="font-size:11px;font-weight:700;color:'+clr+'">'+ch.status+'</span></div>';}).join("")+'</div>';}
+  if(milestones.length){var totalPaid2=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128176; Payment Schedule</div>'+milestones.map(function(m){return'<div class="payment-milestone'+(m.paid?" pm-paid":"")+'"><div class="pm-cb'+(m.paid?" paid":"")+'">'+(m.paid?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtmlText(m.name)+'</div><div style="font-size:12px;color:#aaa">$'+m.amount.toLocaleString()+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div><div style="font-size:12px;font-weight:700;color:'+(m.paid?"#2EAA72":"#aaa")+'">'+(m.paid?"Paid":"Pending")+'</div></div>';}).join("")+'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:13px"><span style="color:#aaa">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+totalPaid2.toLocaleString()+'</span></div></div>';}
+  if(p&&(p.choices||[]).length){html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127912; Your Selections</div>'+(p.choices||[]).map(function(ch){var clr=["Confirmed","Installed","Delivered"].includes(ch.status)?"#2EAA72":ch.status==="Ordered"?"#E8B43A":"#aaa";return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5F5F5"><div><div style="font-size:13px;font-weight:600;color:#333">'+escapeHtmlText(ch.category)+'</div><div style="font-size:12px;color:#888">'+escapeHtmlText(ch.item)+'</div></div><span style="font-size:11px;font-weight:700;color:'+clr+'">'+escapeHtmlText(ch.status)+'</span></div>';}).join("")+'</div>';}
   document.getElementById("portalBody").innerHTML=html;
 }
 
@@ -3053,7 +3053,7 @@ function renderProjectPortal(p, est, wrapper){
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Client Project Portal</div>';
   html+='<button onclick="window.location.reload()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:rgba(255,255,255,0.8);font-size:11px;padding:4px 10px;cursor:pointer">&#8635; Refresh</button>';
   html+='</div>';
-  html+='<div style="font-size:20px;font-weight:800;color:#fff">'+p.client+'</div>';
+  html+='<div style="font-size:20px;font-weight:800;color:#fff">'+escapeHtmlText(p.client)+'</div>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">'+p.type+(p.address?' &middot; '+p.address:'')+'</div>';
   html+='</div>';
 
@@ -3063,7 +3063,7 @@ function renderProjectPortal(p, est, wrapper){
   var statusColor=p.status==='Completed'?'#2EAA72':p.status==='In Progress'?'#2858BD':'#E8B43A';
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   html+='<span style="font-size:13px;color:#888">'+fmt(p.startDate)+' &rarr; '+fmt(p.endDate)+'</span>';
-  html+='<span style="background:'+statusColor+'22;color:'+statusColor+';padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700">'+p.status+'</span>';
+  html+='<span style="background:'+statusColor+'22;color:'+statusColor+';padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700">'+escapeHtmlText(p.status)+'</span>';
   html+='</div>';
   html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">';
   html+='<span style="color:#555">Overall Completion</span><span style="font-weight:700;color:#2858BD">'+pct+'%</span></div>';
@@ -3080,8 +3080,8 @@ function renderProjectPortal(p, est, wrapper){
       html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:'+bg+';border-radius:10px;margin-bottom:8px">';
       html+='<div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div>';
       html+='<div style="flex:1">';
-      html+='<div style="font-size:14px;font-weight:600;color:#1C1C1E">'+it.desc+'</div>';
-      if(it.assignTo) html+='<div style="font-size:11px;color:#888;margin-top:2px">&#128100; '+it.assignTo+'</div>';
+      html+='<div style="font-size:14px;font-weight:600;color:#1C1C1E">'+escapeHtmlText(it.desc)+'</div>';
+      if(it.assignTo) html+='<div style="font-size:11px;color:#888;margin-top:2px">&#128100; '+escapeHtmlText(it.assignTo)+'</div>';
       html+='</div>';
       html+='<div style="font-size:12px;font-weight:700;color:'+clr+'">'+it.complete+'</div>';
       html+='</div>';
@@ -3097,9 +3097,9 @@ function renderProjectPortal(p, est, wrapper){
     choices.forEach(function(ch){
       var sc=['Confirmed','Installed','Delivered','Received','In Stock'].indexOf(ch.status)>=0?'#2EAA72':ch.status==='Ordered'||ch.status==='Quoted'?'#E8B43A':'#aaa';
       html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F5F5F5">';
-      html+='<div><div style="font-size:14px;font-weight:600;color:#1C1C1E">'+ch.category+'</div>';
+      html+='<div><div style="font-size:14px;font-weight:600;color:#1C1C1E">'+escapeHtmlText(ch.category)+'</div>';
       html+='<div style="font-size:12px;color:#888;margin-top:2px">'+ch.item+(ch.vendor?' &middot; '+ch.vendor:'')+'</div></div>';
-      html+='<span style="font-size:12px;font-weight:700;color:'+sc+';white-space:nowrap;margin-left:12px">'+ch.status+'</span>';
+      html+='<span style="font-size:12px;font-weight:700;color:'+sc+';white-space:nowrap;margin-left:12px">'+escapeHtmlText(ch.status)+'</span>';
       html+='</div>';
     });
     html+='</div>';
@@ -3123,7 +3123,7 @@ function renderProjectPortal(p, est, wrapper){
       html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="display:flex;align-items:center;gap:10px">';
       html+='<div style="width:24px;height:24px;border-radius:6px;border:2px solid '+(m.paid?'#2EAA72':'#DDD')+';background:'+(m.paid?'#2EAA72':'transparent')+';display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0">'+(m.paid?'&#10003;':'')+' </div>';
-      html+='<div><div style="font-size:14px;font-weight:600;color:#1C1C1E">'+m.name+'</div>';
+      html+='<div><div style="font-size:14px;font-weight:600;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>';
       if(m.paid&&m._pd) html+='<div style="font-size:11px;color:#2EAA72">Paid'+m._pd+'</div>';
       else if(m.dueDate) html+='<div style="font-size:11px;color:#aaa">Due: '+fmt(m.dueDate)+'</div>';
       if(m.pct) html+='<div style="font-size:11px;color:#aaa">'+m.pct+'% of contract</div>';
@@ -3151,7 +3151,7 @@ function renderProjectPortal(p, est, wrapper){
       var coIdx=(p.changeOrders||[]).indexOf(co);
       var clientAmt=parseFloat(co.clientAmount||co.budgetImpact)||0;
       html+='<div style="background:#F8F9FF;border-radius:12px;padding:16px;margin-bottom:12px">';
-      html+='<div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+co.title+'</div>';
+      html+='<div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+escapeHtmlText(co.title)+'</div>';
       if(co.description){
         var _sm=['Line Item Summary','--- SCOPE','SCOPE AND PRICING','Contract Total:'];
         var _st=co.description;
@@ -3176,7 +3176,7 @@ function renderProjectPortal(p, est, wrapper){
         _pItems.forEach(function(it){
           var _c=it.amt.indexOf('-')!==-1?'#C0392B':'#444';
           _piHtml+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #F5F5F5">'+
-                    '<span style="color:#444">'+it.desc+'</span>'+
+                    '<span style="color:#444">'+escapeHtmlText(it.desc)+'</span>'+
                     '<span style="font-weight:600;color:'+_c+'">'+it.amt+'</span></div>';
         });
         html+='<div style="margin-bottom:8px">'+_piHtml+'</div>';
@@ -3202,8 +3202,8 @@ function renderProjectPortal(p, est, wrapper){
     html+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:12px">&#128260; Approved Changes</div>';
     approvedCOs.forEach(function(co){
       html+='<div style="padding:10px 0;border-bottom:1px solid #F5F5F5;display:flex;justify-content:space-between;align-items:center">';
-      html+='<div><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+co.title+'</div>';
-      if(co.clientSignedBy) html+='<div style="font-size:11px;color:#2EAA72;margin-top:2px">&#10003; Signed by '+co.clientSignedBy+'</div>';
+      html+='<div><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(co.title)+'</div>';
+      if(co.clientSignedBy) html+='<div style="font-size:11px;color:#2EAA72;margin-top:2px">&#10003; Signed by '+escapeHtmlText(co.clientSignedBy)+'</div>';
       html+='</div>';
       html+='<span style="font-size:13px;font-weight:700;color:#2EAA72">+$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'</span>';
       html+='</div>';
@@ -3413,9 +3413,9 @@ function renderClientView(e,wrapper){
 
   // Client + project info
   html+='<div class="wcard">';
-  html+='<div style="font-size:20px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+e.client+'</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+escapeHtmlText(e.client)+'</div>';
   html+='<div style="font-size:14px;color:#888">'+e.type+(e.address?' &middot; '+e.address:'')+'</div>';
-  if(e.estNum) html+='<div style="font-size:12px;color:#2858BD;font-weight:700;margin-top:6px">'+e.estNum+'</div>';
+  if(e.estNum) html+='<div style="font-size:12px;color:#2858BD;font-weight:700;margin-top:6px">'+escapeHtmlText(e.estNum)+'</div>';
   html+='</div>';
 
   var resolvedProjectClass = resolveEstimateProjectClass(e);
@@ -3427,7 +3427,7 @@ function renderClientView(e,wrapper){
   if(!getCanonicalCustomerScope(e).projectScope && e.notes){
     html+='<div class="wcard" style="margin-top:14px">';
     html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Scope</div>';
-    html+='<div style="font-size:13px;color:#555;line-height:1.7">'+e.notes+'</div>';
+    html+='<div style="font-size:13px;color:#555;line-height:1.7">'+escapeHtmlText(e.notes)+'</div>';
     html+='</div>';
   }
 
@@ -3441,10 +3441,10 @@ function renderClientView(e,wrapper){
       byCategory[cat].push(li);
     });
     Object.keys(byCategory).forEach(function(cat){
-      html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;margin:10px 0 6px">'+cat+'</div>';
+      html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;margin:10px 0 6px">'+escapeHtmlText(cat)+'</div>';
       byCategory[cat].forEach(function(li){
         var clientAmt=calcLineItemTotal(li);
-        html+='<div class="li-row"><div class="li-name">'+li.desc+'</div>';
+        html+='<div class="li-row"><div class="li-name">'+escapeHtmlText(li.desc)+'</div>';
         html+='<div class="li-total">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
       });
     });
@@ -3468,7 +3468,7 @@ function renderClientView(e,wrapper){
     milestones.forEach(function(m){
       html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div>';
-      html+='<div style="font-size:14px;font-weight:600;color:#333">'+m.name+'</div>';
+      html+='<div style="font-size:14px;font-weight:600;color:#333">'+escapeHtmlText(m.name)+'</div>';
       if(m.pct) html+='<div style="font-size:11px;color:#aaa">'+m.pct+'% of total</div>';
       html+='</div>';
       html+='<div style="text-align:right">';
@@ -3490,13 +3490,13 @@ function renderClientView(e,wrapper){
     excls2.forEach(function(ex){
       html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #F5F5F5">';
       html+='<div style="width:6px;height:6px;border-radius:50%;background:#E83A6C;flex-shrink:0"></div>';
-      html+='<div style="font-size:13px;color:#333">'+ex+'</div></div>';
+      html+='<div style="font-size:13px;color:#333">'+escapeHtmlText(ex)+'</div></div>';
     });
     html+='</div>';
   }
   html+='<div class="wcard" style="margin-top:14px">';
   html+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:12px">&#128196; Contract &amp; Terms</div>';
-  html+='<div style="font-size:12px;color:#444;line-height:1.8;white-space:pre-wrap;font-family:Georgia,serif;max-height:320px;overflow-y:auto;padding:12px;background:#F8F9FA;border-radius:8px;border:1px solid #E0E0E0">'+contractText+'</div>';
+  html+='<div style="font-size:12px;color:#444;line-height:1.8;white-space:pre-wrap;font-family:Georgia,serif;max-height:320px;overflow-y:auto;padding:12px;background:#F8F9FA;border-radius:8px;border:1px solid #E0E0E0">'+escapeHtmlText(contractText)+'</div>';
   // Show contractor signature if signed
   if(e.contractorSignedAt){
     html+='<div style="margin-top:14px;padding-top:14px;border-top:1px solid #E0E0E0">';
@@ -3511,7 +3511,7 @@ function renderClientView(e,wrapper){
   if(e.signedAt){
     html+='<div class="wcard" style="text-align:center;background:#EDFAF4;border:1px solid #2EAA72;margin-top:14px">';
     html+='<div style="font-size:16px;font-weight:700;color:#2EAA72">&#10003; Signed &amp; Accepted</div>';
-    html+='<div style="font-size:13px;color:#555;margin-top:4px">By: '+e.signedBy+'</div>';
+    html+='<div style="font-size:13px;color:#555;margin-top:4px">By: '+escapeHtmlText(e.signedBy)+'</div>';
     html+='<div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>';
     html+='</div>';
   } else if(e.status!=='Declined'&&e.status!=='Expired'){
@@ -3898,15 +3898,15 @@ function renderTabBody(p){
       var pct=c==="Complete"?100:c==="In Progress"?50:0;
       var clr=c==="Complete"?"#2EAA72":c==="In Progress"?"#2858BD":"#CBD5E1";
       var teamOpts='<option value="">-- Unassigned --</option>';
-      (DD.team||[]).forEach(function(m){teamOpts+='<option value="'+m.name+'"'+(m.name===it.assignTo?' selected':'')+'>'+m.name+(m.trade?' ('+m.trade+')':'')+'</option>';});
+      (DD.team||[]).forEach(function(m){teamOpts+='<option value="'+escapeHtmlText(m.name)+'"'+(m.name===it.assignTo?' selected':'')+'>'+escapeHtmlText(m.name)+(m.trade?' ('+escapeHtmlText(m.trade)+')':'')+'</option>';});
       html+='<div class="scope-item">';
       // Header row
       html+='<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px">';
       html+='<div style="flex:1">';
-      html+='<div style="font-size:14px;font-weight:700;color:#1C1C1E">'+it.desc+'</div>';
-      if(it.category) html+='<div style="font-size:10px;color:#2858BD;margin-top:2px;text-transform:uppercase">'+it.category+'</div>';
+      html+='<div style="font-size:14px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(it.desc)+'</div>';
+      if(it.category) html+='<div style="font-size:10px;color:#2858BD;margin-top:2px;text-transform:uppercase">'+escapeHtmlText(it.category)+'</div>';
       if(it.start) html+='<div style="font-size:10px;color:#aaa;margin-top:2px">'+fmt(it.start)+(it.end?' &#8594; '+fmt(it.end):'')+'</div>';
-      if(it.assignTo) html+='<div style="font-size:11px;color:#2858BD;margin-top:2px">&#128100; '+it.assignTo+'</div>';
+      if(it.assignTo) html+='<div style="font-size:11px;color:#2858BD;margin-top:2px">&#128100; '+escapeHtmlText(it.assignTo)+'</div>';
       html+='</div>';
       html+='<div style="display:flex;gap:6px">';
       html+='<button style="background:#2858BD;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px" onclick="toggleScopeEdit(this,'+i+')">Edit</button>';
@@ -3932,14 +3932,14 @@ function renderTabBody(p){
       html+='</div>';
     });
     html+='<button class="btn-dashed" onclick="showForm(\'scopeForm\')">+ Add Scope Item</button>';
-    html+='<div class="inline-form" id="scopeForm"><label class="fl" style="margin-bottom:6px">Description</label><select class="fi" id="siSel" style="margin-bottom:8px" onchange="document.getElementById(\'siCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="siCustom" placeholder="Custom description" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="siSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="siEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="siBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="siAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="siAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+m.name+'">'+m.name+(m.trade?" ("+m.trade+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'scopeForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addScopeItem()">Add Item</button></div></div>';
+    html+='<div class="inline-form" id="scopeForm"><label class="fl" style="margin-bottom:6px">Description</label><select class="fi" id="siSel" style="margin-bottom:8px" onchange="document.getElementById(\'siCustom\').style.display=this.value===\'__c__\'?\'block\':\'none\'">'+DD.phaseTypes.map(function(pt){return'<option>'+pt+'</option>';}).join("")+'<option value="__c__">Custom...</option></select><input class="fi" id="siCustom" placeholder="Custom description" style="display:none;margin-bottom:8px"/><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Start</label><input class="fi" id="siSt" type="date"/></div><div><label class="fl">End</label><input class="fi" id="siEn" type="date"/></div></div><div class="fr2" style="margin-bottom:8px"><div><label class="fl">Budget ($)</label><input class="fi" id="siBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="siAct" type="number" placeholder="0"/></div></div><label class="fl" style="margin-bottom:6px">Assign To</label><select class="fi" id="siAssign" style="margin-bottom:10px"><option value="">-- Unassigned --</option>'+(DD.team||[]).map(function(m){return'<option value="'+escapeHtmlText(m.name)+'">'+escapeHtmlText(m.name)+(m.trade?" ("+escapeHtmlText(m.trade)+")":"")+'</option>';}).join("")+'</select><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'scopeForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addScopeItem()">Add Item</button></div></div>';
   } else if(currentTab==="timeline"){
     html+='<div class="view-toggle"><button class="vt-btn on" id="vtGantt" onclick="switchTLView(\'gantt\',this)">&#128202; Gantt</button><button class="vt-btn" id="vtCal" onclick="switchTLView(\'cal\',this)">&#128197; Calendar</button></div><div id="tlContent">'+renderGantt(p)+'</div>';
   } else if(currentTab==="choices"){
     var tCB=0,tCA=0;(p.choices||[]).forEach(function(ch){tCB+=(parseFloat(ch.budgetAmt)||0);tCA+=(parseFloat(ch.actualAmt)||0);});
     if(p.choices&&p.choices.length)html+='<div class="wcard" style="margin-bottom:12px">'+bvaHtml(tCB,tCA)+'</div>';
     html+='<div class="sec-label">Client Selections</div>';
-    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+ch.category+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+ch.item+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+ch.vendor+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+ch.notes+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
+    (p.choices||[]).forEach(function(ch,i){html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(ch.category)+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+escapeHtmlText(ch.item)+'</div>'+(ch.vendor?'<div style="font-size:11px;color:#aaa">'+escapeHtmlText(ch.vendor)+'</div>':'')+(ch.notes?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+escapeHtmlText(ch.notes)+'</div>':'')+'</div><button class="btn-blue" style="padding:6px 10px;font-size:11px;margin-right:4px" onclick="openEditChoice('+i+')">Edit</button><button class="del-btn" onclick="delChoice('+i+')">&#215;</button></div><select class="fi" style="font-size:13px;padding:8px;margin-bottom:8px" onchange="updateChoiceStatus('+i+',this.value)">'+DD.choiceStatuses.map(function(s){return'<option'+(s===ch.status?" selected":"")+'>'+s+'</option>';}).join("")+'</select>'+bvaHtml(ch.budgetAmt||0,ch.actualAmt||0)+'</div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'choiceForm\')">+ Add Selection</button>';
     html+='<div class="inline-form" id="choiceForm"><label class="fl" style="margin-bottom:6px">Category</label><input class="fi" id="cCat" placeholder="e.g. Flooring" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Item</label><input class="fi" id="cItem" placeholder="e.g. 12x24 Porcelain" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Vendor</label><input class="fi" id="cVend" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Notes</label><input class="fi" id="cNotes" placeholder="Optional" style="margin-bottom:8px"/><label class="fl" style="margin-bottom:6px">Status</label><select class="fi" id="cStat" style="margin-bottom:8px">'+DD.choiceStatuses.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="cBud" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="cAct" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'choiceForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addChoice()">Add</button></div></div>';
   } else if(currentTab==="budget"){
@@ -3953,7 +3953,7 @@ function renderTabBody(p){
     html+='<div class="sec-label">Cost Line Items</div>';
     if(p.costLedgerVersion===1)html+='<div class="wcard" style="font-size:14px">New scope and selection costs are included here automatically. Review older entries before adding them again.</div>';
     if(p.costLedgerOpeningBalance)html+='<div class="wcard">Previously recorded balance: $'+p.costLedgerOpeningBalance.toLocaleString()+'</div>';
-    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+c.category+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+c.description+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
+    (p.costs||[]).forEach(function(c,i){html+='<div class="item-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(c.category)+'</div>'+(c.description?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+escapeHtmlText(c.description)+'</div>':'')+'</div><button class="del-btn" onclick="delCost('+i+')">&#215;</button></div>'+bvaHtml(c.budgetAmt||0,c.actualAmt||0)+'<div class="fr2" style="margin-top:8px"><div><label class="fl">Budget ($)</label><input class="fi" type="number" value="'+(c.budgetAmt||0)+'" onchange="updateCostAmt('+i+',\'budgetAmt\',this.value)" style="padding:8px"/></div><div><label class="fl">Actual ($)</label><input class="fi" type="number" value="'+(c.actualAmt||0)+'" onchange="updateCostAmt('+i+',\'actualAmt\',this.value)" style="padding:8px"/></div></div></div>';});
     html+='<button class="btn-dashed" onclick="showForm(\'costForm\')">+ Add Cost Line</button>';
     html+='<div class="inline-form" id="costForm"><label class="fl" style="margin-bottom:6px">Category</label><select class="fi" id="costCat" style="margin-bottom:8px">'+DD.costCategories.map(function(s){return'<option>'+s+'</option>';}).join("")+'</select><label class="fl" style="margin-bottom:6px">Description</label><input class="fi" id="costDesc" placeholder="Optional" style="margin-bottom:8px"/><div class="fr2" style="margin-bottom:10px"><div><label class="fl">Budget ($)</label><input class="fi" id="costB" type="number" placeholder="0"/></div><div><label class="fl">Actual ($)</label><input class="fi" id="costA" type="number" placeholder="0"/></div></div><div class="fbtns"><button class="btn-ghost" onclick="hideForm(\'costForm\')">Cancel</button><button class="btn-dark" style="flex:2" onclick="addCost()">Add</button></div></div>';
     html+='<div class="wcard" style="margin-top:14px"><label class="fl" style="margin-bottom:8px">Update Project Totals</label><div class="fr2"><div><label class="fl">Budget ($)</label><input class="fi" id="bBud" type="number" value="'+(p.budget||0)+'"/></div><div><label class="fl">Spent ($)</label><input class="fi" id="bSpt" type="number" value="'+(p.spent||0)+'"/></div></div><button class="btn-green" style="margin-top:10px" onclick="saveBudgetTotals()">Update Totals</button></div>';
@@ -3988,7 +3988,7 @@ function renderTabBody(p){
       var paid=m.paid;
       html+='<div class="item-card" style="border-left:4px solid '+(paid?'#2EAA72':'#2858BD')+'">';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">';
-      html+='<div style="flex:1"><div style="font-size:15px;font-weight:700;color:#1C1C1E">'+m.name+'</div>';
+      html+='<div style="flex:1"><div style="font-size:15px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>';
       if(m.pct) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+m.pct+'% of contract</div>';
       if(m.dueDate) html+='<div style="font-size:11px;color:'+(m.dueImmediately&&!m.paid?'#E83A6C;font-weight:700':'#888')+';margin-top:2px">'+(m.dueImmediately&&!m.paid?'⚡ Due Immediately':'Due: '+fmt(m.dueDate))+'</div>';
       html+='</div>';
@@ -4017,7 +4017,7 @@ function renderTabBody(p){
     var done=(p.punchList||[]).filter(function(i){return i.done;}).length,total2=(p.punchList||[]).length;
     if(total2>0){var pct3=Math.round(done/total2*100);html+='<div class="wcard" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#1C1C1E">Completion</span><span style="font-size:13px;font-weight:700;color:#2EAA72">'+done+'/'+total2+' done</span></div><div style="background:#EEE;border-radius:6px;height:10px"><div style="height:100%;width:'+pct3+'%;background:#2EAA72;border-radius:6px"></div></div></div>';}
     html+='<div class="sec-label">Punch List Items</div>';
-    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><button type="button" role="checkbox" aria-checked="'+(item.done?"true":"false")+'" aria-label="'+(item.done?"Reopen punch item":"Mark punch item complete")+'" class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</button><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+item.text+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.category+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
+    (p.punchList||[]).forEach(function(item,i){html+='<div class="punch-item"><button type="button" role="checkbox" aria-checked="'+(item.done?"true":"false")+'" aria-label="'+(item.done?"Reopen punch item":"Mark punch item complete")+'" class="punch-cb'+(item.done?" done":"")+'" onclick="togglePunch('+i+')">'+(item.done?"&#10003;":"")+'</button><div style="flex:1"><div class="punch-text'+(item.done?" done":"")+'">'+escapeHtmlText(item.text)+'</div>'+(item.category?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+escapeHtmlText(item.category)+'</div>':'')+'</div><button class="del-btn" onclick="delPunch('+i+')">&#215;</button></div>';});
     html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
     html+='<button class="btn-dashed" style="flex:1" ontouchend="event.preventDefault();showForm(\'punchForm\');" onclick="showForm(\'punchForm\');">+ Add Item</button>';
     html+='<button id="punchAIBtn" class="btn-dark" style="flex:1;background:#2858BD" ontouchend="event.preventDefault();generatePunchListAI(this);" onclick="generatePunchListAI(this);">&#10024; AI Generate</button>';
@@ -4030,7 +4030,7 @@ function renderTabBody(p){
     (p.changeOrders||[]).forEach(function(co,i){
       var sc3=co.status==="Approved"?"#2EAA72":co.status==="Rejected"?"#E83A6C":"#E8B43A";
       html+='<div class="item-card"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">';
-      html+='<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1C1C1E">'+co.title+'</div>';
+      html+='<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(co.title)+'</div>';
       html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+co.type+(co.date?' &middot; '+fmt(co.date):'')+' </div></div>';
       html+='<button class="del-btn" onclick="delCO('+i+')">&#215;</button>';
       html+='</div>';
@@ -4056,11 +4056,11 @@ function renderTabBody(p){
           html+='<div style="margin-bottom:8px">'+_iHtml+'</div>';
           var _did='coDet'+i;
           html+='<button onclick="var _el=document.getElementById(\''+_did+'\');_el.style.display=_el.style.display===\'none\'?\'block\':\'none\'" style="background:none;border:1px solid #DDD;border-radius:6px;padding:4px 10px;font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">&#9776; View Detail</button>';
-          html+='<div id="'+_did+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+co.description+'</div>';
+          html+='<div id="'+_did+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+escapeHtmlText(co.description)+'</div>';
         } else if(_scopePart){
           var _did2='coDet'+i;
           html+='<button onclick="var _el=document.getElementById(\''+_did2+'\');_el.style.display=_el.style.display===\'none\'?\'block\':\'none\'" style="background:none;border:1px solid #DDD;border-radius:6px;padding:4px 10px;font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">&#9776; View Detail</button>';
-          html+='<div id="'+_did2+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+co.description+'</div>';
+          html+='<div id="'+_did2+'" style="display:none;margin-top:6px;background:#F8F8F8;border-radius:6px;padding:8px;font-size:11px;color:#666;white-space:pre-line">'+escapeHtmlText(co.description)+'</div>';
         }
       }html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F0F0F0;margin-top:6px">'+'<span style="font-size:12px;color:#888;font-weight:600">Change Order Total</span>'+'<span style="font-size:14px;font-weight:700;color:#2858BD">$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
       html+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
@@ -4068,7 +4068,7 @@ function renderTabBody(p){
       html+='<option'+(co.status==="Pending"?" selected":"")+'>Pending</option>';
       html+='<option'+(co.status==="Approved"?" selected":"")+'>Approved</option>';
       html+='<option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option>';
-      html+='</select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+co.status+'</span></div>';
+      html+='</select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+escapeHtmlText(co.status)+'</span></div>';
       html+='<div style="display:flex;gap:8px;margin-top:10px">';
       if(co.status==="Pending"){
         html+='<button ontouchend="event.preventDefault();approveCOContractor('+i+');" onclick="approveCOContractor('+i+');" style="flex:1;padding:8px;background:#2EAA72;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#10003; Approve</button>';
@@ -4096,10 +4096,10 @@ function renderTabBody(p){
         html+='<div style="font-size:22px;flex-shrink:0">'+typeIcon+'</div>';
         html+='<div style="flex:1">';
         html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-        html+='<span style="font-size:13px;font-weight:700;color:#1C1C1E">'+c.type+'</span>';
+        html+='<span style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(c.type)+'</span>';
         html+='<span style="font-size:11px;color:#aaa">'+fmtTS(c.ts)+'</span></div>';
-        html+='<div style="font-size:13px;color:#333;line-height:1.5;white-space:pre-wrap">'+c.notes+'</div>';
-        if(c.followUp) html+='<div style="font-size:11px;color:#E8B43A;margin-top:6px;font-weight:600">&#9888; Follow up: '+c.followUp+'</div>';
+        html+='<div style="font-size:13px;color:#333;line-height:1.5;white-space:pre-wrap">'+escapeHtmlText(c.notes)+'</div>';
+        if(c.followUp) html+='<div style="font-size:11px;color:#E8B43A;margin-top:6px;font-weight:600">&#9888; Follow up: '+escapeHtmlText(c.followUp)+'</div>';
         // photos[] array (new) or legacy single photo field
         var _cPhotos=(c.photos&&c.photos.length)?c.photos:(c.photo?[c.photo]:[]);
         if(_cPhotos.length){
@@ -4144,7 +4144,7 @@ function renderTabBody(p){
     html+='<div class="sec-label">Previous Logs</div>';
     var logs=(p.dailyLogs||[]).slice().reverse();
     if(!logs.length){html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:13px">No logs yet. Add your first one above.</div>';}
-    logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+(log.crew||'')+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+log.work+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+log.issues+'</div>':'')+(log.photos&&log.photos.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">'+log.photos.map(function(ph){return'<img src="'+ph+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:4/3"/>';}).join('')+'</div>':'')+'</div>';});
+    logs.forEach(function(log,i){var ri=p.dailyLogs.length-1-i;html+='<div class="item-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div class="log-date">'+fmt(log.date)+(log.weather?' &middot; '+log.weather:'')+'</div><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+(log.crew||'')+'</div></div><button class="del-btn" onclick="delLog('+ri+')">&#215;</button></div><div class="log-text">'+escapeHtmlText(log.work)+'</div>'+(log.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:6px;padding:6px 8px;background:#FFF0F3;border-radius:6px">&#9888; '+escapeHtmlText(log.issues)+'</div>':'')+(log.photos&&log.photos.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">'+log.photos.map(function(ph){return'<img src="'+ph+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:4/3"/>';}).join('')+'</div>':'')+'</div>';});
   } else if(currentTab==="notes"){
     html+='<div class="wcard"><label class="fl" style="margin-bottom:8px">General Notes</label><textarea class="fi" id="notesInput" rows="5" style="margin-bottom:10px">'+(p.notes||'')+'</textarea><button class="btn-green" onclick="saveNotes()">Save Notes</button></div>';
     html+='<div class="sec-label">Add Action Item</div>';
@@ -4153,7 +4153,7 @@ function renderTabBody(p){
     var resolved=(p.notesLog||[]).filter(function(n){return n.resolved;}).length,totalNL=(p.notesLog||[]).length;
     if(totalNL>0)html+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">'+resolved+'/'+totalNL+' resolved</div>';
     if(!totalNL)html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:13px">No action items yet. Add one above.</div>';
-    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote('+i+')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+item.text+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+item.author+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote('+i+')">&#215;</button></div></div>';});
+    (p.notesLog||[]).slice().reverse().forEach(function(item,ri){var i=(p.notesLog.length-1-ri);html+='<div class="note-item"><div style="display:flex;align-items:flex-start;gap:8px"><div class="note-cb'+(item.resolved?" done":"")+'" onclick="toggleNote('+i+')">'+(item.resolved?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;color:#333;'+(item.resolved?"text-decoration:line-through;color:#aaa":"")+'">'+escapeHtmlText(item.text)+'</div>'+(item.author?'<div style="font-size:10px;color:#aaa;margin-top:2px">'+escapeHtmlText(item.author)+'</div>':'')+(item.photo?'<img src="'+item.photo+'" class="note-photo" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'200px\':\'100%\'"/>':'')+'<div class="note-ts">'+fmtTS(item.ts)+'</div></div><button class="del-btn" onclick="delNote('+i+')">&#215;</button></div></div>';});
     html+='<div class="wcard" style="margin-top:12px">';
     html+='<button class="btn-dark" style="margin-bottom:8px" onclick="openEditProject()">&#9999; Edit Project Details</button>';
     html+='<button class="btn-green" style="margin-bottom:8px" onclick="shareClientPortal()">&#128279; Share Client Portal</button>';
