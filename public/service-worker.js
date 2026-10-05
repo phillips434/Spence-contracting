@@ -1,4 +1,4 @@
-const CACHE='contractordesk-shell-v1';
+const CACHE='contractordesk-shell-postgres-v2';
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/'])));
 });

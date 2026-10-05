@@ -1,5 +1,5 @@
 const assert=require('assert');
-const {decodeValue,decodeDocument,digest}=require('../lib/firestoreMigrationAudit');
+const {decodeValue,decodeDocument,digest}=require('../lib/legacySerialization');
 describe('Firestore migration fidelity',function(){
   it('preserves empty arrays, empty maps, null, false and zero distinctly',function(){
     assert.deepStrictEqual(decodeValue({arrayValue:{}}),[]);

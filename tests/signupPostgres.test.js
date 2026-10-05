@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(require.resolve('../public/index.html'),'utf8');
-function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);if(a<0)throw Error(name);return html.slice(a,b).split('\nvar originalFirestoreBatch')[0];}
+function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);if(a<0)throw Error(name);return html.slice(a,b).split('\ndb.batch=')[0];}
 function fixture(invitation=null){
  const nodes=Object.fromEntries(['termsCheck','suName','suCompany','suEmail','suPassword','authError','authLoading'].map(n=>[n,{value:'',style:{}}]));Object.assign(nodes.termsCheck,{value:'1'});nodes.suName.value='Fixture Member';nodes.suCompany.value='Fixture Company';nodes.suEmail.value='Member@Example.invalid';nodes.suPassword.value='synthetic-test-only';
  const calls=[];let profile=null,created=0;const c={document:{getElementById:n=>nodes[n]},currentUser:null,auth:{currentUser:null},normalizeInviteEmail:s=>String(s||'').trim().toLowerCase(),Promise,JSON,Date,console,fetch:async(url,options={})=>{calls.push({url,method:options.method||'GET',headers:options.headers,body:options.body&&JSON.parse(options.body)});let document=null;if(url==='/api/data/identity/invitation')document=invitation;if(url==='/api/data/identity/self'){if(options.method==='PUT')profile=JSON.parse(options.body);document=profile;}return {ok:true,json:async()=>({document})};}};

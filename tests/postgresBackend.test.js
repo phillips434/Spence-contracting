@@ -8,19 +8,19 @@ describe('PostgreSQL backend migration guard', function(){
     else process.env.CD_DATA_BACKEND = original;
   });
 
-  it('keeps Firestore active by default', function(){
+  it('uses PostgreSQL by default', function(){
     delete process.env.CD_DATA_BACKEND;
-    assert.strictEqual(dataBackendEnabled(), false);
+    assert.strictEqual(dataBackendEnabled(), true);
   });
 
-  it('requires an explicit postgres switch', function(){
+  it('uses PostgreSQL with explicit configuration', function(){
     process.env.CD_DATA_BACKEND = 'postgres';
     assert.strictEqual(dataBackendEnabled(), true);
   });
 
-  it('does not enable postgres for other values', function(){
+  it('never falls back to a retired database', function(){
     process.env.CD_DATA_BACKEND = 'firestore';
-    assert.strictEqual(dataBackendEnabled(), false);
+    assert.strictEqual(dataBackendEnabled(), true);
   });
 });
 
@@ -35,3 +35,4 @@ describe('PostgreSQL migration endpoint guard', function(){
   it('rejects short or missing secrets',function(){process.env.CD_MIGRATION_MODE='enabled';process.env.CD_MIGRATION_SECRET='short';assert.strictEqual(migrationAuthorized(req('short')),false);});
   it('requires exact secret when explicitly enabled',function(){process.env.CD_MIGRATION_MODE='enabled';process.env.CD_MIGRATION_SECRET='123456789012345678901234';assert.strictEqual(migrationAuthorized(req('wrong')),false);assert.strictEqual(migrationAuthorized(req('123456789012345678901234')),true);});
 });
+

@@ -12,7 +12,6 @@
 <link id="pwaManifestLink" rel="manifest" href=""/>
 <title>Contractor Desk</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -635,12 +634,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
         <div id="backupStatus" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
     <details class="more-actions" id="settingsDiagnostics"><summary>Support tools</summary><div><button class="btn-sm" onclick="openDiagnosticPanel()">View diagnostics</button></div></details>
-    <div class="wcard" id="adminCardMigrate" style="display:none;border:2px solid #E8B43A;background:#FFFBF0">
-        <div style="font-size:14px;font-weight:700;color:#8A6000;margin-bottom:6px">&#128260; Migrate My Data</div>
-        <div style="font-size:12px;color:#8A6000;margin-bottom:12px;line-height:1.5">One-time step: move your existing projects and estimates into your account. Only needed once after Phase 3 setup.</div>
-        <button class="btn-dark" style="background:#E8B43A;color:#1C1C1E" onclick="migrateMyData()">&#128260; Move My Data Into My Account</button>
-        <div id="migrateMyStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
-      </div>
       <div class="wcard" style="border:1.5px solid #2858BD">
         <div style="font-size:14px;font-weight:700;color:#2858BD;margin-bottom:6px">&#129302; Test AI Connection</div>
         <div style="font-size:12px;color:#888;margin-bottom:10px">Check if the app server and AI provider are working.</div>
@@ -787,8 +780,7 @@ var _tl=document.getElementById("trialLogo");if(_tl)_tl.src=CD_LOGO_FULL;
 function closePage(id) { document.getElementById(id).classList.remove('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-var db=firebase.firestore(),auth=firebase.auth();
-db.settings({experimentalAutoDetectLongPolling: true});
+var db={},auth=firebase.auth();
 var col,sCol,nCol,eCol,currentUser=null;
 var CD_USE_POSTGRES = true;
 
@@ -884,21 +876,15 @@ function postgresSupportCollection(kind){
   }
   return query([],null);
 }
-var originalFirestoreBatch=db.batch.bind(db);
 db.batch=function(){
-  if(!CD_USE_POSTGRES)return originalFirestoreBatch();
   var operations=[],batch={};
   ['set','update'].forEach(function(method){batch[method]=function(ref,data,options){if(!ref._pgKind)throw new Error('Only PostgreSQL project and estimate references may be batched');operations.push({kind:ref._pgKind,id:ref.id,method:method,data:data,merge:!!(options&&options.merge)});return batch;};});
   batch.commit=function(){return operations.length?pgFetchJson('/api/data/batch',{method:'POST',body:JSON.stringify({operations:operations})}):Promise.resolve();};return batch;
 };
-var originalFirestoreCollection=db.collection.bind(db);
 db.collection=function(path){
-  if(CD_USE_POSTGRES&&(currentUser||auth.currentUser)){
-    if(['settings','notifications','userProfiles','teamInvites'].indexOf(path)!==-1)return postgresSupportCollection(path);
-    if(['projects','estimates'].indexOf(path)!==-1)return postgresCollection(path);
-    if(path.indexOf('users/')===0)throw new Error('Legacy Firestore migration is disabled for PostgreSQL workspaces');
-  }
-  return originalFirestoreCollection(path);
+  if(['settings','notifications','userProfiles','teamInvites'].indexOf(path)!==-1)return postgresSupportCollection(path);
+  if(['projects','estimates'].indexOf(path)!==-1)return postgresCollection(path);
+  throw new Error('Unsupported PostgreSQL collection: '+path);
 };
 
 
@@ -1131,7 +1117,7 @@ async function openDiagnosticPanel(){
       'mainView visible: ' + (state.mainViewVisible ? 'YES' : 'NO'),
       'relevant localStorage keys/values: ' + (state.localStorageRelevant || 'n/a'),
       'relevant sessionStorage keys/values: ' + (state.sessionStorageRelevant || 'n/a'),
-      'relevant Firestore/profile/workspace errors: ' + state.errors.join('\n  - ')
+      'relevant profile/workspace errors: ' + state.errors.join('\n  - ')
     ];
     report.textContent = lines.join('\n');
   } catch (e) {
@@ -3366,7 +3352,7 @@ function checkClientView(){
    'editScopePage','editLineItemPage','notifsPage'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove('show');
   });
-  document.body.style.background="#fff";document.body.classList.add("client-mode");document.body.classList.add('client-mode');var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading estimate...</div>';console.info('[EST-SHARE] Loading. eCol defined:'+(typeof eCol!=='undefined')+' estId:'+estId);var _estTimer=setTimeout(function(){console.error('[EST-SHARE] 8s timeout — promise never resolved. db:'+typeof db+' eCol:'+typeof eCol+' auth:'+JSON.stringify(firebase.auth().currentUser?'signed-in':'anonymous'));wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa"><div style="font-size:18px;margin-bottom:12px">&#9888;</div>Load timeout. Check browser console for [EST-SHARE] error.</div>';},8000);eCol.doc(estId).onSnapshot(function(doc){clearTimeout(_estTimer);if(!doc.exists){console.warn('[EST-SHARE] Estimate not found. ID:',estId);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found. The link may be expired or incorrect.</div>';return;}console.info('[EST-SHARE] Estimate loaded, rendering...');var est=doc.data();est.id=estId;renderClientView(est,wrapper);},function(err){clearTimeout(_estTimer);var reason=err.code==='permission-denied'?'Permission denied — check Firestore rules':(err.message||err.code||'Unknown error');console.error('[EST-SHARE] Firestore error:',err.code,err.message);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa"><div style="font-size:18px;margin-bottom:12px">&#9888;</div>Could not load estimate.<br><br><span style="font-size:12px;color:#bbb">'+reason+'</span></div>';});}
+  document.body.style.background="#fff";document.body.classList.add("client-mode");document.body.classList.add('client-mode');var wrapper=document.createElement("div");wrapper.id="clientWrapper";document.body.appendChild(wrapper);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Loading estimate...</div>';console.info('[EST-SHARE] Loading. eCol defined:'+(typeof eCol!=='undefined')+' estId:'+estId);var _estTimer=setTimeout(function(){console.error('[EST-SHARE] 8s timeout — promise never resolved. db:'+typeof db+' eCol:'+typeof eCol+' auth:'+JSON.stringify(firebase.auth().currentUser?'signed-in':'anonymous'));wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa"><div style="font-size:18px;margin-bottom:12px">&#9888;</div>Load timeout. Check browser console for [EST-SHARE] error.</div>';},8000);eCol.doc(estId).onSnapshot(function(doc){clearTimeout(_estTimer);if(!doc.exists){console.warn('[EST-SHARE] Estimate not found. ID:',estId);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa">Estimate not found. The link may be expired or incorrect.</div>';return;}console.info('[EST-SHARE] Estimate loaded, rendering...');var est=doc.data();est.id=estId;renderClientView(est,wrapper);},function(err){clearTimeout(_estTimer);var reason=err.code==='permission-denied'?'Permission denied — request a current shared link':(err.message||err.code||'Unknown error');console.error('[EST-SHARE] Shared view error:',err.code,err.message);wrapper.innerHTML='<div style="text-align:center;padding:40px;color:#aaa"><div style="font-size:18px;margin-bottom:12px">&#9888;</div>Could not load estimate.<br><br><span style="font-size:12px;color:#bbb">'+reason+'</span></div>';});}
 function initSigCanvas(canvasId){
   var cc=document.getElementById(canvasId);
   if(!cc)return;
@@ -3578,7 +3564,7 @@ function submitSignature(estId){
   var blank=document.createElement("canvas");
   blank.width=canvas.width;blank.height=canvas.height;
   if(sigData===blank.toDataURL("image/png")){T("Please sign above before submitting.");return;}
-  // Sign in anonymously so Firestore write is allowed
+  // Legacy anonymous sign-in
   var doUpdate = function(){
     (CD_USE_POSTGRES?publicPortalAction('estimates',estId,{action:'estimate-sign',name:name,signature:sigData}):db.collection('estimates').doc(estId).update({
       signedBy:name,signedAt:Date.now(),signatureData:sigData,status:"Approved"
@@ -3601,7 +3587,7 @@ function submitSignature(estId){
     console.error('Signature error:',err);
   });
   };
-  // Direct write - no auth needed, Firestore rules allow update:true on estimates
+  // Legacy document action
   doUpdate();
 }
 
@@ -3635,7 +3621,7 @@ function openDetail(id){
     _renderDetail(cached);
     return;
   }
-  // Fetch from Firestore only if not cached
+  // Fetch from PostgreSQL only if not cached
   document.getElementById("dName").textContent="Loading...";
   col.doc(id).get().then(function(doc){
     if(!doc.exists){document.getElementById("dName").textContent="Not found";return;}
@@ -4171,9 +4157,9 @@ function renderTabBody(p){
     document.getElementById("tabBody").innerHTML=html;
   // Show admin utilities for owner only
   var _isOw=currentUser&&currentUser.uid==="L5XUqfnWrrgbAk18X36XcHDJxnz1";
-  ['adminCardBackup','adminCardMigrate','adminCardTag','adminCardRestore','adminCardPhase'].forEach(function(id){
+  ['adminCardBackup','adminCardTag','adminCardRestore','adminCardPhase'].forEach(function(id){
     var el=document.getElementById(id);
-    if(el)el.style.display=(_isOw&&(!CD_USE_POSTGRES||id!=='adminCardMigrate'))?'block':'none';
+    if(el)el.style.display=_isOw?'block':'none';
   });
   // Ensure combined send button exists directly in detailPage (not inside scroll)
   // Restore checkbox + button state after re-render
@@ -5004,15 +4990,6 @@ function saveProject(){var client=document.getElementById("fClient").value.trim(
 }).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
-  if(currentUser&&currentUser.uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'&&!document.getElementById('migrationAuditButton')){
-    var auditBox=document.createElement('div');auditBox.style.cssText='padding:16px;margin:16px;border:1px solid #ddd;border-radius:12px';
-    var auditBtn=document.createElement('button');auditBtn.id='migrationAuditButton';auditBtn.className='btn-sm';auditBtn.textContent='Verify migration';
-    var auditResult=document.createElement('pre');auditResult.id='migrationAuditResult';auditResult.style.cssText='white-space:pre-wrap;font-size:12px';
-    auditBtn.onclick=function(){auditBtn.disabled=true;auditResult.textContent='Checking source records...';pgFetchJson('/api/data/migration/audit').then(function(j){auditResult.textContent=JSON.stringify(j.report,null,2);}).catch(function(e){auditResult.textContent=e.message;}).finally(function(){auditBtn.disabled=false;});};
-    auditBox.appendChild(auditBtn);auditBox.appendChild(auditResult);document.getElementById('settingsPage').appendChild(auditBox);
-    var migrateBtn=document.createElement('button');migrateBtn.id='migrationSupportButton';migrateBtn.className='btn-sm';migrateBtn.textContent='Complete verified support import';
-    migrateBtn.onclick=function(){migrateBtn.disabled=true;auditResult.textContent='Copying verified company records...';pgFetchJson('/api/data/migration/support',{method:'POST',body:'{}'}).then(function(j){auditResult.textContent=JSON.stringify(j.report,null,2);}).catch(function(e){auditResult.textContent=e.message;}).finally(function(){migrateBtn.disabled=false;});};auditBox.appendChild(migrateBtn);
-  }
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   var _uid=currentUser?currentUser.uid:null;
   if(!_uid){renderSettingsForm();return;}
@@ -5599,7 +5576,7 @@ function signUp(){
 
 function signOutUser(){
   if(!confirm('Sign out of Contractor Desk?')) return;
-  // Unsubscribe all Firestore listeners before logout
+  // Stop all workspace listeners before logout
   if(unsubProjects){unsubProjects();unsubProjects=null;}
   if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
   if(unsubNotifs){unsubNotifs();unsubNotifs=null;}
@@ -5751,107 +5728,6 @@ if(_origRenderSettings){
 // ═══════════════════════════════════════════════════════════════
 // DATA MIGRATION — Move old shared data to user account
 // ═══════════════════════════════════════════════════════════════
-function migrateMyData(){
-  if(CD_USE_POSTGRES){T('Your company uses PostgreSQL. Use Verify migration in Settings.');return;}
-  var statusEl = document.getElementById('migrateMyStatus');
-  statusEl.style.display = 'block';
-  statusEl.style.color = '#2858BD';
-  statusEl.textContent = 'Reading your existing data...';
-
-  if(!currentUser){
-    statusEl.style.color='#E83A6C';
-    statusEl.textContent='Not logged in.';
-    return;
-  }
-
-  var uid = currentUser.uid;
-  var projectCount = 0, estimateCount = 0, settingsFound = false;
-
-  function fixProject(d){
-    // Convert old phases array to scopeItems if needed
-    if((!d.scopeItems||!d.scopeItems.length) && d.phases && d.phases.length){
-      d.scopeItems = d.phases.map(function(ph){
-        return {
-          desc: ph.name||ph.desc||'Untitled',
-          start: ph.start||ph.startDate||'',
-          end: ph.end||ph.endDate||'',
-          budget: parseFloat(ph.phaseBudget||ph.budget)||0,
-          actual: parseFloat(ph.phaseActual||ph.actual)||0,
-          complete: ph.complete||ph.status||'Not Started',
-          assignTo: ph.assignTo||ph.subcontractor||'',
-          assignPhone: ph.assignPhone||ph.phone||'',
-          assignEmail: ph.assignEmail||ph.email||'',
-          category: ph.category||ph.type||''
-        };
-      });
-    }
-    // Ensure all required arrays exist
-    d.scopeItems  = d.scopeItems  || [];
-    d.choices     = d.choices     || [];
-    d.costs       = d.costs       || [];
-    d.punchList   = d.punchList   || [];
-    d.changeOrders= d.changeOrders|| [];
-    d.dailyLogs   = d.dailyLogs   || [];
-    d.notesLog    = d.notesLog    || [];
-    return d;
-  }
-
-  // Read old projects collection directly
-  db.collection('projects').get().then(function(snap){
-    var batch = db.batch();
-    var writes = 0;
-    snap.forEach(function(doc){
-      var d = doc.data();
-      // Skip seed samples
-      if(d.id==='s1'||d.id==='s2'||d.id==='s3') return;
-      d = fixProject(d);
-      var newRef = db.collection('users/'+uid+'/projects').doc(doc.id);
-      batch.set(newRef, d);
-      writes++;
-      projectCount++;
-    });
-    statusEl.textContent = 'Found '+projectCount+' projects. Migrating...';
-    if(writes === 0) return Promise.resolve('noprojects');
-    return batch.commit();
-  }).then(function(result){
-    // Migrate estimates
-    return db.collection('estimates').get();
-  }).then(function(snap){
-    var batch = db.batch();
-    snap.forEach(function(doc){
-      var d = doc.data();
-      d.lineItems        = d.lineItems        || [];
-      d.paymentMilestones= d.paymentMilestones|| [];
-      d.exclusions       = d.exclusions       || [];
-      var newRef = db.collection('users/'+uid+'/estimates').doc(doc.id);
-      batch.set(newRef, d);
-      estimateCount++;
-    });
-    if(estimateCount === 0) return Promise.resolve();
-    return batch.commit();
-  }).then(function(){
-    // Migrate settings
-    return db.collection('settings').doc('dropdowns').get();
-  }).then(function(doc){
-    if(doc.exists){
-      var newRef = db.collection('users/'+uid+'/settings').doc('dropdowns');
-      settingsFound = true;
-      return newRef.set(doc.data());
-    }
-  }).then(function(){
-    statusEl.style.color = '#2EAA72';
-    statusEl.textContent = '\u2713 Done! Moved '+projectCount+' projects, '+estimateCount+' estimates'+(settingsFound?', and your settings':'')+'. Reloading...';
-    T('Migration complete!');
-    setTimeout(function(){ window.location.reload(); }, 2000);
-  }).catch(function(err){
-    statusEl.style.color = '#E83A6C';
-    statusEl.textContent = 'Error: ' + err.message;
-    console.error('Migration error:', err);
-  });
-}
-// ═══════════════════════════════════════════════════════════════
-
-
 // ═══════════════════════════════════════════════════════════════
 // TEAM ACCESS — Invite & manage teammates
 // ═══════════════════════════════════════════════════════════════
@@ -6383,7 +6259,7 @@ function submitSubLog(pid,sidx){
       if(!scope)throw new Error('Assigned scope not found.');
       entry.crew=scope.assignTo||'';
       p.dailyLogs=p.dailyLogs||[];
-      // Check total size — Firestore 1MB limit
+      // Check total size — document size limit
       var dataStr=JSON.stringify(p);
       if(dataStr.length>800000){
         // Too big — save without photos
