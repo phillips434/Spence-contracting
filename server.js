@@ -76,8 +76,9 @@ function buildFlatEstimateGenerateSchema(){
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup'],
+              required: ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup', 'isNewWork'],
               properties: {
+                isNewWork: { type: 'boolean' },
                 category: { type: 'string' },
                 desc: { type: 'string' },
                 qty: { type: 'number' },
