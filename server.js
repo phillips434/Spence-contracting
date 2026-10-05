@@ -65,6 +65,7 @@ function buildFlatEstimateGenerateSchema(){
           'projectScope',
           'workIncluded',
           'conditionsAssumptions',
+          'narrativeUpdate',
           'exclusions',
           'message'
         ],
@@ -107,6 +108,14 @@ function buildFlatEstimateGenerateSchema(){
                 total: { type: 'number' },
                 markup: { type: 'number' }
               }
+            }
+          },
+          narrativeUpdate: {
+            type: 'object', additionalProperties: false,
+            required: ['residentialSummary', 'projectScope', 'workIncluded', 'conditionsAssumptions'],
+            properties: {
+              residentialSummary: { type: 'boolean' }, projectScope: { type: 'boolean' },
+              workIncluded: { type: 'boolean' }, conditionsAssumptions: { type: 'boolean' }
             }
           },
           residentialSummary: { type: 'string' },
