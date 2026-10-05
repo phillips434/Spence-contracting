@@ -49,6 +49,30 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+function buildFlatPricingContractText(){
+  return " Flat line-item pricing: Keep Labor, Materials, Subcontractor, Equipment, Permits & Fees, Allowance, and Other as separate cost categories. " +
+    "For work the contractor supplies and installs, include both the complete Materials package and separate Labor rows; a priced material row does not pay for installation. " +
+    "Labor rows use total person-hours as qty, hrs as unit, and the supplied company hourly labor rate as unitCost. " +
+    "Only Materials rows use direct material acquisition cost as unitCost; exclude labor and markup from material prices. " +
+    "Subcontractor, Equipment, Permits & Fees, Allowance, and Other rows use the direct cost of that service, rental, fee, or allowance, never a material-only price. " +
+    "Do not double-count installation labor already included in an explicitly subcontracted installed price. Honor explicit owner-supplied materials or excluded labor. " +
+    "All unit costs are before markup, profit, and tax; total = qty * unitCost. Markup is applied once by Contractor Desk. " +
+    buildMaterialCompletenessContractText();
+}
+
+function normalizeFlatGeneratedItems(parsed, laborRate){
+  const rate=Number(laborRate);
+  for(const item of Array.isArray(parsed.lineItems)?parsed.lineItems:[]){
+    if(!Number.isFinite(item.qty)||item.qty<=0||!Number.isFinite(item.unitCost)||item.unitCost<0)throw new Error('Invalid generated quantity or direct cost');
+    if(item.category==='Labor'){
+      if(!Number.isFinite(rate)||rate<=0||!/^(hrs?|hours?)$/i.test(item.unit))throw new Error('Generated labor must use person-hours and the company rate');
+      item.unitCost=rate;
+    }
+    item.total=_round2(item.qty*item.unitCost);
+  }
+  return parsed;
+}
+
 function buildFlatEstimateGenerateSchema(){
   return {
     type: 'json_schema',
@@ -1446,7 +1470,7 @@ async function estimateHandler(req, res) {
               " Start your response with { and end with }." +
               " You are a construction estimator." +
               ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"residentialSummary":"","projectScope":"","workIncluded":[],"conditionsAssumptions":[],"exclusions":[],"message":"what was done"}' +
-              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildMaterialPricingContractText() +
+              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildFlatPricingContractText() +
               " Current items: " +
               items +
               " Current exclusions: " +
@@ -1840,6 +1864,11 @@ async function estimateHandler(req, res) {
               }
               let currentEstimateItems = [];
               try { currentEstimateItems = typeof body.items === 'string' ? JSON.parse(body.items) : body.items; } catch (_) {}
+              if(parsedEstimate && !AI_BREAKDOWN_EXPERIMENT){
+                try{normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);}
+                catch(err){return res.status(502).json({error:'generation_failed',message:err.message});}
+                data.content[0].text=JSON.stringify(parsedEstimate);
+              }
               const validExistingUpdate = Array.isArray(currentEstimateItems) && Array.isArray(parsedEstimate?.updateItems) && parsedEstimate.updateItems.some(item =>
                 Number.isInteger(item.index) && item.index >= 0 && item.index < currentEstimateItems.length &&
                 ['qty', 'unitCost', 'total', 'markup'].every(key => typeof item[key] === 'number' && Number.isFinite(item[key])) &&
@@ -2201,6 +2230,8 @@ module.exports = {
   alignLineItemQuantityToPrimaryMaterial,
   buildMaterialCompletenessContractText,
   buildMaterialPricingContractText,
+  buildFlatPricingContractText,
+  normalizeFlatGeneratedItems,
   MATERIAL_PRICE_CATALOG,
   normalizeMaterialDescription,
   normalizeMaterialUnit,
@@ -2224,5 +2255,4 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
-
 
