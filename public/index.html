@@ -2739,8 +2739,8 @@ function generateAIEstimate(){
   var intakeState=window._aiEstimateQuestionState||{active:false,originalPrompt:'',questions:[],history:[]};
   var isQuestionFlow=!!(intakeState.active&&intakeState.questions&&intakeState.questions.length);
   var storedOriginalPrompt=(typeof intakeState.originalPrompt==='string'&&intakeState.originalPrompt.trim())?intakeState.originalPrompt.trim():'';
-  var originalPrompt=(storedOriginalPrompt || prompt).trim();
-  var currentHistory=Array.isArray(intakeState.history)?intakeState.history.slice():[];
+  var originalPrompt=(isQuestionFlow && storedOriginalPrompt ? storedOriginalPrompt : prompt).trim();
+  var currentHistory=isQuestionFlow && Array.isArray(intakeState.history)?intakeState.history.slice():[];
   if(isQuestionFlow){
     currentHistory.push({
       questions:(intakeState.questions||[]).slice(),
@@ -2838,6 +2838,7 @@ function generateAIEstimate(){
         renderEstDetailBody(e);T('Proposed exclusions added. Review them before sending the estimate.');
       });
     }
+    window._aiEstimateQuestionState={active:false,originalPrompt:'',questions:[],history:[]};
     applyEstimateChanges(parsed);
   }).catch(handleAIError);
 }
