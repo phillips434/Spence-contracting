@@ -1269,6 +1269,180 @@ describe('coIntakeReadiness', () => {
     }
   });
 
+  it('existing estimate corrections accept priced updates without adding duplicate line items', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.ANTHROPIC_KEY = 'test-key';
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({
+          action: 'add',
+          lineItems: [],
+          deleteIndexes: [],
+          updateItems: [{index:0,category:'Labor',desc:'Revised labor',qty:2,unit:'hrs',unitCost:85,total:170,markup:20}],
+          residentialSummary: 'Summary',
+          projectScope: 'Scope',
+          workIncluded: ['Install siding'],
+          conditionsAssumptions: ['Assumption'],
+          exclusions: [],
+          message: 'ok'
+        }) } }]
+      })
+    });
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create a small estimate',
+            items: JSON.stringify([{index:0,desc:'Existing labor',category:'Labor',total:85}]),
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create a small estimate' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(result.status, 200);
+      assert.ok(result.body.content[0].text.includes('Revised labor')); 
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
+  it('out-of-range updates do not bypass the zero-line-item guard', async () => {
+    const originalFetch = global.fetch;
+    const previousOpenAiKey = process.env.OPENAI_API_KEY;
+    const previousAnthropicKey = process.env.ANTHROPIC_KEY;
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.ANTHROPIC_KEY = 'test-key';
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({
+          action: 'add',
+          lineItems: [],
+          deleteIndexes: [],
+          updateItems: [{index:5,category:'Labor',desc:'Revised labor',qty:2,unit:'hrs',unitCost:85,total:170,markup:20}],
+          residentialSummary: 'Summary',
+          projectScope: 'Scope',
+          workIncluded: ['Install siding'],
+          conditionsAssumptions: ['Assumption'],
+          exclusions: [],
+          message: 'ok'
+        }) } }]
+      })
+    });
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const server = app.listen(0, () => {
+          const port = server.address().port;
+          const req = http.request({
+            host: '127.0.0.1',
+            port,
+            path: '/api/estimate',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+              try {
+                server.close();
+                resolve({ status: res.statusCode, body: JSON.parse(body) });
+              } catch (err) {
+                server.close();
+                reject(err);
+              }
+            });
+          });
+
+          req.on('error', (err) => {
+            server.close();
+            reject(err);
+          });
+
+          req.write(JSON.stringify({
+            mode: 'estimate-generate',
+            title: 'Estimate test',
+            description: 'Test description',
+            prompt: 'Create a small estimate',
+            items: JSON.stringify([{index:0,desc:'Existing labor',category:'Labor',total:85}]),
+            excls: '[]',
+            markup: 20,
+            laborRate: 85,
+            messages: [{ role: 'user', content: 'Create a small estimate' }]
+          }));
+          req.end();
+        });
+      });
+
+      assert.strictEqual(result.status, 502);
+      assert.strictEqual(result.body.error,'generation_failed');
+    } finally {
+      global.fetch = originalFetch;
+      if (previousOpenAiKey === undefined) {
+        delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = previousOpenAiKey;
+      }
+      if (previousAnthropicKey === undefined) {
+        delete process.env.ANTHROPIC_KEY;
+      } else {
+        process.env.ANTHROPIC_KEY = previousAnthropicKey;
+      }
+    }
+  });
+
   it('returns a valid provider intake response without failing on parse after a valid OpenAI question payload', async () => {
     const originalFetch = global.fetch;
     process.env.ANTHROPIC_KEY = 'test-key';
@@ -3585,4 +3759,5 @@ describe('coIntakeReadiness', () => {
     assert.strictEqual(resultA.status, 'needs_company_rate');
   });
 });
+
 

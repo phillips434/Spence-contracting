@@ -1826,7 +1826,13 @@ app.post("/api/estimate", async (req, res) => {
               } catch (parseErr) {
                 parsedEstimate = null;
               }
-              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0)) {
+              let currentEstimateItems = [];
+              try { currentEstimateItems = typeof body.items === 'string' ? JSON.parse(body.items) : body.items; } catch (_) {}
+              const validExistingUpdate = Array.isArray(currentEstimateItems) && Array.isArray(parsedEstimate?.updateItems) && parsedEstimate.updateItems.some(item =>
+                Number.isInteger(item.index) && item.index >= 0 && item.index < currentEstimateItems.length &&
+                ['qty', 'unitCost', 'total', 'markup'].every(key => typeof item[key] === 'number' && Number.isFinite(item[key])) &&
+                typeof item.desc === 'string' && item.desc.trim().length > 0);
+              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0) && !validExistingUpdate) {
                 console.error('[AI ESTIMATE SERVER] estimate-generate returned zero lineItems in a valid structured response', {
                   mode,
                   parsedEstimateKeys: parsedEstimate && typeof parsedEstimate === 'object' ? Object.keys(parsedEstimate) : [],
@@ -2197,4 +2203,5 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
+
 
