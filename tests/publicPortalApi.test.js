@@ -1,9 +1,20 @@
 const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
-function api(query,fetchImpl){const context={process:{env:{}},fetch:fetchImpl,module:{exports:{}},console,URLSearchParams,require:name=>name==='../db/postgres'?{getPool:()=>({query})}:name==='./documentStore'?{}:name==='./legacySerialization'?require('../lib/legacySerialization'):require(name)};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/publicPortalApi'),'utf8'),context);return context.module.exports;}
+function api(query,fetchImpl){const context={process:{env:{}},fetch:fetchImpl,module:{exports:{}},console,URLSearchParams,require:name=>name==='../db/postgres'?{getPool:()=>({query})}:name==='./documentStore'?{}:name==='./estimatePaymentSafety'?require('../lib/estimatePaymentSafety'):name==='./legacySerialization'?require('../lib/legacySerialization'):require(name)};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/publicPortalApi'),'utf8'),context);return context.module.exports;}
 const signature='data:image/png;base64,YQ==';
 describe('PostgreSQL public portals',()=>{
+ it('blocks a stale payment schedule before accepting a signature or changing a record',()=>{
+   const p={status:'Draft',lineItems:[{total:170,markup:20}],paymentMilestones:[{amount:170}]},before=JSON.stringify(p);
+   assert.throws(()=>api().applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'QA',signature},10),/Payment schedule needs review/);
+   assert.strictEqual(JSON.stringify(p),before);
+   p.paymentMilestones[0].amount=204;api().applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'QA',signature},10);assert.strictEqual(p.status,'Approved');
+ });
+ it('accepts a prepared change order without representing composer opening as delivery',()=>{
+   const p={changeOrders:[{id:'qa',title:'QA',status:'Ready for Client Review',budgetImpact:25}],scopeItems:[],paymentMilestones:[]};
+   api().applyPortalAction(p,{mode:'portal'},{action:'co-sign',index:0,coId:'qa',title:'QA',amount:25,name:'QA',signature},10);
+   assert.strictEqual(p.changeOrders[0].status,'Approved');assert.strictEqual(p.paymentMilestones[0].amount,25);
+ });
  it('rejects malformed photo payloads without appending a daily log',()=>{
   const p={scopeItems:[{assignTo:'Crew'}],dailyLogs:[]},access={mode:'sub',scope:{scope:0}},a=api();
   for(const photo of ['data:image/png;base64,YQ==" onerror="alert(1)','data:image/png;base64,','data:image/png;base64,not base64','data:image/svg+xml;base64,YQ==']){

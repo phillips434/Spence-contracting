@@ -32,7 +32,7 @@ test('subcontractor portals and invoices keep saved markup inert',async({page})=
    const p={client:payload,type:payload,address:payload,clientEmail:payload,companyName:payload,companyPhone:payload,companyEmail:payload,companyAddress:payload,companyPaymentInstructions:payload,id:'test',logoData:'x" onerror="window.injected=true',scopeItems:[{desc:payload,category:payload,complete:payload,status:payload,actual:100}],dailyLogs:[{subScopeIdx:0,date:payload,weather:payload,work:payload,issues:payload,photos:['x" onerror="window.injected=true']}],paymentMilestones:[{name:payload,amount:100,pct:payload}]};
    const doc={exists:true,data:()=>p};window.col={doc:()=>({get:()=>Promise.resolve(doc),onSnapshot:cb=>cb(doc)})};
    (0,eval)(source);query.startsWith('invoice')?checkInvoiceView():checkSubView();
-  },{source:['escapeHtmlText','checkSubView','checkInvoiceView'].map(source).join('\n'),payload,query});
+  },{source:['escapeHtmlText','moneyAmount','checkSubView','checkInvoiceView'].map(source).join('\n'),payload,query});
   const wrapper=page.locator(query.startsWith('invoice')?'#invoiceWrapper':'#subWrapper');
   await expect(wrapper).toContainText(payload);
   await expect(wrapper.locator('[onerror]')).toHaveCount(0);

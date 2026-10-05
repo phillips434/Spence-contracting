@@ -1385,7 +1385,7 @@ async function estimateHandler(req, res) {
         if (isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest) {
           const items = body.items || "[]";
           const existingExcls = body.excls || "[]";
-          const markup = body.markup || 20;
+          const markup = body.markup == null ? 20 : body.markup;
           const laborRate = body.laborRate || 85;
           const location = body.location || "";
           const histCtx = body.histCtx || "";

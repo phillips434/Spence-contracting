@@ -70,7 +70,7 @@ describe('simplified estimate layout',()=>{
     const body={innerHTML:'',addEventListener(){}};
     const c=load({window:{location:{search:''},_aiEstimateQuestionState:questionState||{}},document:{body:{classList:{contains:()=>false}},getElementById:()=>body},DD:{companyName:'QA'},
       calcEstimate:()=>({subtotal:100,clientTotal:120,grandTotal:120,taxAmt:0,profit:20,margin:16.7}),fmt:()=> 'Oct 2',fmtTS:()=> 'Oct 2',generateContractText:()=> 'Test contract',
-      renderResidentialNarrativeBlock:()=> '<div>Summary</div>'},['escapeHtmlText','isTestRecord','archiveControls','renderEstDetailBody']);
+      renderResidentialNarrativeBlock:()=> '<div>Summary</div>'},['escapeHtmlText','isTestRecord','archiveControls','moneyAmount','milestonePaid','estimateScheduleState','scheduleWarning','renderEstDetailBody']);
     return {c,body};
   }
   it('shows prices and main actions before details, and keeps expandable sections balanced',()=>{

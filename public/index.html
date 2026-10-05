@@ -3,7 +3,7 @@
 <head>
 <meta name="referrer" content="no-referrer">
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="theme-color" content="#1C1C1E"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -253,6 +253,27 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
 @media(max-width:600px){.topbar{align-items:center;padding:10px 12px}.cd-brand span{font-size:14px}.topbar>div:last-child{margin-left:auto;gap:6px!important}.topbar button{padding:10px!important;font-size:13px!important}.card,.est-card{padding:16px}.nav-tab{font-size:13px;gap:5px}.nav-tab .cd-icon{width:18px}.phead{flex-wrap:wrap;height:auto;min-height:64px;padding:9px 12px}.phead-title{white-space:normal;line-height:1.3}.phead-num{font-size:11px}.ptabs{top:64px}.fr3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:380px){.cd-brand span{display:none}.topbar-logo{width:36px;height:36px!important}.topbar #btnNew{padding:10px!important}.nav-tab .cd-icon{display:none}}
 
+
+/* Readable controls and responsive workspace layout. */
+.fl,.ibl,.sec-label,.sbox-label,.bva-label,.scard .sl{font-size:12px;color:#64748b}
+.blr,.ptab{color:#64748b;font-size:13px}
+button:focus-visible,a:focus-visible,summary:focus-visible,.fi:focus-visible{outline:3px solid #2858BD;outline-offset:3px}
+.btn-sm,.btn-blue,.btn-notify,.fb,.del-btn,.tag button{min-height:44px}
+.del-btn{min-width:44px}
+button.pm-cb{width:44px;height:44px}
+.schedule-warning{padding:16px;background:#fff8e6;border:2px solid #b77900;border-radius:12px;color:#694300;margin:12px 0;line-height:1.5;overflow-wrap:anywhere}
+.schedule-warning p{margin:8px 0;font-size:14px}
+.preview-line{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}
+.preview-line p,.settings-help{font-size:14px;color:#64748b;line-height:1.5;margin:8px 0}
+.settings-group{margin:12px 0;border:1px solid #dbe1ea;border-radius:12px;background:#fff;padding:12px}
+.settings-group>summary{font-size:16px;font-weight:700;cursor:pointer;padding:8px;min-height:44px}
+.settings-group>.settings-content{padding-top:12px}
+.project-section-select{display:none}
+#settingsPage>div:not(.phead),#estDetailBody,#tabBody{max-width:1000px;margin-left:auto;margin-right:auto}
+#mainView{max-width:1400px;margin:0 auto}
+@media(min-width:900px){#cards,#estCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}#cards>.empty,#estCards>.empty{grid-column:1/-1}.card{margin-bottom:0}}
+@media(max-width:600px){.fi{font-size:16px}.project-section-select{display:block;width:100%;padding:8px 14px;background:#fff;position:sticky;top:64px;z-index:9}.project-section-select select{min-height:44px;width:100%;font-size:16px}#detailPage .ptabs{display:none}.fr3{grid-template-columns:1fr}.toast{white-space:normal;width:max-content;max-width:calc(100vw - 28px);text-align:center}}
+
 </style>
 <script src="/auth-client.js"></script>
 </head>
@@ -402,7 +423,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       <button class="btn-orange" id="btnNew">+ New project</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v213</span></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v214</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v12H3Z"/></svg> Projects</button>
     <button class="nav-tab" id="navEstimates"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg> Estimates</button>
@@ -439,7 +460,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
     <span class="phead-num" id="dPONum" style="color:#9B6BE8"></span>
     <span class="pbadge" id="dBadge"></span>
   </div>
-  <div class="ptabs" id="tabs"></div>
+  <div class="project-section-select"><label class="fl" for="projectSectionSelect">Project section</label><select class="fi" id="projectSectionSelect" onchange="changeProjectSection(this.value)"></select></div><div class="ptabs" id="tabs"></div>
   <div id="projectRecordTools" style="padding:0 14px"></div>
   <div class="pbody" id="tabBody"></div>
 </div>
@@ -598,7 +619,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       </div>
       <div><label class="fl">Status</label>
         <select class="fi" id="efStatus">
-          <option>Draft</option><option>Sent to Client</option><option>Approved</option><option>Declined</option><option>Expired</option>
+          <option>Draft</option><option>Sent to Client</option><option>Ready for Client Review</option><option>Approved</option><option>Declined</option><option>Expired</option>
         </select>
       </div>
     </div>
@@ -700,8 +721,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
     </div>
     
     <div class="wcard" style="border:2px solid #9B6BE8;background:#F8F4FF">
-      <div style="font-size:14px;font-weight:700;color:#6A3DB8;margin-bottom:6px">&#128101; Team Access</div>
-      <div style="font-size:12px;color:#6A3DB8;margin-bottom:12px;line-height:1.5">Invite teammates to your account. They sign up with their own email and see all your projects.</div>
+      <div style="font-size:14px;font-weight:700;color:#6A3DB8;margin-bottom:6px">&#128101; Account Access</div>
+      <div style="font-size:12px;color:#6A3DB8;margin-bottom:12px;line-height:1.5">Give teammates their own sign-in to your company workspace. This is separate from the crew contact directory below.</div>
       <div id="teamAccessList" style="margin-bottom:12px"></div>
       <label class="fl" style="margin-bottom:6px">Invite by Email</label>
       <div style="display:flex;gap:8px">
@@ -710,13 +731,12 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
       </div>
       <div id="inviteStatus" style="font-size:12px;margin-top:8px;display:none"></div>
     </div>
-<div class="wcard" id="adminCardTag" style="display:none;" style="border:2px solid #2858BD;background:#EEF2FF">
+<div class="wcard" id="adminCardTag" style="display:none;border:2px solid #2858BD;background:#EEF2FF">
         <div style="font-size:14px;font-weight:700;color:#2858BD;margin-bottom:6px">&#128274; Tag My Projects</div>
         <div style="font-size:12px;color:#2858BD;margin-bottom:12px;line-height:1.5">One-time step: stamp your account ID onto all your existing projects and estimates so only you can see them. Run this once.</div>
         <button class="btn-dark" style="background:#2858BD" onclick="tagMyProjects()">&#128274; Tag All My Projects</button>
         <div id="tagStatus" style="font-size:12px;margin-top:8px;display:none;font-weight:600;line-height:1.5"></div>
-      </div
-      </div>>
+      </div>
       <div class="wcard">
           <label class="fl" style="margin-bottom:8px">Company Name</label>
           <input class="fi" id="companyName" style="margin-bottom:8px"/>
@@ -731,12 +751,12 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #80
           <button class="btn-green" style="margin-top:4px" onclick="saveCompanyInfo()">Save Company Info</button>
         </div>
 
-    <div class="wcard"><label class="fl" style="margin-bottom:8px">Team &mdash; Subs &amp; Employees</label><div id="teamList"></div>
+    <div class="wcard"><label class="fl" style="margin-bottom:8px">Crew Contact Directory &mdash; Subs &amp; Employees</label><p class="settings-help">Save crew and subcontractor contacts for assignments. Adding a contact does not grant account access.</p><div id="teamList"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:0">
         <div class="fr2"><div><label class="fl">Type</label><select class="fi" id="tmType"><option>Subcontractor</option><option>Employee</option></select></div><div><label class="fl">Trade / Role</label><input class="fi" id="tmTrade" placeholder="e.g. Electrician"/></div></div>
         <div class="fr2"><div><label class="fl">Name</label><input class="fi" id="tmName" placeholder="Full name"/></div><div><label class="fl">Company</label><input class="fi" id="tmCompany"/></div></div>
         <div class="fr2"><div><label class="fl">Phone</label><input class="fi" id="tmPhone" placeholder="555-0100"/></div><div><label class="fl">Email</label><input class="fi" id="tmEmail"/></div></div>
-        <button class="btn-dark" onclick="addTeamMember()">Add Team Member</button>
+        <button class="btn-dark" onclick="addTeamMember()">Add Crew Contact</button>
       </div>
     </div>
     <div class="wcard"><label class="fl" style="margin-bottom:8px">Project Statuses</label><div id="psTagsEl"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="fi" id="psInput" placeholder="Add status..." style="flex:1"/><button class="btn-orange" style="padding:10px 14px;flex-shrink:0" onclick="addTag(&quot;projectStatuses&quot;,&quot;psInput&quot;,&quot;psTagsEl&quot;)">Add</button></div></div>
@@ -966,7 +986,7 @@ function initUserCollections(uid){
 var DD={projectStatuses:["Planning","In Progress","On Hold","Completed"],phaseTypes:["Site Prep","Demo","Rough-In","Framing","Insulation","Drywall","MEP (Plumbing/Elec/HVAC)","Flooring","Tile Work","Cabinets & Millwork","Paint","Fixtures & Hardware","Punch List"],choiceStatuses:["Pending","Quoted","Ordered","Confirmed","Received","In Stock","Delivered","Installed","Rejected"],costCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Design","Contingency","Other"],changeOrderTypes:["Owner Request","Design Change","Unforeseen Condition","Code Requirement","Material Substitution","Other"],punchCategories:["Painting","Flooring","Trim & Millwork","Plumbing","Electrical","HVAC","Tile","Cabinetry","Doors & Windows","Cleaning","Exterior","Other"],estCategories:["Labor","Materials","Subcontractor","Equipment","Permits & Fees","Allowance","Other"],team:[],companyName:"Contractor Desk",aiProfile:{location:"",markup:20,laborRate:85,instructions:""},nextJobNum:4,nextEstNum:1};
 var COLORS=["#2858BD","#3A78E8","#2EAA72","#9B6BE8","#E8B43A","#E83A6C"];
 var STATUS_COLORS=["#2858BD","#3A78E8","#2EAA72","#999","#E8B43A","#9B6BE8"];
-var EST_SC={Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
+var EST_SC={"Ready for Client Review":"#3A78E8",Draft:"#888","Sent to Client":"#3A78E8",Approved:"#2EAA72",Declined:"#E83A6C",Expired:"#E8B43A"};
 var projects=[],estimates=[],activeFilter="All",currentId=null,currentTab="scope",selColor=0,editId=null;
 var estimatesSyncReady=false;
 var calMonth=new Date(),editScopeIdx=-1,editChoiceIdx=-1,editLineItemIdx=-1;
@@ -1250,10 +1270,46 @@ function calcLineItemTotal(li){
   var markup=parseFloat(li.markup)||0;
   return cost*(1+markup/100);
 }
+function moneyAmount(value){return (Number(value)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function compactMoney(value){return '$'+(Number(value)||0).toLocaleString('en-US',{notation:'compact',maximumFractionDigits:2});}
+function milestonePaid(m){return !!m&&(m.paid===true||m.isPaid===true||['paid','complete','completed'].includes(m.status));}
+function estimateScheduleState(e){
+  var milestones=e.paymentMilestones||[],total=Math.round(calcEstimate(e).grandTotal*100);
+  var invalid=milestones.some(function(m){return !m||m.amount==null||String(m.amount).trim()===''||!Number.isFinite(Number(m.amount))||Number(m.amount)<0;});
+  var scheduled=milestones.reduce(function(sum,m){return sum+Math.round((Number(m&&m.amount)||0)*100);},0);
+  return {mismatch:!!milestones.length&&(invalid||scheduled!==total),invalid:invalid,total:total/100,scheduled:scheduled/100,difference:(total-scheduled)/100};
+}
+function scheduleWarning(e,customer){
+  var state=estimateScheduleState(e);if(!state.mismatch)return '';
+  return '<div class="schedule-warning" role="alert"><strong>Payment schedule needs review</strong><p>'+(customer?'Please ask your contractor to update the payment schedule before accepting this estimate.':state.invalid?'A milestone has an invalid amount. Review it before sharing.':'Scheduled: $'+moneyAmount(state.scheduled)+' · Estimate: $'+moneyAmount(state.total)+'. '+(state.difference>0?'Short by $':'Over by $')+moneyAmount(Math.abs(state.difference))+'.')+'</p>'+(customer?'':'<button class="btn-dark" onclick="reconcileEstimateSchedule()">Adjust final unpaid milestone</button><p>Paid milestones stay unchanged. You can also edit the schedule manually.</p>')+'</div>';
+}
+function ensureEstimateSchedule(e){
+  if(!estimateScheduleState(e).mismatch)return true;
+  alert('The payment schedule does not match this estimate. Review and reconcile it before sharing or sending.');
+  var section=document.getElementById('estimatePayments');if(section)section.scrollIntoView({behavior:'smooth',block:'start'});return false;
+}
+function reconcileEstimateSchedule(){
+  var e=ger();if(!e)return;var state=estimateScheduleState(e);if(!state.mismatch)return;
+  if(state.invalid){alert('Correct invalid milestone amounts manually first.');return;}
+  var rows=e.paymentMilestones||[],index=-1;
+  rows.forEach(function(m,i){if(!milestonePaid(m))index=i;});
+  if(index<0){alert('All milestones are paid. Add an unpaid milestone or review the estimate total; paid milestones will not be changed.');return;}
+  var amount=Math.round((Number(rows[index].amount)+state.difference)*100)/100;
+  if(amount<0){alert('This adjustment would make the final unpaid milestone negative. Review the unpaid schedule manually.');return;}
+  if(!confirm('Change '+rows[index].name+' from $'+moneyAmount(rows[index].amount)+' to $'+moneyAmount(amount)+'? Other milestones stay unchanged.'))return;
+  var updated=Object.assign({},e,{paymentMilestones:rows.map(function(m,i){return i===index?Object.assign({},m,{amount:amount,pct:null}):m;})});
+  if(e._savedRecordSnapshot)Object.defineProperty(updated,"_savedRecordSnapshot",{value:e._savedRecordSnapshot,writable:true,configurable:true,enumerable:false});
+  eCol.doc(e.id).set(updated).then(function(){Object.assign(e,updated);rememberRecordSnapshot(e);renderEstDetailBody(e);T('Payment schedule reconciled.');}).catch(function(){T('Schedule could not be saved. Please try again.');});
+}
+function isOpenEstimate(e,today){
+  return !e.signedAt&&!e.converted&&['Draft','Sent to Client','Ready for Client Review','Approved'].includes(e.status||'Draft')&&(!e.validUntil||e.validUntil>=today);
+}
+
 function calcEstimate(est){var items=est.lineItems||[];var subtotal=items.reduce(function(a,li){return a+(parseFloat(li.total)||0);},0);var clientTotal=items.reduce(function(a,li){return a+calcLineItemTotal(li);},0);var tax=parseFloat(est.tax)||0;var taxAmt=clientTotal*(tax/100);var grandTotal=clientTotal+taxAmt;var profit=grandTotal-subtotal-taxAmt;var margin=grandTotal>0?(profit/grandTotal*100):0;return{subtotal:subtotal,clientTotal:clientTotal,taxAmt:taxAmt,grandTotal:grandTotal,profit:profit,margin:margin};}
 
 function switchMainTab(tab){
   mainTabMode=tab;
+  window.scrollTo({top:0,left:0,behavior:"instant"});
   closePage("detailPage");
   closePage("estDetailPage");
   document.getElementById("navProjects").classList.toggle("on",tab==="projects");
@@ -1263,7 +1319,7 @@ function switchMainTab(tab){
   document.getElementById("estimatesView").style.display=tab==="estimates"?"block":"none";
   document.getElementById("dashboardView").style.display=tab==="dashboard"?"block":"none";
   if(tab==="projects"){
-    document.getElementById("btnNew").textContent="+ New";
+    document.getElementById("btnNew").textContent="+ New project";
     document.getElementById("btnNew").onclick=openAdd;
     renderCards();
   } else if(tab==="estimates"){
@@ -1271,7 +1327,7 @@ function switchMainTab(tab){
     document.getElementById("btnNew").onclick=openNewEstimate;
     renderEstCards();
   } else if(tab==="dashboard"){
-    document.getElementById("btnNew").textContent="+ New";
+    document.getElementById("btnNew").textContent="+ New project";
     document.getElementById("btnNew").onclick=openAdd;
     renderDashboard();
   }
@@ -1716,7 +1772,7 @@ function addTeamMember(){var type=document.getElementById("tmType").value,trade=
 function removeTeamMember(i){DD.team.splice(i,1);renderTeamList();saveSettings();}
 function renderTeamList(){
   var el=document.getElementById("teamList");if(!el)return;
-  if(!(DD.team||[]).length){el.innerHTML='<div style="color:#bbb;font-size:13px;margin-bottom:8px">No team members added yet.</div>';return;}
+  if(!(DD.team||[]).length){el.innerHTML='<div style="color:#bbb;font-size:13px;margin-bottom:8px">No crew contacts added yet.</div>';return;}
   el.innerHTML=(DD.team||[]).map(function(m,i){
     var tc=m.type==="Employee"?"#2EAA72":"#2858BD";
     return'<div style="background:#F8F9FF;border:1px solid #EEF2F7;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
@@ -1884,7 +1940,7 @@ function reviewEstimate(){var section=document.getElementById('estimateReview');
 function renderAll(){renderStats();renderFilters();renderCards();}
 function renderStats(){var total=projects.filter(function(p){return inWorkView(p,'work');}).length,active=projects.filter(function(p){return inWorkView(p,'work');}).filter(function(p){return p.status==="In Progress";}).length;var budget=projects.filter(function(p){return inWorkView(p,'work');}).reduce(function(a,p){return a+(p.budget||0);},0),spent=projects.filter(function(p){return inWorkView(p,'work');}).reduce(function(a,p){return a+(p.spent||0);},0);document.getElementById("stats").innerHTML=[["&#128193;","Jobs",total],["&#9889;","Active",active],["&#128176;","Budget","$"+(budget/1000).toFixed(0)+"k"],["&#128202;","Spent","$"+(spent/1000).toFixed(0)+"k"]].map(function(d){return'<div class="scard"><div class="si">'+d[0]+'</div><div class="sv">'+d[2]+'</div><div class="sl">'+d[1]+'</div></div>';}).join("");}
 function renderFilters(){document.getElementById("filters").innerHTML=workViewButtons('project',projectWorkView)+["All"].concat(DD.projectStatuses).map(function(s){return'<button class="fb'+(s===activeFilter?" on":"")+'" data-f="'+s+'">'+s+'</button>';}).join("");document.querySelectorAll(".fb").forEach(function(b){b.onclick=function(){activeFilter=this.getAttribute("data-f");renderFilters();renderCards();};});}
-function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return inWorkView(p,projectWorkView)&&(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){if(!projects.length&&!q&&activeFilter==="All"&&projectWorkView==="work"&&(!CD_USE_POSTGRES||estimatesSyncReady)){var setup=renderOnboarding();if(setup){el.innerHTML=setup;return;}}el.innerHTML='<div class="empty">No projects in this view. Change the view or search to find older work.</div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2858BD",dot:"#2858BD"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var days=daysLeft(p.endDate),dc=p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=p.status!=="Completed"?" ("+(days>0?days+"d left":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+escapeHtmlText(p.id)+'">'+(p.jobNum?'<div class="card-num">'+escapeHtmlText(p.jobNum)+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:18px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(p.client)+'</div><div style="font-size:14px;color:#64748b;margin-top:3px">'+escapeHtmlText(p.type)+' &middot; '+escapeHtmlText((p.address||""))+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+escapeHtmlText(p.status)+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">PM</div><div style="font-size:14px;font-weight:600;color:#333">'+escapeHtmlText((p.pm||"--"))+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Deadline</div><div style="font-size:14px;font-weight:600;color:'+dc+'">'+fmt(p.endDate)+dt+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Budget</div><div style="font-size:14px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Change Orders</div><div style="font-size:14px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Punch List</div><div style="font-size:14px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+escapeHtmlText(p.color||"#2858BD")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
+function renderCards(){var q=document.getElementById("searchInput").value.toLowerCase();var f=projects.filter(function(p){return inWorkView(p,projectWorkView)&&(activeFilter==="All"||p.status===activeFilter)&&(!q||(p.client||"").toLowerCase().includes(q)||(p.type||"").toLowerCase().includes(q));});var el=document.getElementById("cards");if(!f.length){if(!projects.length&&!q&&activeFilter==="All"&&projectWorkView==="work"&&(!CD_USE_POSTGRES||estimatesSyncReady)){var setup=renderOnboarding();if(setup){el.innerHTML=setup;return;}}el.innerHTML='<div class="empty">No projects in this view. Change the view or search to find older work.</div>';return;}el.innerHTML=f.map(function(p){var s=sc(p.status)||{bg:"#EEF2FF",text:"#2858BD",dot:"#2858BD"};var pct=Math.round((p.spent||0)/((p.budget||1))*100),pr=gp(p);var hasDeadline=!!p.endDate&&Number.isFinite(new Date(p.endDate).getTime()),days=hasDeadline?daysLeft(p.endDate):null,dc=hasDeadline&&p.status!=="Completed"&&days<14?"#E83A6C":"#555";var dt=hasDeadline&&p.status!=="Completed"?" ("+(days>0?days+"d left":days===0?"Due today":"Overdue")+")":"";var openCO=(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;var openPL=(p.punchList||[]).filter(function(i){return !i.done;}).length;return'<div class="card" data-id="'+escapeHtmlText(p.id)+'">'+(p.jobNum?'<div class="card-num">'+escapeHtmlText(p.jobNum)+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:18px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(p.client)+'</div><div style="font-size:14px;color:#64748b;margin-top:3px">'+escapeHtmlText(p.type)+' &middot; '+escapeHtmlText((p.address||""))+'</div></div><span class="badge" style="background:'+s.bg+';color:'+s.text+'"><span class="bdot" style="background:'+s.dot+'"></span>'+escapeHtmlText(p.status)+'</span></div><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap"><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">PM</div><div style="font-size:14px;font-weight:600;color:#333">'+escapeHtmlText((p.pm||"--"))+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Deadline</div><div style="font-size:14px;font-weight:600;color:'+dc+'">'+(hasDeadline?fmt(p.endDate):'No end date')+dt+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Budget</div><div style="font-size:14px;font-weight:600;color:#333">$'+(p.budget||0).toLocaleString()+'</div></div>'+(openCO>0?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Change Orders</div><div style="font-size:14px;font-weight:600;color:#E8B43A">'+openCO+' pending</div></div>':'')+(openPL>0?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Punch List</div><div style="font-size:14px;font-weight:600;color:#9B6BE8">'+openPL+' open</div></div>':'')+'</div><div class="brow"><div class="blr"><span>Scope Progress</span><span>'+pr+'%</span></div><div class="bt"><div class="bf" style="width:'+pr+'%;background:'+escapeHtmlText(p.color||"#2858BD")+'"></div></div></div><div class="brow"><div class="blr"><span>Budget Used</span><span>'+pct+'%</span></div><div class="bt"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+(pct>90?"#E83A6C":"#2EAA72")+'"></div></div></div></div>';}).join("");document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){openDetail(this.getAttribute("data-id"));};});}
 
 function renderDashboard(){
   var el=document.getElementById("dashContent");
@@ -1901,10 +1957,11 @@ function renderDashboard(){
   var onHold=dailyProjects.filter(function(p){return p.status==="On Hold";});
 
   // Estimate pipeline
-  var totalEstVal=dailyEstimates.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
+  var pendingEst=dailyEstimates.filter(function(e){return isOpenEstimate(e,today);});
+  var totalEstVal=pendingEst.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
   var signedEst=dailyEstimates.filter(function(e){return e.signedAt;});
   var signedVal=signedEst.reduce(function(a,e){return a+calcEstimate(e).grandTotal;},0);
-  var pendingEst=dailyEstimates.filter(function(e){return !e.signedAt&&e.status!=="Rejected";});
+
 
   // Alerts
   var openCO=dailyProjects.reduce(function(a,p){return a+(p.changeOrders||[]).filter(function(c){return c.status==="Pending";}).length;},0);
@@ -1912,7 +1969,7 @@ function renderDashboard(){
   var overdueProjects=active.filter(function(p){return p.endDate&&p.endDate<today;});
   var unpaidMilestones=0;
   dailyProjects.forEach(function(p){
-    (p.milestones||[]).forEach(function(m){if(!m.paid&&m.dueDate&&m.dueDate<today)unpaidMilestones++;});
+    (p.paymentMilestones||[]).forEach(function(m){if(!milestonePaid(m)&&m.dueDate&&m.dueDate<today)unpaidMilestones++;});
   });
 
   var html='';
@@ -1941,23 +1998,23 @@ function renderDashboard(){
   // Revenue in (signed estimates)
   html+='<div class="dash-card" style="border-left:4px solid #2EAA72">';
   html+='<div class="dash-label">Contracted Revenue</div>';
-  html+='<div class="dash-val" style="color:#2EAA72">$'+Math.round(signedVal/1000)+'k</div>';
+  html+='<div class="dash-val" style="color:#2EAA72">'+compactMoney(signedVal)+'</div>';
   html+='<div class="dash-sub">'+signedEst.length+' signed estimate'+(signedEst.length!==1?'s':'')+'</div></div>';
   // Pipeline
   html+='<div class="dash-card" style="border-left:4px solid #2858BD">';
   html+='<div class="dash-label">Estimate Pipeline</div>';
-  html+='<div class="dash-val" style="color:#2858BD">$'+Math.round(totalEstVal/1000)+'k</div>';
+  html+='<div class="dash-val" style="color:#2858BD">'+compactMoney(totalEstVal)+'</div>';
   html+='<div class="dash-sub">'+pendingEst.length+' pending</div></div>';
   // Total project budget
   html+='<div class="dash-card" style="border-left:4px solid #E8B43A">';
   html+='<div class="dash-label">Total Project Budget</div>';
-  html+='<div class="dash-val">$'+Math.round(totalB/1000)+'k</div>';
+  html+='<div class="dash-val">'+compactMoney(totalB)+'</div>';
   html+='<div class="dash-sub">Across '+dailyProjects.length+' project'+(dailyProjects.length!==1?'s':'')+'</div></div>';
   // Spent
   var spentPct=totalB>0?Math.round(totalS/totalB*100):0;
   html+='<div class="dash-card" style="border-left:4px solid '+(spentPct>90?'#E83A6C':'#888')+'">';
   html+='<div class="dash-label">Total Spent</div>';
-  html+='<div class="dash-val" style="color:'+(spentPct>90?'#E83A6C':'#333')+'">$'+Math.round(totalS/1000)+'k</div>';
+  html+='<div class="dash-val" style="color:'+(spentPct>90?'#E83A6C':'#333')+'">'+compactMoney(totalS)+'</div>';
   html+='<div class="dash-sub">'+spentPct+'% of budget</div></div>';
   html+='</div>';
 
@@ -2031,7 +2088,7 @@ function renderDashboard(){
   el.innerHTML=html;
 }
 
-function renderEstCards(){var el=document.getElementById("estCards");var views=document.getElementById('estimateViews');if(views)views.innerHTML=workViewButtons('estimate',estimateWorkView);var search=document.getElementById('estimateSearch');var q=search?search.value.toLowerCase():'';var visible=estimates.filter(function(e){return inWorkView(e,estimateWorkView)&&(!q||[e.client,e.type,e.estNum,e.address].join(' ').toLowerCase().includes(q));});if(!visible.length){el.innerHTML='<div class="empty">No estimates in this view.<br>Choose another view or change your search.</div>';return;}el.innerHTML=visible.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+escapeHtmlText(e.id)+'">'+(e.estNum?'<div class="card-num">'+escapeHtmlText(e.estNum)+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:18px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(e.client)+'</div><div style="font-size:14px;color:#64748b;margin-top:3px">'+escapeHtmlText(e.type)+(e.address?' &middot; '+escapeHtmlText(e.address):'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+escapeHtmlText(e.status)+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1C1C1E">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Margin</div><div style="font-size:14px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Date</div><div style="font-size:14px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Signed</div><div style="font-size:14px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
+function renderEstCards(){var el=document.getElementById("estCards");var views=document.getElementById('estimateViews');if(views)views.innerHTML=workViewButtons('estimate',estimateWorkView);var search=document.getElementById('estimateSearch');var q=search?search.value.toLowerCase():'';var visible=estimates.filter(function(e){return inWorkView(e,estimateWorkView)&&(!q||[e.client,e.type,e.estNum,e.address].join(' ').toLowerCase().includes(q));});if(!visible.length){el.innerHTML='<div class="empty">No estimates in this view.<br>Choose another view or change your search.</div>';return;}el.innerHTML=visible.map(function(e){var sc2=EST_SC[e.status]||"#888";var calc=calcEstimate(e);return'<div class="est-card" data-eid="'+escapeHtmlText(e.id)+'">'+(e.estNum?'<div class="card-num">'+escapeHtmlText(e.estNum)+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px"><div><div style="font-size:18px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(e.client)+'</div><div style="font-size:14px;color:#64748b;margin-top:3px">'+escapeHtmlText(e.type)+(e.address?' &middot; '+escapeHtmlText(e.address):'')+'</div></div><span class="est-status" style="background:'+sc2+'22;color:'+sc2+'">'+escapeHtmlText(e.status)+'</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Total</div><div style="font-size:14px;font-weight:700;color:#1C1C1E">$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Margin</div><div style="font-size:14px;font-weight:600;color:#2EAA72">'+calc.margin.toFixed(1)+'%</div></div><div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Date</div><div style="font-size:14px;font-weight:600;color:#555">'+fmt(e.date)+'</div></div>'+(e.signedAt?'<div><div style="font-size:11px;color:#64748b;text-transform:uppercase">Signed</div><div style="font-size:14px;font-weight:600;color:#2EAA72">&#10003; Signed</div></div>':'')+'</div></div>';}).join("");document.querySelectorAll(".est-card").forEach(function(c){c.onclick=function(){openEstDetail(this.getAttribute("data-eid"));};});}
 function switchEstTab(tab,btn){}
 function openEstDetail(id){currentEstId=id;currentEstTab="details";var e=ger();if(!e)return;var sc2=EST_SC[e.status]||"#888";document.getElementById("edName").textContent=e.client+" - "+e.type;document.getElementById("edEstNum").textContent=e.estNum||"";var b=document.getElementById("edBadge");b.textContent=e.status;b.style.background=sc2+"22";b.style.color=sc2;document.querySelectorAll(".est-subtab").forEach(function(t,i){t.classList.toggle("on",i===0);});renderEstDetailBody(e);var dp=document.getElementById("estDetailPage");dp.classList.add("show");dp.scrollTop=0;}
 
@@ -2084,13 +2141,13 @@ function renderEstDetailBody(e){
 
   // Grand total summary
   html+='<div class="est-summary" style="margin-top:16px">';
-  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row"><span>Your Cost</span><span>$'+calc.subtotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
   if(calc.taxAmt>0){
-    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
   }
-  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+Math.round(calc.profit).toLocaleString()+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Grand Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+  html+='<div class="est-sum-row profit"><span>Profit</span><span>$'+moneyAmount(calc.profit)+'</span></div>';
   html+='<div class="est-sum-row profit"><span>Margin</span><span>'+calc.margin.toFixed(1)+'%</span></div>';
   html+='</div>';
 
@@ -2102,18 +2159,19 @@ function renderEstDetailBody(e){
   html+='<button class="btn-sm" onclick="openEditEstimate()">Edit estimate details</button>';
   html+='<button class="btn-sm" style="background:#9B6BE8" onclick="openAddLineItem()">Add line item</button>';
   html+='<button class="btn-sm" style="background:#2EAA72" onclick="shareEstimate()">&#128279; Share</button>';
-  html+='<button class="btn-sm" style="background:#3A78E8" onclick="sendEstimate()">&#128228; Send</button>';
+  html+='<button class="btn-sm" style="background:#3A78E8" onclick="sendEstimate()">&#128228; Open email/text draft</button>';
   html+='<button class="btn-sm" style="background:#E8B43A" onclick="openClientPortal()">Client preview</button>';
   html+='<button class="btn-sm" style="background:#E8713A" onclick="printInvoice()">Print invoice</button>';
   if(e.status==='Approved') html+='<button class="btn-sm" style="background:#1C1C1E" onclick="convertToProject()">Create project</button>';
   html+=archiveControls('estimate',e)+'</div></details>';
 
+  if(e.deliveryState==='draft-opened')html+='<div class="wcard">Email/text draft prepared. Delivery is not confirmed; finish sending in your email or messaging app.</div>';
   if(e.signedAt) html+='<div style="background:#EDFAF4;border:1px solid #2EAA72;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A7A4E;margin-bottom:14px">&#10003; Signed by '+escapeHtmlText(e.signedBy)+' &middot; '+fmtTS(e.signedAt)+'</div>';
 
   // Status
   html+='<div class="wcard" style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Status</label>';
   html+='<select class="fi" data-action="est-status" onchange="updateEstStatus(this.value)">';
-  html+=["Draft","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?' selected':'')+'>'+escapeHtmlText(s)+'</option>';}).join('');
+  html+=["Draft","Ready for Client Review","Sent to Client","Approved","Declined","Expired"].map(function(s){return'<option'+(s===e.status?' selected':'')+'>'+escapeHtmlText(s)+'</option>';}).join('');
   html+='</select></div>';
 
   // Line Items
@@ -2135,13 +2193,13 @@ function renderEstDetailBody(e){
         if(li.qty&&li.unit) html+='<div style="font-size:11px;color:#aaa;margin-top:2px">'+li.qty+' '+escapeHtmlText(li.unit)+' &times; $'+(parseFloat(li.unitCost)||0).toLocaleString()+'</div>';
         html+='</div>';
         html+='<div style="display:flex;gap:6px;flex-shrink:0">';
-        html+='<button ontouchend="event.preventDefault();openEditLineItem('+i+');" onclick="openEditLineItem('+i+');" style="background:#2858BD;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
-        html+='<button ontouchend="event.preventDefault();delLineItem('+i+');" onclick="if(confirm(\'Delete?\'))delLineItem('+i+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
+        html+='<button aria-label="Edit line item" ontouchend="event.preventDefault();openEditLineItem('+i+');" onclick="openEditLineItem('+i+');" style="background:#2858BD;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#9999;</button>';
+        html+='<button aria-label="Delete line item" ontouchend="event.preventDefault();delLineItem('+i+');" onclick="if(confirm(\'Delete?\'))delLineItem('+i+');" style="background:#E83A6C;border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;min-width:44px">&#215;</button>';
         html+='</div></div>';
         html+='<div style="display:flex;justify-content:space-between;font-size:12px">';
-        html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+        html+='<span style="color:#888">Your cost: $'+cost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>';
         html+='<span style="color:#9B6BE8">'+markup+'% markup</span>';
-        html+='<span style="font-weight:700;color:#1C1C1E;font-size:13px">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+        html+='<span style="font-weight:700;color:#1C1C1E;font-size:13px">$'+clientAmt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>';
         html+='</div>';
         html+='</div>';
       });
@@ -2151,7 +2209,8 @@ function renderEstDetailBody(e){
 
   html+='</div></details>';
   // ── PAYMENT SCHEDULE ──────────────────────────────────
-  html+='<div class="sec-label" style="margin-top:20px">Payment Schedule</div>';
+  html+='<div class="sec-label" id="estimatePayments" style="margin-top:20px">Payment Schedule</div>';
+  html+=scheduleWarning(e,false);
   html+='<div class="wcard">';
   var milestones=e.paymentMilestones||[];
   var totalPaid=milestones.filter(function(m){return m.paid===true||m.isPaid===true||m.status==='paid'||m.status==='complete'||m.status==='completed';}).reduce(function(a,m){return a+(parseFloat(m.amount)||0);},0);
@@ -2159,17 +2218,17 @@ function renderEstDetailBody(e){
     var paidPct=calc.grandTotal>0?Math.round(totalPaid/calc.grandTotal*100):0;
     html+='<div style="margin-bottom:14px">';
     html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">';
-    html+='<span style="font-weight:700;color:#2EAA72">$'+totalPaid.toLocaleString()+' collected</span>';
-    html+='<span style="color:#aaa">of $'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<span style="font-weight:700;color:#2EAA72">$'+moneyAmount(totalPaid)+' collected</span>';
+    html+='<span style="color:#aaa">of $'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
     html+='<div class="bt" style="height:10px"><div class="bf" style="width:'+paidPct+'%;background:#2EAA72"></div></div>';
     html+='<div style="font-size:11px;color:#aaa;margin-top:4px">'+milestones.filter(function(m){return m.paid;}).length+' of '+milestones.length+' milestones paid</div>';
     html+='</div>';
     milestones.forEach(function(m,i){
       html+='<div class="pay-mile'+(m.paid?' paid':'')+'">';
-      html+='<div class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone('+i+')">'+(m.paid?'&#10003;':'')+'</div>';
+      html+='<button type="button" aria-label="Toggle milestone paid" aria-pressed="'+(milestonePaid(m)?'true':'false')+'" class="pm-cb'+(m.paid?' paid':'')+'" onclick="toggleMilestone('+i+')">'+(m.paid?'&#10003;':'')+'</button>';
       html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>';
-      html+='<div style="font-size:12px;color:#aaa;margin-top:2px">$'+m.amount.toLocaleString()+(m.pct?' ('+m.pct+'%)':'')+'</div></div>';
-      html+='<button class="del-btn" onclick="delMilestone('+i+')">&#215;</button></div>';
+      html+='<div style="font-size:12px;color:#aaa;margin-top:2px">$'+moneyAmount(m.amount)+(m.pct?' ('+m.pct+'%)':'')+'</div></div>';
+      html+='<button class="del-btn" aria-label="Delete payment milestone" onclick="delMilestone('+i+')">&#215;</button></div>';
     });
   }
   // Add milestone form inline
@@ -2319,7 +2378,7 @@ function getCanonicalCustomerScope(e){
   return buildCanonicalCustomerScope(e);
 }
 function renderCommercialNarrativeBlock(e, isClientMode){var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return '';var html='';html+='<div class="wcard" style="margin-top:14px">';html+='<div style="font-size:11px;font-weight:700;color:#2858BD;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Commercial</div>';html+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;line-height:1.5;margin-bottom:8px">'+escapeHtmlText(scope.projectScope)+'</div>';html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">SCOPE OF WORK</div><div style="font-size:13px;color:#333;line-height:1.6">'+escapeHtmlText(scope.projectScope)+'</div></div>';if(scope.workIncluded&&scope.workIncluded.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">WORK INCLUDED</div><div style="font-size:13px;color:#333;line-height:1.6">'+escapeHtmlText(scope.workIncluded.join('; '))+'</div></div>';}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">PROJECT CONDITIONS / ASSUMPTIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+escapeHtmlText(scope.conditionsAssumptions.join('; '))+'</div></div>';}if(scope.exclusions&&scope.exclusions.length){html+='<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px">EXCLUSIONS</div><div style="font-size:13px;color:#333;line-height:1.6">'+escapeHtmlText(scope.exclusions.join('; '))+'</div></div>';}html+='</div>';return html;}
-function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";var scope=getCanonicalCustomerScope(e)||{projectScope:(e&&(e.notes||e.type))||'Scope of work',workIncluded:[],conditionsAssumptions:[],exclusions:Array.isArray(e&&e.exclusions)?e.exclusions:[]};var projectClass=resolveEstimateProjectClass(e)||'commercial';var projectScopeText=scope.projectScope||'Scope of work';var workIncludedText=(scope.workIncluded&&scope.workIncluded.length)?scope.workIncluded.join('; '):(e&&e.notes?e.notes:'');var conditionsText=(scope.conditionsAssumptions&&scope.conditionsAssumptions.length)?scope.conditionsAssumptions.join('; '):'';var exclusionsText=(scope.exclusions&&scope.exclusions.length)?scope.exclusions.join('; '):'';var contractBody=co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\n";if(projectClass==='residential'){contractBody += "PROJECT SCOPE:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}else{contractBody += "SCOPE OF WORK:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}contractBody += "CONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";return contractBody;}
+function generateContractText(e,calc){var co=(e&&e.companyName)||DD.companyName||"Your Company";var scope=getCanonicalCustomerScope(e)||{projectScope:(e&&(e.notes||e.type))||'Scope of work',workIncluded:[],conditionsAssumptions:[],exclusions:Array.isArray(e&&e.exclusions)?e.exclusions:[]};var projectClass=resolveEstimateProjectClass(e)||'commercial';var projectScopeText=scope.projectScope||'Scope of work';var workIncludedText=(scope.workIncluded&&scope.workIncluded.length)?scope.workIncluded.join('; '):(e&&e.notes?e.notes:'');var conditionsText=(scope.conditionsAssumptions&&scope.conditionsAssumptions.length)?scope.conditionsAssumptions.join('; '):'';var exclusionsText=(scope.exclusions&&scope.exclusions.length)?scope.exclusions.join('; '):'';var contractBody=co+" — Construction Agreement\n\nDate: "+new Date().toLocaleDateString()+"\nEstimate #: "+(e.estNum||"")+"\n\nCLIENT: "+e.client+(e.address?"\nADDRESS: "+e.address:"")+"\n\n";if(projectClass==='residential'){contractBody += "PROJECT SCOPE:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}else{contractBody += "SCOPE OF WORK:\n"+projectScopeText+"\n\n";if(workIncludedText){contractBody += "WORK INCLUDED:\n"+workIncludedText+"\n\n";}if(conditionsText){contractBody += "PROJECT CONDITIONS / ASSUMPTIONS:\n"+conditionsText+"\n\n";}if(exclusionsText){contractBody += "EXCLUSIONS:\n"+exclusionsText+"\n\n";}}contractBody += "CONTRACT PRICE: $"+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+"\n\nPAYMENT TERMS:\nPayment due per the payment schedule attached. All checks payable to "+co+". A service charge of 1.5% per month will be applied to past-due balances.\n\nCHANGE ORDERS:\nAny work outside the scope listed above requires a written change order signed by both parties before work begins. Change orders may affect price and schedule.\n\nWARRANTY:\n"+co+" warrants all labor and materials for one (1) year from substantial completion.\n\nTERMINATION:\nEither party may terminate this agreement with 10 days written notice. Client shall pay for all work completed to date of termination.\n\nACCEPTANCE:\nBy signing, both parties agree to the terms above.";return contractBody;}
 function isResidentialEstimate(e){if(!e)return false;return resolveEstimateProjectClass(e)==='residential' || /residential|house|home|condo|townhome|townhouse|apartment|kitchen|bathroom|bedroom|garage|living|renovation|remodel/i.test((e.type||'')+' '+(e.notes||''));}
 function buildResidentialEstimateDescription(e){if(!isResidentialEstimate(e))return null;var scope=getCanonicalCustomerScope(e);if(!scope||!scope.projectScope)return null;var sections=[];var displayScope=scope.projectScope;if(!e.customerScope&&scope.workIncluded&&scope.workIncluded.length&&scope.workIncluded.every(function(item){return scope.projectScope.indexOf(item)!==-1;})){displayScope=e.type||'Construction improvements described below.';}sections.push({key:'projectScope',label:'PROJECT SCOPE',value:displayScope});if(scope.workIncluded&&scope.workIncluded.length){sections.push({key:'workIncluded',label:'WORK INCLUDED',value:scope.workIncluded.join('; ')});}if(scope.conditionsAssumptions&&scope.conditionsAssumptions.length){sections.push({key:'conditionsAssumptions',label:'PROJECT CONDITIONS / ASSUMPTIONS',value:scope.conditionsAssumptions.join('; ')});}if(scope.exclusions&&scope.exclusions.length){sections.push({key:'exclusions',label:'EXCLUSIONS',value:scope.exclusions.join('; ')});}var heading=(resolveEstimateProjectClass(e)==='residential'?'Residential':((e.type||'').toString().trim()||'Residential'));var summaryValue=(scope.residentialSummary && String(scope.residentialSummary).trim()) ? String(scope.residentialSummary).trim() : (scope.projectScope || '');return {heading:heading,summary:summaryValue,sections:sections,detailText:sections.map(function(section){return section.label+': '+section.value;}).join('\n\n')};}
 function getScopeSectionText(scope, key){if(!scope)return '';if(key==='residentialSummary')return String(scope.residentialSummary||scope.projectScope||'');if(key==='projectScope')return String(scope.projectScope||'');if(key==='workIncluded')return Array.isArray(scope.workIncluded)?scope.workIncluded.join('; '):String(scope.workIncluded||'');if(key==='conditionsAssumptions')return Array.isArray(scope.conditionsAssumptions)?scope.conditionsAssumptions.join('; '):String(scope.conditionsAssumptions||'');if(key==='exclusions')return Array.isArray(scope.exclusions)?scope.exclusions.join('; '):String(scope.exclusions||'');return '';} 
@@ -2386,23 +2445,23 @@ function resetContract(){
   });
 }
 function printInvoice(){
-  var e=ger();if(!e)return;
+  var e=ger();if(!e||!ensureEstimateSchedule(e))return;
   var calc=calcEstimate(e);
   var co=DD.companyName||'Contractor Desk';
   var inv=e.invoice||{};
   var rows=(e.lineItems||[]).map(function(li){
     var ca=calcLineItemTotal(li);
-    return '<tr><td style="padding:8px 0;border-bottom:1px solid #eee">'+li.desc+'</td><td style="text-align:right;padding:8px 0;border-bottom:1px solid #eee">$'+ca.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>';
+    return '<tr><td style="padding:8px 0;border-bottom:1px solid #eee">'+li.desc+'</td><td style="text-align:right;padding:8px 0;border-bottom:1px solid #eee">$'+ca.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
   }).join('');
   var milestones=(e.paymentMilestones||[]).map(function(m){
-    return '<tr><td style="padding:6px 0">'+m.name+(m.pct?' ('+m.pct+'%)':'')+'</td><td style="text-align:right;padding:6px 0">$'+m.amount.toLocaleString()+'</td></tr>';
+    return '<tr><td style="padding:6px 0">'+m.name+(m.pct?' ('+m.pct+'%)':'')+'</td><td style="text-align:right;padding:6px 0">$'+moneyAmount(m.amount)+'</td></tr>';
   }).join('');
   var w=window.open('','_blank');
   w.document.write('<html><head><title>Invoice</title></head><body style="font-family:Georgia,serif;padding:40px;max-width:680px;margin:0 auto;color:#333">');
   w.document.write('<h1 style="color:#2858BD;margin-bottom:4px">'+co+'</h1>');
   w.document.write('<p style="color:#888;margin-bottom:24px">Invoice '+(inv.invoiceNum||e.estNum||'')+'</p>');
   w.document.write('<table style="width:100%;margin-bottom:16px"><tr><td><strong>To:</strong> '+e.client+'<br>'+(e.address||'')+'</td><td style="text-align:right"><strong>Date:</strong> '+new Date().toLocaleDateString()+'<br><strong>Due:</strong> '+(inv.dueDate||'Upon Receipt')+'</td></tr></table>');
-  w.document.write('<h3 style="margin-bottom:8px">Services</h3><table style="width:100%">'+rows+'<tr><td colspan="2" style="padding:12px 0"></td></tr><tr><td style="font-size:18px;font-weight:bold">Total Due</td><td style="text-align:right;font-size:18px;font-weight:bold;color:#2858BD">$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr></table>');
+  w.document.write('<h3 style="margin-bottom:8px">Services</h3><table style="width:100%">'+rows+'<tr><td colspan="2" style="padding:12px 0"></td></tr><tr><td style="font-size:18px;font-weight:bold">Total Due</td><td style="text-align:right;font-size:18px;font-weight:bold;color:#2858BD">$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr></table>');
   if(milestones) w.document.write('<h3 style="margin-top:24px;margin-bottom:8px">Payment Schedule</h3><table style="width:100%">'+milestones+'</table>');
   w.document.write('</body></html>');
   w.document.close();w.print();
@@ -2431,19 +2490,24 @@ function addMilestone(){
   e.paymentMilestones.push({name:name,pct:pct||null,amount:amt,paid:false});
   eCol.doc(e.id).set(e).then(function(){T('Added!');hideForm('msForm');renderEstDetailBody(e);});
 }
-function autoGenMilestones(){var e=ger();if(!e)return;var total=calcEstimate(e).grandTotal;e.paymentMilestones=[{name:"Initial Deposit (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false},{name:"Progress Payment (40%)",amount:Math.round(total*0.40),dueDate:"",paid:false},{name:"Final Payment (30%)",amount:Math.round((total-Math.round(total*0.30)-Math.round(total*0.40))*100)/100,dueDate:"",paid:false}];eCol.doc(e.id).set(e).then(function(){T("Milestones generated!");renderEstDetailBody(e);});}
+function autoGenMilestones(){var e=ger();if(!e)return;if((e.paymentMilestones||[]).some(milestonePaid)){alert("Paid milestones cannot be replaced. Adjust unpaid milestones instead.");return;}if((e.paymentMilestones||[]).length&&!confirm("Replace the existing unpaid schedule with 30 / 40 / 30?"))return;var total=calcEstimate(e).grandTotal;e.paymentMilestones=[{name:"Initial Deposit (30%)",amount:Math.round(total*0.30),dueDate:"",paid:false},{name:"Progress Payment (40%)",amount:Math.round(total*0.40),dueDate:"",paid:false},{name:"Final Payment (30%)",amount:Math.round((total-Math.round(total*0.30)-Math.round(total*0.40))*100)/100,dueDate:"",paid:false}];eCol.doc(e.id).set(e).then(function(){T("Milestones generated!");renderEstDetailBody(e);});}
 function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);document.getElementById("portalPage").classList.add("show");}
 function renderPortalBody(e){
   var calc=calcEstimate(e);
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
-  var logoSrc=(p&&p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL));
+  var logoSrc=(e.logoData&&e.logoData.length>10?e.logoData:p&&p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL));
   var html="";
   html+='<div class="portal-header"><img src="'+escapeHtmlText(logoSrc)+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+escapeHtmlText(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+escapeHtmlText(e.client)+'</div></div>';
-  html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2858BD">'+escapeHtmlText(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+escapeHtmlText(e.status)+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1C1C1E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div></div>';
+  html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2858BD">'+escapeHtmlText(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+escapeHtmlText(e.status)+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1C1C1E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div></div>';
+  html+=resolveEstimateProjectClass(e)==='commercial'?renderCommercialNarrativeBlock(e,true):renderResidentialNarrativeBlock(e,true);
+  if(!getCanonicalCustomerScope(e).projectScope&&e.notes)html+='<div class="portal-section"><h3>Project scope</h3><p>'+escapeHtmlText(e.notes)+'</p></div>';
+  if((e.lineItems||[]).length)html+='<div class="portal-section"><h3>Included work</h3>'+(e.lineItems||[]).map(function(li){return '<div class="preview-line"><div><strong>'+escapeHtmlText(li.desc||'Work item')+'</strong><p>'+escapeHtmlText((li.qty==null?'':li.qty)+' '+(li.unit||''))+'</p></div><strong>$'+moneyAmount(calcLineItemTotal(li))+'</strong></div>';}).join('')+'</div>';
+  if((e.exclusions||[]).length)html+='<div class="portal-section"><h3>Exclusions</h3><ul>'+(e.exclusions||[]).map(function(x){return '<li>'+escapeHtmlText(x)+'</li>';}).join('')+'</ul></div>';
+  html+=scheduleWarning(e,true);
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
   if(p){var scopePct=gp(p);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127959; Project Progress</div><div class="brow"><div class="blr"><span>Scope Completion</span><span>'+scopePct+'%</span></div><div class="bt" style="height:10px"><div class="bf" style="width:'+scopePct+'%;background:#2858BD"></div></div></div><div style="margin-top:10px">'+(p.scopeItems||[]).map(function(it){var clr=it.complete==="Complete"?"#2EAA72":it.complete==="In Progress"?"#E8B43A":"#DDD";return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F5F5F5"><div style="width:10px;height:10px;border-radius:50%;background:'+clr+';flex-shrink:0"></div><div style="font-size:13px;color:#333;flex:1">'+escapeHtmlText(it.desc)+'</div><div style="font-size:11px;color:'+clr+';font-weight:600">'+escapeHtmlText(it.complete)+'</div></div>';}).join("")+'</div></div>';}
   var milestones=e.paymentMilestones||[];
-  if(milestones.length){var totalPaid2=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128176; Payment Schedule</div>'+milestones.map(function(m){return'<div class="payment-milestone'+(m.paid?" pm-paid":"")+'"><div class="pm-cb'+(m.paid?" paid":"")+'">'+(m.paid?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtmlText(m.name)+'</div><div style="font-size:12px;color:#aaa">$'+m.amount.toLocaleString()+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div><div style="font-size:12px;font-weight:700;color:'+(m.paid?"#2EAA72":"#aaa")+'">'+(m.paid?"Paid":"Pending")+'</div></div>';}).join("")+'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:13px"><span style="color:#aaa">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+totalPaid2.toLocaleString()+'</span></div></div>';}
+  if(milestones.length){var totalPaid2=milestones.filter(function(m){return m.paid;}).reduce(function(a,m){return a+(m.amount||0);},0);html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128176; Payment Schedule</div>'+milestones.map(function(m){return'<div class="payment-milestone'+(m.paid?" pm-paid":"")+'"><div class="pm-cb'+(m.paid?" paid":"")+'">'+(m.paid?"&#10003;":"")+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtmlText(m.name)+'</div><div style="font-size:12px;color:#aaa">$'+moneyAmount(m.amount)+(m.dueDate?' &middot; Due '+fmt(m.dueDate):'')+'</div></div><div style="font-size:12px;font-weight:700;color:'+(m.paid?"#2EAA72":"#aaa")+'">'+(m.paid?"Paid":"Pending")+'</div></div>';}).join("")+'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:13px"><span style="color:#aaa">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+moneyAmount(totalPaid2)+'</span></div></div>';}
   if(p&&(p.choices||[]).length){html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#127912; Your Selections</div>'+(p.choices||[]).map(function(ch){var clr=["Confirmed","Installed","Delivered"].includes(ch.status)?"#2EAA72":ch.status==="Ordered"?"#E8B43A":"#aaa";return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5F5F5"><div><div style="font-size:13px;font-weight:600;color:#333">'+escapeHtmlText(ch.category)+'</div><div style="font-size:12px;color:#888">'+escapeHtmlText(ch.item)+'</div></div><span style="font-size:11px;font-weight:700;color:'+clr+'">'+escapeHtmlText(ch.status)+'</span></div>';}).join("")+'</div>';}
   document.getElementById("portalBody").innerHTML=html;
 }
@@ -2721,7 +2785,8 @@ function generateAIEstimate(){
     document.querySelectorAll('.btn-ai').forEach(function(b){b.disabled=true;});
     _aiStatus('⏳ Button clicked — preparing request...');
     profile=DD.aiProfile||{};
-    dm=parseFloat(e.markup)||parseFloat(profile.markup)||20;
+    dm=e.markup!=null?parseFloat(e.markup):profile.markup!=null?parseFloat(profile.markup):20;
+    if(!Number.isFinite(dm))dm=20;
     lr=parseFloat(profile.laborRate)||85;
     existingItems=JSON.stringify((e.lineItems||[]).map(function(li,i){
       return{index:i,desc:li.desc,category:li.category,total:li.total};
@@ -2907,7 +2972,7 @@ function updateEliPagePreview(){
   var uc=parseFloat(document.getElementById("eliPageUnitCost").value)||0;
   var markup=parseFloat(document.getElementById("eliPageMarkup").value)||0;
   var total=qty*uc*(1+markup/100);
-  document.getElementById("eliPagePreview").textContent="$"+total.toLocaleString(undefined,{maximumFractionDigits:0});
+  document.getElementById("eliPagePreview").textContent="$"+total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function saveEditLineItemPage(){
   var e=ger();if(!e)return;
@@ -2922,12 +2987,12 @@ function saveEditLineItemPage(){
   };
   eCol.doc(e.id).set(e).then(function(){T("Updated!");closePage("editLineItemPage");renderEstDetailBody(e);});
 }
-function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty").value)||0,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;document.getElementById("eliPreview").textContent="$"+(qty*uc*(1+markup/100)).toLocaleString(undefined,{maximumFractionDigits:0});}
+function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty").value)||0,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;document.getElementById("eliPreview").textContent="$"+(qty*uc*(1+markup/100)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
 function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
-function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
+function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=DD.aiProfile&&DD.aiProfile.markup!=null?DD.aiProfile.markup:20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
 var estimateFormBaseline=null;
-function openEditEstimate(){var e=ger();if(!e)return;estimateFormBaseline=JSON.parse(JSON.stringify(e));editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
+function openEditEstimate(){var e=ger();if(!e)return;estimateFormBaseline=JSON.parse(JSON.stringify(e));editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup==null?20:e.markup;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
 function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose a project class: Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();if(!estNum)return;var est=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});if(editEstId&&(existing._savedRecordSnapshot||(typeof estimateFormBaseline!=='undefined'&&estimateFormBaseline&&estimateFormBaseline.id===id)))Object.defineProperty(est,'_savedRecordSnapshot',{value:(typeof estimateFormBaseline!=='undefined'&&estimateFormBaseline&&estimateFormBaseline.id===id)?estimateFormBaseline:existing._savedRecordSnapshot,writable:true,configurable:true,enumerable:false});withSharedOwnerMetadata(est).then(function(record){
   record.userId = record.ownerUid;
   return eCol.doc(record.id).set(record).then(function(){
@@ -2937,13 +3002,13 @@ function saveEstimate(){var client=document.getElementById("efClient").value.tri
     T(editEstId?"Updated!":"Created! "+estNum);document.getElementById("estFormPage").classList.remove("show");if(!editEstId){currentEstId=id;setTimeout(function(){openEstDetail(id);},300);}else{openEstDetail(id);}});
 }).catch(function(err){console.error('Estimate save error:', err);T('Error saving estimate: '+(err&&err.message?err.message:err));});}
 function updateEstStatus(v){var e=ger();if(!e)return;e.status=v;eCol.doc(e.id).set(e).then(function(){T("Updated!");pushNotification("Estimate for "+e.client+" is now "+v);renderEstCards();if(currentEstId===e.id)openEstDetail(e.id);});}
-function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var dm=(ger()||{}).markup||(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
+function openAddLineItem(){var opts=(DD.estCategories||[]).map(function(s){return'<option>'+s+'</option>';}).join("");document.getElementById("liCat").innerHTML=opts;document.getElementById("liCatS").innerHTML=opts;["liDesc","liUnit","liDescS"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("liQty").value="1";document.getElementById("liUnitCost").value="";document.getElementById("liCostS").value="";var record=ger()||{},profile=DD.aiProfile||{};var dm=record.markup!=null?record.markup:profile.markup!=null?profile.markup:20;document.getElementById("liMarkup").value=dm;document.getElementById("liMarkupS").value=dm;document.getElementById("addLineItemModal").classList.add("show");}
 function closeAddLineItem(){document.getElementById("addLineItemModal").classList.remove("show");}
 function switchLiTab(mode){liTabMode=mode;document.getElementById("liTabDetailed").classList.toggle("on",mode==="detailed");document.getElementById("liTabSimple").classList.toggle("on",mode==="simple");document.getElementById("liDetailedForm").style.display=mode==="detailed"?"block":"none";document.getElementById("liSimpleForm").style.display=mode==="simple"?"block":"none";}
 function saveLineItem(){var e=ger();if(!e)return;e.lineItems=e.lineItems||[];if(liTabMode==="detailed"){var desc=document.getElementById("liDesc").value.trim();if(!desc){alert("Enter a description.");return;}var qty=parseFloat(document.getElementById("liQty").value)||1,unit=document.getElementById("liUnit").value.trim(),uc=parseFloat(document.getElementById("liUnitCost").value)||0,markup=parseFloat(document.getElementById("liMarkup").value)||0;e.lineItems.push({category:document.getElementById("liCat").value,desc:desc,qty:qty,unit:unit,unitCost:uc,total:qty*uc,markup:markup});}else{var desc2=document.getElementById("liDescS").value.trim();if(!desc2){alert("Enter a description.");return;}var cost=parseFloat(document.getElementById("liCostS").value)||0,markup2=parseFloat(document.getElementById("liMarkupS").value)||0;e.lineItems.push({category:document.getElementById("liCatS").value,desc:desc2,qty:1,unit:"",unitCost:cost,total:cost,markup:markup2});}eCol.doc(e.id).set(e).then(function(){T("Added!");closeAddLineItem();renderEstDetailBody(e);});}
 function delLineItem(i){if(!confirm("Delete?"))return;var e=ger();e.lineItems.splice(i,1);eCol.doc(e.id).set(e).then(function(){T("Deleted!");renderEstDetailBody(e);});}
-function shareEstimate(){var e=ger();if(!e)return;if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){shareEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
-function sendEstimate(){var e=ger();if(!e)return;if(!e.clientPhone&&!e.clientEmail){alert('Add a client phone number or email before sending this estimate.');return;}if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){sendEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Sent to Client";eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
+function shareEstimate(){var e=ger();if(!e||!ensureEstimateSchedule(e))return;if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){shareEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;navigator.clipboard.writeText(url).then(function(){T("Link copied!");}).catch(function(){var d=document.createElement("textarea");d.value=url;document.body.appendChild(d);d.select();try{document.execCommand("copy");T("Link copied!");}catch(ex){T("Copy link: "+url.slice(-30));}document.body.removeChild(d);});}
+function sendEstimate(){var e=ger();if(!e||!ensureEstimateSchedule(e))return;if(!e.clientPhone&&!e.clientEmail){alert('Add a client phone number or email before sending this estimate.');return;}if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('est',e.id,{},function(){sendEstimate();}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('est',e.id,{}):window.location.href.split("?")[0]+"?est="+e.id;var calc=calcEstimate(e);var msg="Hi, please review your estimate from "+(DD.companyName||"Contractor Desk")+":\n\nProject: "+e.type+"\nTotal: $"+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+"\n\nReview & Sign:\n"+url;if(e.clientPhone)window.open("sms:"+e.clientPhone+"?body="+encodeURIComponent(msg));if(e.clientEmail)setTimeout(function(){window.open("mailto:"+e.clientEmail+"?subject=Your Estimate&body="+encodeURIComponent(msg));},e.clientPhone?1200:0);if(!e.clientPhone&&!e.clientEmail){alert("Add a client phone number or email before sending this estimate.");return;}if(e.status==="Draft"){e.status="Ready for Client Review";e.deliveryState="draft-opened";e.draftedAt=Date.now();eCol.doc(e.id).set(e).then(function(){renderEstDetailBody(e);renderEstCards();});}}
 function convertToProject(){
   var e=ger();if(!e)return;
   if(!confirm("Convert to project?"))return;
@@ -2986,8 +3051,8 @@ function convertToProject(){
     address:e.address||"",
     pm:"",
     startDate:"",endDate:"",
-    budget:Math.round(calc.subtotal||e.budget||0),
-    clientTotal:Math.round(calc.grandTotal||e.clientTotal||e.totalAmount||0),
+    budget:Math.round((calc.subtotal||e.budget||0)*100)/100,
+    clientTotal:Math.round((calc.grandTotal||e.clientTotal||e.totalAmount||0)*100)/100,
     spent:0,
     status:DD.projectStatuses&&DD.projectStatuses[0]||"Planning",
     notes:"From estimate "+e.estNum+(e.notes?". "+e.notes:""),
@@ -2999,7 +3064,7 @@ function convertToProject(){
     choices:[],costs:[],punchList:[],
     changeOrders:[],dailyLogs:[],notesLog:[],
     estimateId:e.id,
-    estimateTotal:Math.round(calc.grandTotal||e.clientTotal||e.totalAmount||e.budget||0),
+    estimateTotal:Math.round((calc.grandTotal||e.clientTotal||e.totalAmount||e.budget||0)*100)/100,
     logoData:DD.logoData||"",
     companyName:DD.companyName||"",
     companyPhone:DD.companyPhone||"",
@@ -3121,7 +3186,7 @@ function renderProjectPortal(p, est, wrapper){
     if(totalAmt>0){
       var ppct=Math.round(totalPaid/totalAmt*100);
       html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">';
-      html+='<span style="color:#888">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+totalPaid.toLocaleString()+' of $'+totalAmt.toLocaleString()+'</span></div>';
+      html+='<span style="color:#888">Total Collected</span><span style="font-weight:700;color:#2EAA72">$'+moneyAmount(totalPaid)+' of $'+totalAmt.toLocaleString()+'</span></div>';
       html+='<div style="background:#EEE;border-radius:6px;height:8px;margin-bottom:14px"><div style="height:100%;width:'+ppct+'%;background:#2EAA72;border-radius:6px"></div></div>';
     }
     milestones.forEach(function(m){
@@ -3146,7 +3211,7 @@ function renderProjectPortal(p, est, wrapper){
   // Change orders — split into pending approval and approved
   var allCOs=p.changeOrders||[];
   var sentCOs=allCOs.filter(function(c){
-    return c.status==='Sent to Client'||c.status==='Sent';
+    return c.status==='Ready for Client Review'||c.status==='Sent to Client'||c.status==='Sent';
   });
   var approvedCOs=allCOs.filter(function(c){return c.status==='Approved';});
 
@@ -3240,7 +3305,7 @@ function renderProjectPortal(p, est, wrapper){
   setTimeout(function(){
     initSigCanvas('sigCanvas');
     (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending'||co.status==='Sent'||co.status==='Sent to Client') initSigCanvas('coSigCanvas'+i);
+      if(co.status==='Pending'||co.status==='Ready for Client Review'||co.status==='Sent'||co.status==='Sent to Client') initSigCanvas('coSigCanvas'+i);
     });
   },500);
 
@@ -3298,7 +3363,7 @@ function renderProjectPortal(p, est, wrapper){
   // Retry CO canvases - they may need more time
   setTimeout(function(){
     (p.changeOrders||[]).forEach(function(co,i){
-      if(co.status==='Pending'||co.status==='Sent'||co.status==='Sent to Client'){
+      if(co.status==='Pending'||co.status==='Ready for Client Review'||co.status==='Sent'||co.status==='Sent to Client'){
         var el=document.getElementById('coSigCanvas'+i);
         if(el) initSigCanvas('coSigCanvas'+i);
       }
@@ -3452,7 +3517,7 @@ function renderClientView(e,wrapper){
       byCategory[cat].forEach(function(li){
         var clientAmt=calcLineItemTotal(li);
         html+='<div class="li-row"><div class="li-name">'+escapeHtmlText(li.desc)+'</div>';
-        html+='<div class="li-total">$'+clientAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+        html+='<div class="li-total">$'+clientAmt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>';
       });
     });
     html+='</div>';
@@ -3461,10 +3526,10 @@ function renderClientView(e,wrapper){
   // Total summary
   html+='<div class="est-summary">';
   if(calc.taxAmt>0){
-    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
-    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Subtotal</span><span>$'+calc.clientTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+    html+='<div class="est-sum-row"><span>Tax ('+(e.tax||0)+'%)</span><span>$'+calc.taxAmt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
   }
-  html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+  html+='<div class="est-sum-row total"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
   html+='</div>';
 
   // Payment schedule
@@ -3479,7 +3544,7 @@ function renderClientView(e,wrapper){
       if(m.pct) html+='<div style="font-size:11px;color:#aaa">'+m.pct+'% of total</div>';
       html+='</div>';
       html+='<div style="text-align:right">';
-      html+='<div style="font-size:15px;font-weight:700;color:#2858BD">$'+m.amount.toLocaleString()+'</div>';
+      html+='<div style="font-size:15px;font-weight:700;color:#2858BD">$'+moneyAmount(m.amount)+'</div>';
       if(m.paid) html+='<div style="font-size:11px;font-weight:700;color:#2EAA72">&#10003; Paid</div>';
       html+='</div></div>';
     });
@@ -3521,6 +3586,8 @@ function renderClientView(e,wrapper){
     html+='<div style="font-size:13px;color:#555;margin-top:4px">By: '+escapeHtmlText(e.signedBy)+'</div>';
     html+='<div style="font-size:12px;color:#888">'+fmtTS(e.signedAt)+'</div>';
     html+='</div>';
+  } else if(estimateScheduleState(e).mismatch){
+    html+=scheduleWarning(e,true);
   } else if(e.status!=='Declined'&&e.status!=='Expired'){
     html+='<div class="wcard" style="margin-top:14px">';
     html+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:4px">Sign to Approve</div>';
@@ -3667,7 +3734,8 @@ function _renderDetail(p){
   renderTabs(p);renderTabBody(p);
 }
 
-function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Payments","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","payments","punch-list","change-orders","comms","daily-log","notes"];document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2858BD")+";color:#1C1C1E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){currentTab=this.getAttribute("data-tab");var p2=gpr();if(p2){renderTabs(p2);renderTabBody(p2);}};});}
+function changeProjectSection(key){currentTab=key;var page=document.getElementById("detailPage");if(page)page.scrollTop=0;var p=gpr();if(p){renderTabs(p);renderTabBody(p);}}
+function renderTabs(p){var tabs=["Scope of Work","Timeline","Choices","Budget","Payments","Punch List","Change Orders","Comms Log","Daily Log","Notes"];var keys=["scope","timeline","choices","budget","payments","punch-list","change-orders","comms","daily-log","notes"];var picker=document.getElementById("projectSectionSelect");if(picker)picker.innerHTML=tabs.map(function(t,i){return '<option value="'+keys[i]+'"'+(keys[i]===currentTab?' selected':'')+'>'+t+'</option>';}).join("");document.getElementById("tabs").innerHTML=tabs.map(function(t,idx){var k=keys[idx],on=k===currentTab;return'<button class="ptab'+(on?" on":"")+'" style="'+(on?"border-bottom-color:"+(p.color||"#2858BD")+";color:#1C1C1E":"")+'" data-tab="'+k+'">'+t+'</button>';}).join("");document.querySelectorAll(".ptab").forEach(function(b){b.onclick=function(){changeProjectSection(this.getAttribute("data-tab"));};});}
 function renderGantt(p){var items=(p.scopeItems||p.phases||[]);if(!items.length)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">No scope items with dates yet.</div>';var minD=null,maxD=null;items.forEach(function(ph){if(ph.start){var d=new Date(ph.start);if(!minD||d<minD)minD=d;}if(ph.end){var d=new Date(ph.end);if(!maxD||d>maxD)maxD=d;}});if(!minD||!maxD)return'<div style="color:#bbb;font-size:13px;padding:20px;text-align:center">Add start/end dates to scope items to see Gantt chart.</div>';var totalDays=(maxD-minD)/86400000+1;var months=[],cur=new Date(minD);cur.setDate(1);while(cur<=maxD){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}var html='<div class="gantt-wrap"><div style="min-width:400px"><div style="display:flex;margin-bottom:8px;padding-left:120px">';months.forEach(function(m){var mS=new Date(m),mE=new Date(m);mE.setMonth(mE.getMonth()+1);mE.setDate(0);var s=Math.max(0,(mS-minD)/86400000),e=Math.min(totalDays,(mE-minD)/86400000+1);var w=((e-s)/totalDays*100).toFixed(1);html+='<div style="width:'+w+'%;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;flex-shrink:0">'+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m.getMonth()]+'</div>';});html+='</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=Math.max(0,(new Date(ph.start)-minD)/86400000),e=Math.min(totalDays,(new Date(ph.end)-minD)/86400000+1);var left=(s/totalDays*100).toFixed(1),width=Math.max(0.5,((e-s)/totalDays*100)).toFixed(1);var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2858BD":"#3A78E8";var label=ph.desc||ph.name||"";html+='<div class="gantt-row"><div class="gantt-label" title="'+escapeHtmlText(label)+'">'+escapeHtmlText(label)+'</div><div class="gantt-track"><div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+clr+'">'+escapeHtmlText(label)+'</div></div></div>';});html+='</div></div>';return html;}
 function renderCalendar(p){var items=(p.scopeItems||p.phases||[]);var y=calMonth.getFullYear(),mo=calMonth.getMonth();var mNames=["January","February","March","April","May","June","July","August","September","October","November","December"];var html='<div class="wcard"><div class="cal-nav"><button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1C1C1E">&#8249;</button><span class="cal-title">'+mNames[mo]+" "+y+'</span><button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#1C1C1E">&#8250;</button></div><div class="cal-grid">';["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});var firstDay=new Date(y,mo,1).getDay(),daysInMonth=new Date(y,mo+1,0).getDate();var today=new Date();today.setHours(0,0,0,0);for(var i=0;i<firstDay;i++)html+='<div class="cal-day other-month"></div>';for(var d=1;d<=daysInMonth;d++){var td=new Date(y,mo,d);td.setHours(0,0,0,0);var isT=td.getTime()===today.getTime();html+='<div class="cal-day'+(isT?" today":"")+'"><div class="cal-day-num">'+d+'</div>';items.forEach(function(ph){if(!ph.start||!ph.end)return;var s=new Date(ph.start);s.setHours(0,0,0,0);var e=new Date(ph.end);e.setHours(0,0,0,0);if(td>=s&&td<=e){var clr=ph.complete==="Complete"?"#2EAA72":ph.complete==="In Progress"?"#2858BD":"#3A78E8";html+='<div class="cal-event" style="background:'+clr+'">'+escapeHtmlText(ph.desc||ph.name||"")+'</div>';}});html+='</div>';}html+='</div></div>';return html;}
 function calPrev(){calMonth.setMonth(calMonth.getMonth()-1);var p=gpr();if(p)renderTabBody(p);}
@@ -3980,7 +4048,7 @@ function renderTabBody(p){
     // Summary cards
     html+='<div class="summary-grid" style="margin-bottom:14px">';
     html+='<div class="sbox"><div class="sbox-label">Contract Total</div><div class="sbox-val" style="color:#2858BD">$'+(p.clientTotal||p.estimateTotal||totalAmt).toLocaleString()+'</div></div>';
-    html+='<div class="sbox"><div class="sbox-label">Collected</div><div class="sbox-val" style="color:#2EAA72">$'+totalPaid.toLocaleString()+'</div></div>';
+    html+='<div class="sbox"><div class="sbox-label">Collected</div><div class="sbox-val" style="color:#2EAA72">$'+moneyAmount(totalPaid)+'</div></div>';
     html+='<div class="sbox"><div class="sbox-label">Outstanding</div><div class="sbox-val" style="color:'+(totalOwed>0?'#E83A6C':'#2EAA72')+'">$'+totalOwed.toLocaleString()+'</div></div>';
     html+='</div>';
     if(totalAmt>0){
@@ -4073,13 +4141,14 @@ function renderTabBody(p){
       html+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
       html+='<select class="fi" style="font-size:13px;padding:8px;flex:1" onchange="updateCOStatus('+i+',this.value)">';
       html+='<option'+(co.status==="Pending"?" selected":"")+'>Pending</option>';
+      ['Ready for Client Review','Sent to Client','Sent'].forEach(function(status){if(co.status===status)html+='<option selected>'+escapeHtmlText(status)+'</option>';});
       html+='<option'+(co.status==="Approved"?" selected":"")+'>Approved</option>';
       html+='<option'+(co.status==="Rejected"?" selected":"")+'>Rejected</option>';
       html+='</select><span class="co-badge" style="background:'+sc3+'22;color:'+sc3+'">'+escapeHtmlText(co.status)+'</span></div>';
       html+='<div style="display:flex;gap:8px;margin-top:10px">';
       if(co.status==="Pending"){
         html+='<button ontouchend="event.preventDefault();approveCOContractor('+i+');" onclick="approveCOContractor('+i+');" style="flex:1;padding:8px;background:#2EAA72;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#10003; Approve</button>';
-        html+='<button ontouchend="event.preventDefault();sendCOToClient('+i+');" onclick="sendCOToClient('+i+');" style="flex:1;padding:8px;background:#2858BD;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#128228; Send to Client</button>';
+        html+='<button ontouchend="event.preventDefault();sendCOToClient('+i+');" onclick="sendCOToClient('+i+');" style="flex:1;padding:8px;background:#2858BD;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;min-height:40px">&#128228; Open email/text draft</button>';
       }
       if(co.approvedAt) html+='<div style="font-size:11px;color:#2EAA72;padding:8px 0">&#10003; Approved '+fmtTS(co.approvedAt)+(co.approvedBy?' by '+escapeHtmlText(co.approvedBy):'')+'</div>';
       html+='</div>';
@@ -4304,6 +4373,7 @@ function delComm(i){
 function sendCOToClient(i){
   var p=gpr();if(!p)return;
   var co=p.changeOrders[i];if(!co)return;
+  if(!p.clientPhone&&!p.clientEmail){T("Add a client phone or email before preparing a change order.");return;}
   if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&prepareSharedLink('portal',p.id,{},function(){sendCOToClient(i);}))return;var url=(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES)?preparedSharedLink('portal',p.id,{}):window.location.href.split('?')[0]+'?portal='+p.id;
   var msg='Hi '+p.client+',\n\nA change order on your project requires your approval:\n\n'+
     'Change Order: '+co.title+'\n'+
@@ -4311,10 +4381,11 @@ function sendCOToClient(i){
     'Change Order Total: +$'+(parseFloat(co.clientAmount||co.budgetImpact)||0).toLocaleString()+'\n\n'+
     'Please review and sign here:\n'+url+
     '\n\nThank you,\n'+(DD.companyName||'Contractor Desk');
-  // Save status before opening SMS/email so portal shows approval form
-  co.status='Sent to Client';
-  co.sentAt=Date.now();
-  saveP(p,'Change order sent to client.');
+  // Preparing a draft permits review, but does not confirm external delivery.
+  co.status='Ready for Client Review';
+  co.deliveryState='draft-opened';
+  co.draftedAt=Date.now();
+  saveP(p,'Change order email/text draft prepared; delivery not confirmed.');
   var phone=p.clientPhone||'';
   var email=p.clientEmail||'';
   if(phone){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);}
@@ -4385,7 +4456,8 @@ function runCOGenerationRequest(title, desc, btnEl, questionState){
   var p=gpr();if(!p)return;
   var btn=btnEl||document.querySelector('.co-ai-btn');if(btn){btn.disabled=true;btn.textContent='Drafting...';}
   var profile=DD.aiProfile||{};
-  var markup=parseFloat(profile.markup)||20;
+  var markup=profile.markup!=null?parseFloat(profile.markup):20;
+  if(!Number.isFinite(markup))markup=20;
   var lr=parseFloat(profile.laborRate)||85;
   var histCtx2=buildHistoricalContext();
   var origEst=estimates.find(function(e){return e.projectId===p.id||e.id===p.estimateId;});
@@ -5004,6 +5076,8 @@ function saveProject(){var client=document.getElementById("fClient").value.trim(
 }).catch(function(err){console.error('Project save error:', err);T('Error saving project: '+(err&&err.message?err.message:err));});}
 function openSettings(){
   document.getElementById("settingsPage").classList.add("show");
+  document.getElementById("settingsPage").scrollTop=0;
+  organizeSettings();
   document.getElementById("teamList").innerHTML='<div style="color:#aaa;font-size:13px">Loading...</div>';
   var _uid=currentUser?currentUser.uid:null;
   if(!_uid){renderSettingsForm();return;}
@@ -5029,7 +5103,44 @@ function openSettings(){
   }).catch(function(){ renderSettingsForm(); });
 }
 
+function organizeSettings(){
+  var page=document.getElementById('settingsPage'),root=page&&page.querySelector(':scope > div:not(.phead)');
+  if(!root||root.querySelector('#settingsCompanyGroup'))return;
+  function group(id,title,open){var details=document.createElement('details');details.id=id;details.className='settings-group';details.open=!!open;var summary=document.createElement('summary');summary.textContent=title;details.appendChild(summary);var content=document.createElement('div');content.className='settings-content';details.appendChild(content);root.appendChild(details);return content;}
+  var company=group('settingsCompanyGroup','Company profile',true),access=group('settingsAccessGroup','Account access and crew contacts',false),estimating=group('settingsEstimatingGroup','Estimating defaults',false),categories=group('settingsCategoriesGroup','Project categories and statuses',false),support=group('settingsMaintenanceGroup','Administrator maintenance and support',false);
+  function moveField(id,target){var node=document.getElementById(id),card=node&&node.closest('.wcard');if(card)target.appendChild(card);}
+  ['companyName','logoPreviewWrap'].forEach(function(id){moveField(id,company);});
+  ['teamAccessList','teamList'].forEach(function(id){moveField(id,access);});
+  ['aiLocation','tradePicker'].forEach(function(id){moveField(id,estimating);});
+  ['psTagsEl','ptTagsEl','csTagsEl','ccTagsEl','coTagsEl','plTagsEl','elTagsEl'].forEach(function(id){moveField(id,categories);});
+  ['adminCardBackup','adminCardRestore','adminCardPhase','adminCardTag','settingsDiagnostics'].forEach(function(id){var node=document.getElementById(id);if(node)support.appendChild(node);});
+  moveField('aiTestResult',support);
+}
+var accessibleFieldCounter=0;
+function enhanceAccessibility(root){
+  if(!root||!root.querySelectorAll)return;
+  root.querySelectorAll('label:not([for])').forEach(function(label){
+    if(label.querySelector('input,select,textarea'))return;
+    var control=label.nextElementSibling;
+    if(control&&!control.matches('input,select,textarea'))control=control.querySelector('input,select,textarea');
+    if(!control)return;if(!control.id)control.id='accessibleField'+(++accessibleFieldCounter);label.htmlFor=control.id;
+  });
+  root.querySelectorAll('button:not([aria-label]),a.phead-back:not([aria-label])').forEach(function(button){
+    var text=button.textContent.trim(),handler=button.getAttribute('onclick')||'';
+    if(button.classList.contains('phead-back'))button.setAttribute('aria-label','Back');
+    else if(/^[×✕✏✎‹›]+$/.test(text)){
+      var verb=/del|remove|delete/i.test(handler)?'Delete':/edit/i.test(handler)?'Edit':text==='‹'?'Previous':text==='›'?'Next':'Close';
+      button.setAttribute('aria-label',verb);
+    }
+  });
+}
+function installAccessibilityEnhancements(){
+  enhanceAccessibility(document);
+  new MutationObserver(function(changes){changes.forEach(function(change){change.addedNodes.forEach(function(node){if(node.nodeType===1)enhanceAccessibility(node);});});}).observe(document.body,{childList:true,subtree:true});
+}
+
 function renderSettingsForm(){
+  organizeSettings();
   var diagnostics=document.getElementById('settingsDiagnostics');if(diagnostics)diagnostics.style.display='block';
   renderTeamList();
   document.getElementById("companyName").value=DD.companyName||"Contractor Desk";
@@ -5039,7 +5150,7 @@ function renderSettingsForm(){
   if(document.getElementById("companyPaymentInstructions")) document.getElementById("companyPaymentInstructions").value=DD.companyPaymentInstructions||"";
   var profile=DD.aiProfile||{};
   document.getElementById("aiLocation").value=profile.location||"";
-  document.getElementById("aiMarkup").value=profile.markup||20;
+  document.getElementById("aiMarkup").value=profile.markup==null?20:profile.markup;
   document.getElementById("aiLaborRate").value=profile.laborRate||85;
   document.getElementById("aiInstructions").value=profile.instructions||"";
   renderTagSet("psTagsEl","projectStatuses");
@@ -5450,7 +5561,7 @@ function backupAllData(){
       return Promise.all([col.get(),eCol.get(),sCol.doc(workspaceSettingsDoc(workspaceUid)).get()]).then(function(results){
         if(!currentUser||currentUser.uid!==uid)throw new Error('Your session changed. Sign in and try again.');
         if(!results[2].exists)throw new Error('Company settings could not be found. Backup was not created.');
-        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v213',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
+        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v214',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
         var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
         if(backupDownloadUrl)URL.revokeObjectURL(backupDownloadUrl);
         backupDownloadUrl=URL.createObjectURL(blob);
@@ -6535,6 +6646,8 @@ openSettings = function(){
 // END TEAM ACCESS CONTROL
 // ═══════════════════════════════════════════════════════════════
 
+
+installAccessibilityEnhancements();
 </script>
 </body>
 </html>
