@@ -2,7 +2,7 @@ const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
 const http=require('http');
-const {app,removeAnsweredIntakeQuestions}=require('../server');
+const {app,removeAnsweredIntakeQuestions}=require('./helpers/providerApp');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);assert(a>=0&&b>a);return html.slice(a,b);}
 const clone=x=>JSON.parse(JSON.stringify(x));

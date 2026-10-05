@@ -1198,7 +1198,7 @@ app.get("/api/build-info", function (req, res) {
   });
 });
 
-app.post("/api/daily-log", async (req, res) => {
+async function dailyLogHandler(req, res) {
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
@@ -1278,9 +1278,9 @@ app.post("/api/daily-log", async (req, res) => {
     console.error("[AI DAILY LOG] failed", err);
     return res.status(500).json({ error: err && err.message ? err.message : "Daily log AI failed" });
   }
-});
+}
 
-app.post("/api/estimate", async (req, res) => {
+async function estimateHandler(req, res) {
   const routeStart = Date.now();
   const contentLength = req.headers && req.headers['content-length'] ? req.headers['content-length'] : null;
   const messageCount = Array.isArray(req.body && req.body.messages) ? req.body.messages.length : 0;
@@ -2160,7 +2160,13 @@ app.post("/api/estimate", async (req, res) => {
     }
     return res.status(500).json({ error: "Failed to reach AI provider." });
   }
-});
+}
+
+// Paid AI endpoints require a valid account and an active company membership.
+const {requireAppUser,trustedOrigin}=require('./lib/authApi');
+const {requireCompany}=require('./lib/companySupportApi');
+app.post('/api/estimate',requireAppUser,requireCompany,trustedOrigin,estimateHandler);
+app.post('/api/daily-log',requireAppUser,requireCompany,trustedOrigin,dailyLogHandler);
 
 // Register data APIs before the SPA fallback so API responses remain JSON.
 installPostgresRoutes(app);
@@ -2179,6 +2185,8 @@ app.listen(PORT, "0.0.0.0", () => {
 
 module.exports = {
   app,
+  estimateHandler,
+  dailyLogHandler,
   removeAnsweredIntakeQuestions,
   buildEstimateExclusionsSchema,
   validateCOIntakeReadiness,

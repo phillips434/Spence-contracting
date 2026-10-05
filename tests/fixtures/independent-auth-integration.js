@@ -32,16 +32,20 @@ const { PGlite } = require("@electric-sql/pglite");
   require("nodemailer").createTransport = () => ({
     sendMail: async (mail) => emails.push(mail),
   });
-  const express = require("express"),
-    app = express();
-  app.use(express.json());
-  require("../../lib/authApi").installAuthRoutes(app);
-  require("../../lib/dataApi").installDataRoutes(app);
+  const app = require("../../server").app;
+  const nativeFetch=global.fetch;let providerCalls=0;
+  process.env.OPENAI_API_KEY='fixture-key';process.env.ANTHROPIC_KEY='fixture-key';
+  global.fetch=async(url,options)=>{
+    providerCalls++;
+    if(String(url)==='https://api.openai.com/v1/chat/completions')return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:'OK'}}]})};
+    if(String(url)==='https://api.anthropic.com/v1/messages')return {ok:true,status:200,text:async()=>JSON.stringify({content:[{text:JSON.stringify({workCompleted:'Fixture daily log'})}]})};
+    throw Error('Unexpected provider network request');
+  };
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
   const origin = "http://127.0.0.1:" + server.address().port;
   async function request(route, body, cookie, extra = {}) {
-    const response = await fetch(origin + route, {
+    const response = await nativeFetch(origin + route, {
       method: body ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
@@ -182,6 +186,24 @@ const { PGlite } = require("@electric-sql/pglite");
       (await request("/api/data/session", null, legacyCookie)).status,
       403,
     );
+    for(const route of ['/api/estimate','/api/daily-log']){
+      const before=providerCalls;
+      assert.equal((await request(route,{messages:[{role:'user',content:'ping'}],workCompleted:'Fixture work'},memberCookie)).status,200);
+      assert.equal(providerCalls,before+1);
+      assert.equal((await request(route,{},null)).status,401);
+      assert.equal((await request(route,{},legacyCookie)).status,403);
+      assert.equal((await request(route,{},memberCookie,{Origin:'https://attacker.example'})).status,403);
+      assert.equal(providerCalls,before+1,'rejected requests never reach paid provider');
+    }
+    await require('../../lib/documentStore').transact(client=>require('../../lib/documentStore').saveProjectDocument(client,company,{id:'patch-fixture',client:'Fixture project',choices:[{item:'Original'}],notes:'Original notes'}));
+    const {patchRecord}=require('../../lib/recordPatch');
+    await patchRecord('projects',company,'patch-fixture',{notes:'Office update'},{notes:{exists:true,value:'Original notes'}});
+    const merged=await patchRecord('projects',company,'patch-fixture',{choices:[{item:'Field update'}]},{choices:{exists:true,value:[{item:'Original'}]}});
+    assert.equal(merged.notes,'Office update','unrelated teammate edits survive');
+    await assert.rejects(patchRecord('projects',company,'patch-fixture',{choices:[{item:'Stale edit'}]},{choices:{exists:true,value:[{item:'Original'}]}}),/Another person changed choices/);
+    const retained=(await db.query("select legacy_payload from projects where legacy_id='patch-fixture'")).rows[0].legacy_payload;
+    assert.equal(retained.choices[0].item,'Field update','stale selection never overwrites newer value');
+    await assert.rejects(patchRecord('projects','00000000-0000-0000-0000-000000000000','patch-fixture',{notes:'Other company'}),/Record not found/);
     await request("/api/auth/reset", { email: "new@example.invalid" });
     r = await request("/api/auth/complete", {
       token: token(),
@@ -215,6 +237,7 @@ const { PGlite } = require("@electric-sql/pglite");
       "Independent auth database integration passed: verified signup, invited membership, legacy password setup, session revocation, CSRF and one-time tokens.",
     );
   } finally {
+    global.fetch=nativeFetch;
     await new Promise((r) => server.close(r));
     await db.close();
   }

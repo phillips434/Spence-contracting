@@ -834,7 +834,7 @@ function postgresCollection(kind){
         return save(Object.assign({},data,{id:id}));
         function save(value){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(Object.assign({},value,{id:id}))});}
       },
-      update:function(patch){return this.get().then(function(snap){if(!snap.exists)throw new Error('Record not found');return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(mergePatch(snap.data(),patch))});});},
+      update:function(patch,expected){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({patch:patch,expected:expected})});},
       delete:function(){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'DELETE'});},
       onSnapshot:function(ok,fail){
         var stopped=false,last='';
@@ -916,8 +916,8 @@ function toggleTermsAgree(){
 function showLegalPage(type){
   var titles={terms:'Terms of Service',privacy:'Privacy Policy',beta:'Beta Agreement'};
   var contents={
-    terms:'<h2>Terms of Service</h2><p>Contractor Desk is provided as a beta software product. By using this application you agree to use it at your own risk. Contractor Desk is not liable for any data loss, business disruption, or damages arising from use of this beta software.</p><p>Unauthorized access, reverse engineering, or redistribution of this software is prohibited. All project data you enter remains your property. Contractor Desk does not sell or share your data with third parties.</p><p>Full terms will be published at launch. Contact us with any questions.</p>',
-    privacy:'<h2>Privacy Policy</h2><p>Contractor Desk collects only the information you provide during signup and the project data you enter. This data is stored securely using our PostgreSQL database and secure application services and is not shared with third parties.</p><p>We may use your email to send product updates. You can opt out at any time. We do not sell your data.</p><p>Full privacy policy will be published at launch.</p>',
+    terms:'<h2>Terms of Service</h2><p>Contractor Desk is provided as a beta software product. By using this application you agree to use it at your own risk. Contractor Desk is not liable for any data loss, business disruption, or damages arising from use of this beta software.</p><p>Unauthorized access, reverse engineering, or redistribution of this software is prohibited. All project data you enter remains your property. Contractor Desk does not sell your data. Service providers process information needed to host the application, deliver account emails, and provide AI features.</p><p>Full terms will be published at launch. Contact us with any questions.</p>',
+    privacy:'<h2>Privacy Policy</h2><p>Contractor Desk collects only the information you provide during signup and the project data you enter. This data is stored using our PostgreSQL database and application services. When you use an AI feature, the information submitted for that feature is sent to OpenAI or Anthropic to generate the response. Hosting and account-email providers also process information needed to operate the service.</p><p>We may use your email to send product updates. You can opt out at any time. We do not sell your data.</p><p>Full privacy policy will be published at launch.</p>',
     beta:'<h2>Beta Agreement</h2><p>You are using a beta version of Contractor Desk. Beta software may contain bugs, incomplete features, or unexpected behavior. By continuing you acknowledge this and agree not to use this software for mission-critical operations without appropriate backups.</p><p>Your feedback helps us improve the product. Beta access may be revoked or changed at any time. Thank you for helping us build a better product for contractors.</p>'
   };
   document.getElementById('legalPageTitle').textContent=titles[type]||type;
@@ -1598,17 +1598,9 @@ function persistProjectChanges(record,baseline){
     if(!projectFieldEqual(record[key],baseline[key]))patch[key]=record[key];
   });
   if(CD_USE_POSTGRES){
-    return ref.get().then(function(doc){
-      if(!doc.exists)throw new Error('Project was removed. Reload before saving.');
-      var latest=doc.data();
-      Object.keys(patch).forEach(function(key){
-        if(key==='updatedAt'||key==='updatedByUid')return;
-        if(!projectFieldEqual(latest[key],baseline[key])&&!projectFieldEqual(latest[key],patch[key])){
-          throw new Error('Another person changed '+key+'. Reload the project before saving again.');
-        }
-      });
-      return Object.keys(patch).length?ref.update(patch).then(function(){return Object.assign({},latest,patch);}):latest;
-    });
+    if(!Object.keys(patch).length)return Promise.resolve(baseline);
+    var expected={};Object.keys(patch).forEach(function(key){expected[key]={exists:Object.prototype.hasOwnProperty.call(baseline,key),value:baseline[key]};});
+    return ref.update(patch,expected).then(function(result){return result.document;});
   }
   return db.runTransaction(function(tx){
     return tx.get(ref).then(function(doc){
