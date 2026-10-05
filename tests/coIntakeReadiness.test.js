@@ -1110,10 +1110,11 @@ describe('coIntakeReadiness', () => {
       assert.strictEqual(lastCall.response_format.json_schema.strict, true);
       assert.strictEqual(lastCall.response_format.json_schema.schema.additionalProperties, false);
       assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.additionalProperties, false);
-      assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.required, ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup']);
+      assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.required, ['category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup', 'isNewWork']);
       assert.strictEqual(lastCall.response_format.json_schema.schema.properties.updateItems.items.additionalProperties, false);
       assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.updateItems.items.required, ['index', 'category', 'desc', 'qty', 'unit', 'unitCost', 'total', 'markup']);
-      assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.properties.isNewWork, undefined);
+      assert.strictEqual(lastCall.response_format.json_schema.schema.properties.lineItems.items.properties.isNewWork.type, 'boolean');
+      assert.deepStrictEqual(lastCall.response_format.json_schema.schema.properties.narrativeUpdate.required, ['residentialSummary', 'projectScope', 'workIncluded', 'conditionsAssumptions']);
       assert.strictEqual(lastCall.model, 'gpt-4.1');
     } finally {
       global.fetch = originalFetch;
