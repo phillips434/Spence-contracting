@@ -99,4 +99,12 @@ describe("independent authentication security", function () {
     assert.equal(options.cache, "no-store");
     assert.equal(c.window.cdAuth.currentUser, null);
   });
+  it('clears an expired browser session once and allows the same account to log in again',async()=>{
+    const owner={uid:'fixture-owner'},events=[];
+    const c={window:{},fetch:async()=>({ok:true,json:async()=>({ok:true,user:owner})}),document:{addEventListener(){}},console,Promise};
+    vm.runInNewContext(fs.readFileSync(require.resolve('../public/auth-client.js'),'utf8'),c);
+    await new Promise(r=>setImmediate(r));const auth=c.window.cdAuth;auth.onAuthStateChanged(u=>events.push(u&&u.uid));await new Promise(r=>setImmediate(r));
+    auth.invalidateSession();auth.invalidateSession();assert.equal(auth.currentUser,null);assert.deepEqual(events,['fixture-owner',null]);
+    await auth.signInWithEmailAndPassword('fixture@invalid.test','synthetic-only-fixture');assert.equal(auth.currentUser.uid,'fixture-owner');assert.deepEqual(events,['fixture-owner',null,'fixture-owner']);
+  });
 });

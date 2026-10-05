@@ -24,6 +24,9 @@
     });
   }
   window.cdAuth = {
+    invalidateSession: function () {
+      if (user) notify(null);
+    },
     get currentUser() {
       return user;
     },

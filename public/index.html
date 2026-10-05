@@ -787,7 +787,8 @@ function pgAuthHeaders(){
   var user=currentUser||auth.currentUser;if(!user)return Promise.reject(new Error('Not signed in'));
   return Promise.resolve({'Content-Type':'application/json'});
 }
-function pgDocSnap(data,id){return {exists:!!data,id:id,data:function(){return data?JSON.parse(JSON.stringify(data)):undefined;}};}
+function rememberRecordSnapshot(record){Object.defineProperty(record,'_savedRecordSnapshot',{value:JSON.parse(JSON.stringify(record)),writable:true,configurable:true,enumerable:false});return record;}
+function pgDocSnap(data,id){return {exists:!!data,id:id,data:function(){return data?rememberRecordSnapshot(JSON.parse(JSON.stringify(data))):undefined;}};}
 function pgQuerySnap(docs){
   docs=Array.isArray(docs)?docs:[];
   var snaps=docs.map(function(d){return pgDocSnap(d,d.id);});
@@ -807,7 +808,7 @@ function pgFetchJson(url,options){
   return pgAuthHeaders().then(function(headers){
     options.headers=Object.assign({},headers,options.headers||{});
     return fetch(url,options);
-  }).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('Request failed '+r.status));return j;});});
+  }).then(function(r){if(r.status===401&&auth.invalidateSession)auth.invalidateSession();return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('Request failed '+r.status));return j;});});
 }
 // Public views read PostgreSQL and submit only their permitted action.
 function publicPortalQuery(){
@@ -830,8 +831,15 @@ function postgresCollection(kind){
       id:id,path:'postgres/'+kind+'/'+id,_pgKind:kind,
       get:function(){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id)).then(function(j){return pgDocSnap(j.document,id);}).catch(function(err){if(/Not found/.test(err.message))return pgDocSnap(null,id);throw err;});},
       set:function(data,opts){
-        if(opts&&opts.merge)return this.get().then(function(snap){return save(mergePatch(snap.exists?snap.data():{},data));});
-        return save(Object.assign({},data,{id:id}));
+        if(opts&&opts.merge)return this.update(data);
+        var baseline=data._savedRecordSnapshot;
+        if(baseline){
+          var patch={},expected={};
+          Object.keys(data).forEach(function(key){if(!projectFieldEqual(data[key],baseline[key])){patch[key]=data[key];expected[key]={exists:Object.prototype.hasOwnProperty.call(baseline,key),value:baseline[key]};}});
+          if(!Object.keys(patch).length)return Promise.resolve({ok:true,document:baseline});
+          return this.update(patch,expected).then(function(result){Object.assign(data,result.document);rememberRecordSnapshot(data);return result;});
+        }
+        return save(Object.assign({},data,{id:id})).then(function(result){rememberRecordSnapshot(data);return result;});
         function save(value){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(Object.assign({},value,{id:id}))});}
       },
       update:function(patch,expected){return pgFetchJson('/api/data/'+kind+'/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({patch:patch,expected:expected})});},
@@ -1175,11 +1183,17 @@ function nextEstNumber(){if(typeof estimatesSyncReady!=='undefined'&&!estimatesS
 function workspaceSettingsDoc(workspaceUid){
   return workspaceUid==='L5XUqfnWrrgbAk18X36XcHDJxnz1'?'dropdowns':workspaceUid;
 }
+var savedSettingsSnapshot=null,settingsDisplaySnapshot=null;
 function saveSettingsSilent(){
   var uid=currentUser?currentUser.uid:null;
   if(!uid)return Promise.resolve();
   return resolveWorkspaceUidForSession(uid,true).then(function(workspaceUid){
     if(!workspaceUid)throw new Error('Company workspace could not be resolved.');
+    if(typeof CD_USE_POSTGRES!=='undefined'&&CD_USE_POSTGRES&&savedSettingsSnapshot&&settingsDisplaySnapshot){
+      var patch={},expected={};Object.keys(DD).forEach(function(key){if(!projectFieldEqual(DD[key],settingsDisplaySnapshot[key])){patch[key]=DD[key];expected[key]={exists:Object.prototype.hasOwnProperty.call(savedSettingsSnapshot,key),value:savedSettingsSnapshot[key]};}});
+      if(!Object.keys(patch).length)return;
+      return pgFetchJson('/api/data/support/settings/'+encodeURIComponent(workspaceSettingsDoc(workspaceUid)),{method:'PATCH',body:JSON.stringify({patch:patch,expected:expected})}).then(function(result){savedSettingsSnapshot=JSON.parse(JSON.stringify(result.document));settingsDisplaySnapshot=JSON.parse(JSON.stringify(Object.assign({},DD,result.document)));Object.assign(DD,result.document);});
+    }
     return sCol.doc(workspaceSettingsDoc(workspaceUid)).set(DD);
   }).catch(function(err){T('Settings save failed: '+err.message);throw err;});
 }
@@ -1332,7 +1346,7 @@ function loadSettings(cb){
     var isOwner=uid==='L5XUqfnWrrgbAk18X36XcHDJxnz1';
     var settingsDoc = workspaceSettingsDoc(workspaceUid || uid);
     sCol.doc(settingsDoc).get().then(function(d){
-      if(d.exists) DD=Object.assign({},DD,d.data());
+      if(d.exists){var loadedSettings=d.data();DD=Object.assign({},DD,loadedSettings);savedSettingsSnapshot=JSON.parse(JSON.stringify(loadedSettings));settingsDisplaySnapshot=JSON.parse(JSON.stringify(DD));}
       // Apply saved logo to topbar if it exists, else use CD_LOGO default
       var tl=document.getElementById('topbarLogo');
       if(tl){
@@ -1565,6 +1579,7 @@ function applyInviteOwnerLink(uid, email){
 function withSharedOwnerMetadata(record){
   var uid=currentUser&&currentUser.uid?currentUser.uid:null;
   var nextRecord=Object.assign({}, record||{});
+  if(record&&record._savedRecordSnapshot)Object.defineProperty(nextRecord,'_savedRecordSnapshot',{value:record._savedRecordSnapshot,writable:true,configurable:true,enumerable:false});
   if(!uid){return Promise.resolve(nextRecord);}
   return resolveCurrentOwnerUid().then(function(resolvedOwnerUid){
     var effectiveOwnerUid = nextRecord.ownerUid || nextRecord.userId || resolvedOwnerUid || uid;
@@ -1746,7 +1761,7 @@ function startSync(){
       Promise.all([pgFetchJson('/api/data/projects'),pgFetchJson('/api/data/estimates')]).then(function(r){
         if(stopped)return;
         projects=(r[0].documents||[]).map(function(p){return rememberProjectSnapshot(p);});
-        estimates=(r[1].documents||[]).filter(function(e){return !(e.converted===true||e.status==='Converted');});
+        estimates=(r[1].documents||[]).filter(function(e){return !(e.converted===true||e.status==='Converted');}).map(rememberRecordSnapshot);
         estimatesSyncReady=true;
         setSS('live');
         renderAll();
@@ -2904,8 +2919,9 @@ function updateEliPreview(){var qty=parseFloat(document.getElementById("eliQty")
 function closeEditLineItem(){document.getElementById("editLineItemModal").classList.remove("show");}
 function saveEditLineItem(){var e=ger();var qty=parseFloat(document.getElementById("eliQty").value)||1,uc=parseFloat(document.getElementById("eliUnitCost").value)||0,markup=parseFloat(document.getElementById("eliMarkup").value)||0;e.lineItems[editLineItemIdx]={category:document.getElementById("eliCat").value,desc:document.getElementById("eliDesc").value.trim(),qty:qty,unit:document.getElementById("eliUnit").value.trim(),unitCost:uc,total:qty*uc,markup:markup};eCol.doc(e.id).set(e).then(function(){T("Updated!");closeEditLineItem();renderEstDetailBody(e);});}
 function openNewEstimate(){editEstId=null;document.getElementById("estFormTitle").textContent="New Estimate";["efClient","efType","efAddress","efNotes","efClientEmail","efClientPhone","efProjectClass"].forEach(function(id){var el=document.getElementById(id);if(el){if(id==="efProjectClass"){el.value="";}else el.value="";}});document.getElementById("efMarkup").value=(DD.aiProfile&&DD.aiProfile.markup)||20;document.getElementById("efTax").value="0";document.getElementById("efStatus").value="Draft";var today=new Date().toISOString().split("T")[0];document.getElementById("efDate").value=today;var valid=new Date();valid.setDate(valid.getDate()+30);document.getElementById("efValidUntil").value=valid.toISOString().split("T")[0];document.getElementById("estFormPage").classList.add("show");}
-function openEditEstimate(){var e=ger();if(!e)return;editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
-function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose a project class: Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();if(!estNum)return;var est=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});withSharedOwnerMetadata(est).then(function(record){
+var estimateFormBaseline=null;
+function openEditEstimate(){var e=ger();if(!e)return;estimateFormBaseline=JSON.parse(JSON.stringify(e));editEstId=e.id;document.getElementById("estFormTitle").textContent="Edit Estimate";document.getElementById("efClient").value=e.client||"";document.getElementById("efType").value=e.type||"";document.getElementById("efProjectClass").value=(e.projectClass||'');document.getElementById("efAddress").value=e.address||"";document.getElementById("efNotes").value=e.notes||"";document.getElementById("efClientEmail").value=e.clientEmail||"";document.getElementById("efClientPhone").value=e.clientPhone||"";document.getElementById("efMarkup").value=e.markup||20;document.getElementById("efTax").value=e.tax||0;document.getElementById("efStatus").value=e.status||"Draft";document.getElementById("efDate").value=e.date||"";document.getElementById("efValidUntil").value=e.validUntil||"";document.getElementById("estFormPage").classList.add("show");}
+function saveEstimate(){var client=document.getElementById("efClient").value.trim(),type=document.getElementById("efType").value.trim(),projectClass=(document.getElementById("efProjectClass")||{}).value||'';if(!client||!type){alert("Client name and project type required.");return;}var normalizedProjectClass=normalizeProjectClass(projectClass);if(!normalizedProjectClass){alert("Please choose a project class: Residential or Commercial before creating the estimate.");return;}var id=editEstId||("est"+Date.now()),existing=editEstId?(ger()||{}):{};var estNum=existing.estNum||nextEstNumber();if(!estNum)return;var est=Object.assign({},existing,{id:id,userId:existing.userId||'',ownerUid:existing.ownerUid||existing.userId||'',estNum:estNum,client:client,type:type,projectClass:normalizedProjectClass,address:document.getElementById("efAddress").value.trim(),notes:document.getElementById("efNotes").value.trim(),clientEmail:document.getElementById("efClientEmail").value.trim(),clientPhone:document.getElementById("efClientPhone").value.trim(),markup:parseFloat(document.getElementById("efMarkup").value)||0,tax:parseFloat(document.getElementById("efTax").value)||0,status:document.getElementById("efStatus").value,date:document.getElementById("efDate").value,validUntil:document.getElementById("efValidUntil").value,lineItems:existing.lineItems||[],paymentMilestones:existing.paymentMilestones||[],createdAt:existing.createdAt||Date.now(),logoData:DD.logoData||existing.logoData||'',companyName:DD.companyName||existing.companyName||''});if(editEstId&&(existing._savedRecordSnapshot||(typeof estimateFormBaseline!=='undefined'&&estimateFormBaseline&&estimateFormBaseline.id===id)))Object.defineProperty(est,'_savedRecordSnapshot',{value:(typeof estimateFormBaseline!=='undefined'&&estimateFormBaseline&&estimateFormBaseline.id===id)?estimateFormBaseline:existing._savedRecordSnapshot,writable:true,configurable:true,enumerable:false});withSharedOwnerMetadata(est).then(function(record){
   record.userId = record.ownerUid;
   return eCol.doc(record.id).set(record).then(function(){
     var savedIndex=estimates.findIndex(function(item){return item.id===record.id;});
@@ -5083,6 +5099,12 @@ auth.onAuthStateChanged(function(user){
   if(isClientView||params.get('sub')||params.get('invoice')){ return; } // Already handled above
 
   if(!user){
+    if(unsubProjects){unsubProjects();unsubProjects=null;}
+    if(unsubEstimates){unsubEstimates();unsubEstimates=null;}
+    if(unsubNotifs){unsubNotifs();unsubNotifs=null;}
+    currentUser=null;_activeUid=null;currentId=null;currentEstId=null;savedSettingsSnapshot=null;settingsDisplaySnapshot=null;
+    projects=[];estimates=[];notifications=[];preparedSharedLinks={};estimatesSyncReady=false;
+    document.querySelectorAll('.page.show,.modal.show').forEach(function(el){el.classList.remove('show');});
     // Not logged in — show auth screen
     document.getElementById('authScreen').style.display='block';
     document.getElementById('mainView').style.display='none';

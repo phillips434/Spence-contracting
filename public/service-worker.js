@@ -1,4 +1,4 @@
-const CACHE='contractordesk-shell-independent-auth-v3';
+const CACHE='contractordesk-shell-independent-auth-v4';
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/'])));
 });
