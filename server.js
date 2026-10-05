@@ -4,6 +4,7 @@ const { installDataRoutes } = require('./lib/dataApi');
 const cors = require("cors");
 const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
+const { dimensionCatalog, applyAreaTakeoffs, takeoffPrompt } = require('./lib/flatAreaTakeoff');
 const app = express();
 // Railway terminates HTTPS at its edge proxy. Trust only the immediate proxy.
 app.set("trust proxy", 1);
@@ -85,6 +86,7 @@ function buildFlatEstimateGenerateSchema(){
         required: [
           'action',
           'lineItems',
+          'quantityTakeoffs',
           'deleteIndexes',
           'updateItems',
           'residentialSummary',
@@ -97,6 +99,18 @@ function buildFlatEstimateGenerateSchema(){
         ],
         properties: {
           action: { type: 'string', enum: ['add', 'update', 'ready'] },
+          quantityTakeoffs: {
+            type: 'array', items: {
+              type: 'object', additionalProperties: false,
+              required: ['lineItemIndex','dimensionIndexes','subtractDimensionIndexes','wastePercent'],
+              properties: {
+                lineItemIndex: {type:'integer'},
+                dimensionIndexes: {type:'array',items:{type:'integer'}},
+                subtractDimensionIndexes: {type:'array',items:{type:'integer'}},
+                wastePercent: {type:'number'}
+              }
+            }
+          },
           lineItems: {
             type: 'array',
             items: {
@@ -1499,6 +1513,7 @@ async function estimateHandler(req, res) {
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
             let flatCurrentItems;
+            if(mode==='estimate-generate')systemPrompt+=takeoffPrompt(dimensionCatalog(prompt+followUpContext));
             try{flatCurrentItems=typeof items==='string'?JSON.parse(items):items;}catch(_){}
             if(Array.isArray(flatCurrentItems)&&flatCurrentItems.length===0){
               systemPrompt += " INITIAL ESTIMATE RULE: Current items is empty. The answers in follow-up context describe the initial requested scope, not revisions to existing priced work. Generate the entire specified scope in lineItems, including all component materials and labor, with isNewWork:true on every row. Do not use updateItems because there are no existing item indexes. Populate all requested narrative sections; existing-estimate preservation rules apply only when Current items contains priced rows.";
@@ -1870,7 +1885,12 @@ async function estimateHandler(req, res) {
               let currentEstimateItems = [];
               try { currentEstimateItems = typeof body.items === 'string' ? JSON.parse(body.items) : body.items; } catch (_) {}
               if(parsedEstimate && !AI_BREAKDOWN_EXPERIMENT){
-                try{normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);}
+                try{
+                  const questionContext=body.questionContext;
+                  const source=(body.prompt||'')+(questionContext?' FOLLOW-UP CONTEXT: Original request: '+(questionContext.originalPrompt||'')+'. Question history: '+JSON.stringify(questionContext.history||[]):'');
+                  applyAreaTakeoffs(parsedEstimate,dimensionCatalog(source));
+                  normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);
+                }
                 catch(err){return res.status(502).json({error:'generation_failed',message:err.message});}
                 if(Array.isArray(currentEstimateItems)&&currentEstimateItems.length===0){
                   for(const item of parsedEstimate.lineItems||[])item.isNewWork=true;
