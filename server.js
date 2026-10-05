@@ -5,6 +5,8 @@ const cors = require("cors");
 const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
 const app = express();
+// Railway terminates HTTPS at its edge proxy. Trust only the immediate proxy.
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 const APP_BUILD_INFO = {
   environment: process.env.APP_ENVIRONMENT || process.env.NODE_ENV || 'local',
@@ -2162,6 +2164,7 @@ app.post("/api/estimate", async (req, res) => {
 
 // Register data APIs before the SPA fallback so API responses remain JSON.
 installPostgresRoutes(app);
+require('./lib/authApi').installAuthRoutes(app);
 installDataRoutes(app);
 
 app.use((req, res) => {
