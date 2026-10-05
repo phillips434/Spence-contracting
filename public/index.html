@@ -2506,15 +2506,16 @@ function generateAIEstimate(){
 
   function runEstimateRequest(payload){
     var _aiController=new AbortController();
-    var _aiStart=Date.now();
+    var _aiTimeoutMs=payload.mode==='estimate-generate'?120000:30000;
+    var _aiTimedOut=false;
     var _aiTimeout=setTimeout(function(){
-      _aiStatus('⏱ 30s timeout — aborting...','#E8B43A');
+      _aiTimedOut=true;
       _aiController.abort();
-    },30000);
+    },_aiTimeoutMs);
     var _slowWarn=setTimeout(function(){
       var el=document.getElementById('aiLoading');
       if(el&&el.style.display!=='none'){
-        _aiStatus('⏳ Still working... waiting for the app server (up to 30s)');
+        _aiStatus('⏳ Still preparing your estimate. Larger estimates can take up to two minutes.');
       }
     },10000);
 
@@ -2526,11 +2527,17 @@ function generateAIEstimate(){
       body:JSON.stringify(payload),
       signal:_aiController.signal
     }).then(function(r){
-      clearTimeout(_aiTimeout);
       if(!r.ok){
         return r.text().then(function(t){throw new Error('Server error '+r.status+': '+t.slice(0,100));});
       }
       return r.json();
+    }).catch(function(err){
+      if(_aiTimedOut){
+        var timeoutError=new Error('The estimate took too long. Your saved estimate was not changed. Please try again.');
+        timeoutError.code='AI_TIMEOUT';
+        throw timeoutError;
+      }
+      throw err;
     }).finally(function(){
       clearTimeout(_slowWarn);
       clearTimeout(_aiTimeout);
@@ -2686,7 +2693,7 @@ function generateAIEstimate(){
 
   function handleAIError(err){
     _aiDone();
-    T('❌ AI error: '+(err.message||'Unknown error')+' — check Settings → Test Connection');
+    T('❌ AI error: '+(err.message||'Unknown error')+(err.code==='AI_TIMEOUT'?'':' — check Settings → Test Connection'));
     console.error('[AI] Request failed:',err.name,err.message);
   }
 
