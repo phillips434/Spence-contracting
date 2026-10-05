@@ -423,7 +423,7 @@ button.pm-cb{width:44px;height:44px}
       <button class="btn-orange" id="btnNew">+ New project</button>
     </div>
   </div>
-  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v214</span></div>
+  <div class="sync-bar"><div class="sdot" id="syncDot"></div><span id="syncLabel">Connecting...</span><span style="margin-left:auto;font-size:9px;color:#aaa;opacity:0.6">v215</span></div>
   <div class="main-nav">
     <button class="nav-tab on" id="navProjects"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v12H3Z"/></svg> Projects</button>
     <button class="nav-tab" id="navEstimates"><svg class="cd-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg> Estimates</button>
@@ -707,7 +707,7 @@ button.pm-cb{width:44px;height:44px}
     </div>
     <div class="wcard" style="border:2px solid #2EAA72;background:#EDFAF4">
       <div style="font-size:14px;font-weight:700;color:#1A7A4E;margin-bottom:6px">&#128444;&#65039; Company Logo</div>
-      <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Upload your logo. Shows in the top bar, client portal, and printed documents.</div>
+      <div style="font-size:12px;color:#1A7A4E;margin-bottom:12px;line-height:1.5">Upload your company logo for customer portals and documents. The app keeps Contractor Desk branding.</div>
       <div id="logoPreviewWrap" style="margin-bottom:12px;display:none">
         <img id="logoPreviewImg" src="" style="max-height:60px;max-width:200px;object-fit:contain;border-radius:8px;border:1px solid #D0F0E0;padding:6px;background:#fff"/>
         <button onclick="removeLogo()" style="display:block;margin-top:8px;background:none;border:none;color:#E83A6C;font-size:12px;font-weight:700;cursor:pointer">&#215; Remove Logo</button>
@@ -1406,7 +1406,7 @@ function loadSettings(cb){
       // Apply saved logo to topbar if it exists, else use CD_LOGO default
       var tl=document.getElementById('topbarLogo');
       if(tl){
-        tl.src=(DD.logoData&&DD.logoData.length>10)?DD.logoData:CD_LOGO;
+        tl.src=CD_LOGO;
         tl.style.display='block';
       }
       if(cb)cb();
@@ -2495,9 +2495,9 @@ function openClientPortal(){var e=ger();if(!e)return;renderPortalBody(e);documen
 function renderPortalBody(e){
   var calc=calcEstimate(e);
   var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null;
-  var logoSrc=(e.logoData&&e.logoData.length>10?e.logoData:p&&p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL));
+  var logoSrc=(e.logoData&&e.logoData.length>10?e.logoData:p&&p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:""));
   var html="";
-  html+='<div class="portal-header"><img src="'+escapeHtmlText(logoSrc)+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/><div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+escapeHtmlText(DD.companyName||"Contractor Desk")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+escapeHtmlText(e.client)+'</div></div>';
+  html+='<div class="portal-header">'+(logoSrc?'<img alt="Company logo" src="'+escapeHtmlText(logoSrc)+'" style="max-height:55px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/>':'')+'<div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">'+escapeHtmlText(e.companyName||(p&&p.companyName)||DD.companyName||"Your Contractor")+'</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Your Project Portal</div><div style="font-size:18px;font-weight:700;margin-top:4px">'+escapeHtmlText(e.client)+'</div></div>';
   html+='<div class="portal-section"><div style="font-size:14px;font-weight:700;color:#1C1C1E;margin-bottom:10px">&#128203; Estimate Summary</div><div class="fr2"><div><div style="font-size:11px;color:#aaa">ESTIMATE #</div><div style="font-size:15px;font-weight:700;color:#2858BD">'+escapeHtmlText(e.estNum||"")+'</div></div><div><div style="font-size:11px;color:#aaa">STATUS</div><div style="font-size:15px;font-weight:700;color:'+(EST_SC[e.status]||"#888")+'">'+escapeHtmlText(e.status)+'</div></div></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1C1C1E"><span>Total</span><span>$'+calc.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div></div>';
   html+=resolveEstimateProjectClass(e)==='commercial'?renderCommercialNarrativeBlock(e,true):renderResidentialNarrativeBlock(e,true);
   if(!getCanonicalCustomerScope(e).projectScope&&e.notes)html+='<div class="portal-section"><h3>Project scope</h3><p>'+escapeHtmlText(e.notes)+'</p></div>';
@@ -3114,13 +3114,14 @@ function renderProjectPortal(p, est, wrapper){
   } else if(est && est.paymentMilestones && est.paymentMilestones.length){
     milestones=est.paymentMilestones;
   }
-  var co=DD.companyName||'Contractor Desk';
+  var co=p.companyName||'Your Contractor';
 
   var html='<div style="max-width:600px;margin:0 auto;padding:16px 16px 60px">';
 
   // Header
   html+='<div class="client-header">';
-  html+='<img src="'+(p.logoData&&p.logoData.length>10?p.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  if(p.logoData&&p.logoData.length>10) html+='<img alt="'+escapeHtmlText(co)+' logo" src="'+escapeHtmlText(p.logoData)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">'+escapeHtmlText(co)+'</div>';
   html+='<div style="display:flex;justify-content:space-between;align-items:center">';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Client Project Portal</div>';
   html+='<button onclick="window.location.reload()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:rgba(255,255,255,0.8);font-size:11px;padding:4px 10px;cursor:pointer">&#8635; Refresh</button>';
@@ -3297,7 +3298,7 @@ function renderProjectPortal(p, est, wrapper){
   }
 
   // Footer
-  html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:12px">'+co+' &middot; <img src="'+CD_LOGO+'" style="height:16px;vertical-align:middle;margin-right:4px;opacity:0.7"/>Powered by Contractor Desk</div>';
+  html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:12px">'+escapeHtmlText(co)+' &middot; <img src="'+CD_LOGO+'" style="height:16px;vertical-align:middle;margin-right:4px;opacity:0.7"/>Powered by Contractor Desk</div>';
   html+='</div>';
   wrapper.innerHTML=html;
 
@@ -3479,7 +3480,9 @@ function renderClientView(e,wrapper){
 
   // Header with logo
   html+='<div class="client-header">';
-  html+='<img src="'+(e.logoData&&e.logoData.length>10?e.logoData:(DD.logoData&&DD.logoData.length>10?DD.logoData:CD_LOGO_FULL))+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  var clientCompany=e.companyName||'Your Contractor';
+  if(e.logoData&&e.logoData.length>10) html+='<img alt="'+escapeHtmlText(clientCompany)+' logo" src="'+escapeHtmlText(e.logoData)+'" style="max-height:60px;object-fit:contain;display:block;margin:0 auto 10px"/>';
+  html+='<div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">'+escapeHtmlText(clientCompany)+'</div>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.6)">Project Estimate</div>';
   html+='</div>';
 
@@ -5561,7 +5564,7 @@ function backupAllData(){
       return Promise.all([col.get(),eCol.get(),sCol.doc(workspaceSettingsDoc(workspaceUid)).get()]).then(function(results){
         if(!currentUser||currentUser.uid!==uid)throw new Error('Your session changed. Sign in and try again.');
         if(!results[2].exists)throw new Error('Company settings could not be found. Backup was not created.');
-        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v214',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
+        var backup={schemaVersion:2,exportedAt:new Date().toISOString(),appVersion:'v215',workspaceUid:workspaceUid,settings:results[2].data(),projects:companyBackupRecords(results[0],uid,workspaceUid,memberUids),estimates:companyBackupRecords(results[1],uid,workspaceUid,memberUids)};
         var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
         if(backupDownloadUrl)URL.revokeObjectURL(backupDownloadUrl);
         backupDownloadUrl=URL.createObjectURL(blob);

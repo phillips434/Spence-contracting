@@ -4,6 +4,12 @@ const vm=require('vm');
 function api(query,fetchImpl){const context={process:{env:{}},fetch:fetchImpl,module:{exports:{}},console,URLSearchParams,require:name=>name==='../db/postgres'?{getPool:()=>({query})}:name==='./documentStore'?{}:name==='./estimatePaymentSafety'?require('../lib/estimatePaymentSafety'):name==='./legacySerialization'?require('../lib/legacySerialization'):require(name)};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/publicPortalApi'),'utf8'),context);return context.module.exports;}
 const signature='data:image/png;base64,YQ==';
 describe('PostgreSQL public portals',()=>{
+ it('uses current company branding without rewriting saved business records',()=>{
+   const record={companyName:'Old company',logoData:'old-logo',budget:120},before=JSON.stringify(record);
+   const p=api().applyCompanyBrand(record,{companyName:'Spence Construction',logoData:'new-logo'});
+   assert.strictEqual(p.companyName,'Spence Construction');assert.strictEqual(p.logoData,'new-logo');assert.strictEqual(p.budget,120);assert.strictEqual(JSON.stringify(record),before);
+   assert.strictEqual(api().applyCompanyBrand(record,{logoData:''}).logoData,'');
+ });
  it('blocks a stale payment schedule before accepting a signature or changing a record',()=>{
    const p={status:'Draft',lineItems:[{total:170,markup:20}],paymentMilestones:[{amount:170}]},before=JSON.stringify(p);
    assert.throws(()=>api().applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'QA',signature},10),/Payment schedule needs review/);

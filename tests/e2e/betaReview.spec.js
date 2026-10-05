@@ -73,3 +73,18 @@ test('phone project section picker exposes every section without a crowded tab r
  await expect(page.locator('#tabs')).toBeHidden();expect(await page.locator('#projectSectionSelect option').count()).toBe(10);
  await page.getByLabel('Project section').selectOption('payments');await expect(page.locator('#tabBody')).toHaveText('payments');
 });
+
+for(const width of [390,1280])test('customer project header uses its company brand, never the app fallback at '+width+'px',async({page})=>{
+ await page.setViewportSize({width,height:844});await page.setContent('<style>'+css+'</style><main id="brandPortal"></main>');
+ await page.evaluate(code=>{
+  window.DD={companyName:'Another signed-in company',logoData:'data:image/png;base64,WRONG'};
+  window.CD_LOGO='data:image/png;base64,APPFOOTER';window.CD_LOGO_FULL='data:image/png;base64,APPHEADER';window.initSigCanvas=()=>{};window.fmt=()=>'';window.fmtDate=()=>'';
+  (0,eval)(code);
+  window.brandProject={id:'qa',companyName:'Spence Construction',client:'QA Client',type:'QA',logoData:'data:image/png;base64,YQ==',scopeItems:[],changeOrders:[]};
+  renderProjectPortal(brandProject,null,document.getElementById('brandPortal'));
+ },['escapeHtmlText','renderProjectPortal'].map(source).join('\n'));
+ await expect(page.locator('.client-header')).toContainText('Spence Construction');
+ await expect(page.locator('.client-header img')).toHaveAttribute('src','data:image/png;base64,YQ==');
+ await page.evaluate(()=>{delete brandProject.logoData;renderProjectPortal(brandProject,null,document.getElementById('brandPortal'));});
+ await expect(page.locator('.client-header')).toContainText('Spence Construction');await expect(page.locator('.client-header img')).toHaveCount(0);
+});
