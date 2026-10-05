@@ -1498,6 +1498,11 @@ async function estimateHandler(req, res) {
               " IMPORTANT: AI must never infer or invent contractual exclusions merely because work was not mentioned in the contractor's scope. Exclusions may only be returned when the contractor/user explicitly states something is excluded, not included, by owner/customer, outside the scope, or otherwise clearly not part of the contract, or when that exclusion already exists in the current exclusions list. The absence of work from the scope is not evidence that it is contractually excluded. Examples: 'Existing appliances stay' does not imply appliance replacement or relocation is excluded; 'Keep existing plumbing locations' does not imply plumbing or electrical relocation is excluded. If flooring, permits, structural work, electrical work, or similar items are merely unmentioned, do not create exclusions for them." +
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
+            let flatCurrentItems;
+            try{flatCurrentItems=typeof items==='string'?JSON.parse(items):items;}catch(_){}
+            if(Array.isArray(flatCurrentItems)&&flatCurrentItems.length===0){
+              systemPrompt += " INITIAL ESTIMATE RULE: Current items is empty. The answers in follow-up context describe the initial requested scope, not revisions to existing priced work. Generate the entire specified scope in lineItems, including all component materials and labor, with isNewWork:true on every row. Do not use updateItems because there are no existing item indexes. Populate all requested narrative sections; existing-estimate preservation rules apply only when Current items contains priced rows.";
+            }
           }
           if(mode==='estimate-exclusions'){
             systemPrompt='Return only JSON with action:"exclusions", exclusions (array of strings), and message. Draft proposed exclusions for contractor review for the explicitly requested project. Do not change pricing, line items, scope, or assumptions. Do not duplicate current exclusions. Clearly describe suggestions as proposed exclusions requiring contractor review. Current priced items: '+items+'. Existing exclusions: '+existingExcls;
@@ -1867,13 +1872,17 @@ async function estimateHandler(req, res) {
               if(parsedEstimate && !AI_BREAKDOWN_EXPERIMENT){
                 try{normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);}
                 catch(err){return res.status(502).json({error:'generation_failed',message:err.message});}
+                if(Array.isArray(currentEstimateItems)&&currentEstimateItems.length===0){
+                  for(const item of parsedEstimate.lineItems||[])item.isNewWork=true;
+                }
                 data.content[0].text=JSON.stringify(parsedEstimate);
               }
               const validExistingUpdate = Array.isArray(currentEstimateItems) && Array.isArray(parsedEstimate?.updateItems) && parsedEstimate.updateItems.some(item =>
                 Number.isInteger(item.index) && item.index >= 0 && item.index < currentEstimateItems.length &&
                 ['qty', 'unitCost', 'total', 'markup'].every(key => typeof item[key] === 'number' && Number.isFinite(item[key])) &&
                 typeof item.desc === 'string' && item.desc.trim().length > 0);
-              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0) && !validExistingUpdate) {
+              const validGeneratedItem=Array.isArray(parsedEstimate?.lineItems)&&parsedEstimate.lineItems.some(item=>item&&item.isNewWork!==false);
+              if (parsedEstimate && !validGeneratedItem && !validExistingUpdate) {
                 console.error('[AI ESTIMATE SERVER] estimate-generate returned zero lineItems in a valid structured response', {
                   mode,
                   parsedEstimateKeys: parsedEstimate && typeof parsedEstimate === 'object' ? Object.keys(parsedEstimate) : [],
@@ -2255,4 +2264,3 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
-
