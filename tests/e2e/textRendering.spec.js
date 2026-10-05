@@ -20,3 +20,23 @@ test('customer narratives and team contacts render markup as literal text on pho
   expect(await page.evaluate(()=>window.injected)).toBeUndefined();
  }
 });
+
+test('subcontractor portals and invoices keep saved markup inert',async({page})=>{
+ for(const width of [390,1280])for(const query of ['sub=test&scope=0','sub=test&scopes=0','invoice=test&ms=0']){
+  await page.setViewportSize({width,height:844});
+  await page.route('https://fixture.invalid/**',route=>route.fulfill({body:'<div id="mainView"></div>',contentType:'text/html'}));
+  await page.goto('https://fixture.invalid/?'+query);
+  await page.evaluate(({source,payload,query})=>{
+   window.DD={};window.LOGO_SRC='';window.CD_LOGO='';
+   window.rememberProjectSnapshot=x=>x;window.fmt=x=>x;
+   const p={client:payload,type:payload,address:payload,clientEmail:payload,companyName:payload,companyPhone:payload,companyEmail:payload,companyAddress:payload,companyPaymentInstructions:payload,id:'test',logoData:'x" onerror="window.injected=true',scopeItems:[{desc:payload,category:payload,complete:payload,status:payload,actual:100}],dailyLogs:[{subScopeIdx:0,date:payload,weather:payload,work:payload,issues:payload,photos:['x" onerror="window.injected=true']}],paymentMilestones:[{name:payload,amount:100,pct:payload}]};
+   const doc={exists:true,data:()=>p};window.col={doc:()=>({get:()=>Promise.resolve(doc),onSnapshot:cb=>cb(doc)})};
+   (0,eval)(source);query.startsWith('invoice')?checkInvoiceView():checkSubView();
+  },{source:['escapeHtmlText','checkSubView','checkInvoiceView'].map(source).join('\n'),payload,query});
+  const wrapper=page.locator(query.startsWith('invoice')?'#invoiceWrapper':'#subWrapper');
+  await expect(wrapper).toContainText(payload);
+  await expect(wrapper.locator('[onerror]')).toHaveCount(0);
+  await expect(wrapper.locator('img[src="x"]')).toHaveCount(0);
+  expect(await page.evaluate(()=>window.injected)).toBeUndefined();
+ }
+});

@@ -6095,9 +6095,9 @@ function checkSubView(){
       var co=p.companyName||p.logoData?'':'';
       var logoSrc=p.logoData&&p.logoData.length>10?p.logoData:'';
       var out='<div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:16px">';
-      if(logoSrc)out+='<div style="text-align:center;margin-bottom:12px"><img src="'+logoSrc+'" style="max-height:50px;object-fit:contain"/></div>';
+      if(logoSrc)out+='<div style="text-align:center;margin-bottom:12px"><img src="'+escapeHtmlText(logoSrc)+'" style="max-height:50px;object-fit:contain"/></div>';
       out+='<div style="font-size:18px;font-weight:700;color:#1C1C1E;margin-bottom:4px">Work Order</div>';
-      out+='<div style="font-size:13px;color:#888;margin-bottom:12px">'+p.client+(p.type?' &middot; '+p.type:'')+'</div>';
+      out+='<div style="font-size:13px;color:#888;margin-bottom:12px">'+escapeHtmlText(p.client)+(p.type?' &middot; '+escapeHtmlText(p.type):'')+'</div>';
       out+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #F0F0F0;font-weight:700;color:#2858BD">';
       out+='<span>Combined Subcontract Amount</span><span>$'+totalAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
       out+='</div>';
@@ -6105,18 +6105,18 @@ function checkSubView(){
         var it=x.item;
         var subAmt=parseFloat(it.actual)||0;
         out+='<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px">';
-        out+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+it.desc+'</div>';
-        if(it.category)out+='<div style="font-size:12px;color:#888;margin-bottom:6px">'+it.category+'</div>';
+        out+='<div style="font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:4px">'+escapeHtmlText(it.desc)+'</div>';
+        if(it.category)out+='<div style="font-size:12px;color:#888;margin-bottom:6px">'+escapeHtmlText(it.category)+'</div>';
         if(it.start||it.end){
           out+='<div style="font-size:12px;color:#555;margin-bottom:6px">';
-          if(it.start)out+='Start: '+it.start;
+          if(it.start)out+='Start: '+escapeHtmlText(it.start);
           if(it.start&&it.end)out+=' &nbsp;|&nbsp; ';
-          if(it.end)out+='End: '+it.end;
+          if(it.end)out+='End: '+escapeHtmlText(it.end);
           out+='</div>';
         }
         if(subAmt>0)out+='<div style="font-size:13px;font-weight:600;color:#2858BD;margin-bottom:6px">Subcontract: $'+subAmt.toLocaleString()+'</div>';
         var badge=it.status==='Complete'?'#2EAA72':it.status==='In Progress'?'#F5A623':'#888';
-        out+='<div style="display:inline-block;background:'+badge+'22;color:'+badge+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">'+(it.status||'Not Started')+'</div>';
+        out+='<div style="display:inline-block;background:'+badge+'22;color:'+badge+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">'+escapeHtmlText(it.status||'Not Started')+'</div>';
         out+='</div>';
       });
       out+='<div style="text-align:center;padding:16px;font-size:12px;color:#aaa">Powered by <strong style="color:#2858BD">Contractor Desk</strong></div>';
@@ -6141,15 +6141,15 @@ function checkSubView(){
     var prevLogs=(p.dailyLogs||[]).filter(function(l){return l.subScopeIdx===sidx;}).slice().reverse();
     wrap.innerHTML=
       '<div style="background:#1C1C1E;padding:16px;border-radius:12px;margin-bottom:16px;color:#fff">'
-      +'<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px">'+(p.companyName||DD.companyName||'Contractor Desk')+'</div>'
-      +'<div style="font-size:18px;font-weight:800">'+p.client+'</div>'
-      +'<div style="font-size:13px;color:rgba(255,255,255,0.7)">'+p.type+(p.address?' &middot; '+p.address:'')+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px">'+escapeHtmlText(p.companyName||DD.companyName||'Contractor Desk')+'</div>'
+      +'<div style="font-size:18px;font-weight:800">'+escapeHtmlText(p.client)+'</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,0.7)">'+escapeHtmlText(p.type)+(p.address?' &middot; '+escapeHtmlText(p.address):'')+'</div>'
       +'</div>'
       +'<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;border:2px solid #9B6BE8">'
       +'<div style="font-size:11px;color:#9B6BE8;font-weight:700;text-transform:uppercase;margin-bottom:6px">Your Scope</div>'
-      +'<div style="font-size:17px;font-weight:800;color:#1C1C1E;margin-bottom:8px">'+it.desc+'</div>'
-      +(it.start||it.end?'<div style="font-size:12px;color:#888;margin-bottom:8px">'+(it.start?'Start: '+it.start:'')+(it.end?' &nbsp; End: '+it.end:'')+'</div>':'')
-      +'<span style="display:inline-block;padding:4px 12px;border-radius:20px;background:'+sc+';color:#fff;font-size:12px;font-weight:700">'+it.complete+'</span>'
+      +'<div style="font-size:17px;font-weight:800;color:#1C1C1E;margin-bottom:8px">'+escapeHtmlText(it.desc)+'</div>'
+      +(it.start||it.end?'<div style="font-size:12px;color:#888;margin-bottom:8px">'+(it.start?'Start: '+escapeHtmlText(it.start):'')+(it.end?' &nbsp; End: '+escapeHtmlText(it.end):'')+'</div>':'')
+      +'<span style="display:inline-block;padding:4px 12px;border-radius:20px;background:'+sc+';color:#fff;font-size:12px;font-weight:700">'+escapeHtmlText(it.complete)+'</span>'
       +'</div>'
       +'<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px">'
       +'<div style="font-size:14px;font-weight:700;margin-bottom:10px">Update Status</div>'
@@ -6159,7 +6159,7 @@ function checkSubView(){
       +'<option '+(it.complete==='Complete'?'selected':'')+'>Complete</option>'
       +'<option '+(it.complete==='On Hold'?'selected':'')+'>On Hold</option>'
       +'</select>'
-      +'<button data-pid="'+pid+'" data-sidx="'+sidx+'" onclick="updSubSt(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2858BD;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Update Status</button>'
+      +'<button data-pid="'+escapeHtmlText(pid)+'" data-sidx="'+sidx+'" onclick="updSubSt(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2858BD;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Update Status</button>'
       +'</div>'
       +'<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px">'
       +'<div style="font-size:14px;font-weight:700;margin-bottom:10px">Add Daily Log</div>'
@@ -6173,14 +6173,14 @@ function checkSubView(){
       +'<textarea id="sIssues" rows="2" placeholder="Any problems..." style="width:100%;padding:10px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;margin-bottom:8px;box-sizing:border-box;resize:vertical"></textarea>'
       +'<label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px">Photos</label>'
       +'<input type="file" id="sPhoto" accept="image/*" multiple style="margin-bottom:10px;font-size:13px"/>'
-      +'<button data-pid="'+pid+'" data-sidx="'+sidx+'" onclick="submitSubLog(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2EAA72;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Save Log</button>'
+      +'<button data-pid="'+escapeHtmlText(pid)+'" data-sidx="'+sidx+'" onclick="submitSubLog(this.dataset.pid,this.dataset.sidx)" style="width:100%;padding:13px;background:#2EAA72;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Save Log</button>'
       +'<div id="sStatus" style="font-size:13px;margin-top:8px;display:none;text-align:center"></div>'
       +'</div>'
       +'<div style="background:#fff;border-radius:12px;padding:16px">'
       +'<div style="font-size:14px;font-weight:700;margin-bottom:10px">Your Previous Logs</div>'
-      +(prevLogs.length?prevLogs.map(function(l){return '<div style="border-bottom:1px solid #EEE;padding:10px 0"><div style="font-size:12px;font-weight:700;color:#2858BD">'+l.date+(l.weather?' &middot; '+l.weather:'')+'</div><div style="font-size:13px;color:#333;margin-top:4px">'+l.work+'</div>'+(l.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:4px">&#9888; '+l.issues+'</div>':'')+(l.photos&&l.photos.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'+l.photos.map(function(ph){return'<img src="'+ph+'" style="width:100%;border-radius:6px;object-fit:cover;aspect-ratio:4/3"/>';}).join('')+'</div>':'')+'</div>';}).join(''):'<div style="color:#bbb;font-size:13px">No logs yet.</div>')
+      +(prevLogs.length?prevLogs.map(function(l){return '<div style="border-bottom:1px solid #EEE;padding:10px 0"><div style="font-size:12px;font-weight:700;color:#2858BD">'+escapeHtmlText(l.date)+(l.weather?' &middot; '+escapeHtmlText(l.weather):'')+'</div><div style="font-size:13px;color:#333;margin-top:4px">'+escapeHtmlText(l.work)+'</div>'+(l.issues?'<div style="font-size:12px;color:#E83A6C;margin-top:4px">&#9888; '+escapeHtmlText(l.issues)+'</div>':'')+(l.photos&&l.photos.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'+l.photos.map(function(ph){return'<img src="'+escapeHtmlText(ph)+'" style="width:100%;border-radius:6px;object-fit:cover;aspect-ratio:4/3"/>';}).join('')+'</div>':'')+'</div>';}).join(''):'<div style="color:#bbb;font-size:13px">No logs yet.</div>')
       +'<div style="text-align:center;padding:20px 0;margin-top:12px;border-top:1px solid #EEE"><img src="'+CD_LOGO+'" style="height:20px;vertical-align:middle;margin-right:6px;opacity:0.5"/><img src="'+(typeof CD_LOGO!=='undefined'?CD_LOGO:'')+'" style="height:16px;vertical-align:middle;margin-right:4px;opacity:0.6"/><span style="font-size:11px;color:#aaa">Powered by Contractor Desk</span></div>'+'</div>';
-  }).catch(function(err){wrap.innerHTML='<div style="padding:40px;color:#E83A6C">Error: '+err.message+'</div>';});
+  }).catch(function(err){wrap.innerHTML='<div style="padding:40px;color:#E83A6C">Error: '+escapeHtmlText(err.message)+'</div>';});
   return true;
 }
 
@@ -6306,12 +6306,12 @@ function checkInvoiceView(){
       // Header
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #F0F0F0">'
       +'<div>'
-      +(logo&&logo.length>10?'<img src="'+logo+'" style="max-height:60px;object-fit:contain;margin-bottom:8px;display:block"/>':'')
-      +'<div style="font-size:20px;font-weight:800;color:#1C1C1E">'+co+'</div>'
+      +(logo&&logo.length>10?'<img src="'+escapeHtmlText(logo)+'" style="max-height:60px;object-fit:contain;margin-bottom:8px;display:block"/>':'')
+      +'<div style="font-size:20px;font-weight:800;color:#1C1C1E">'+escapeHtmlText(co)+'</div>'
       +'</div>'
       +'<div style="text-align:right">'
       +'<div style="font-size:24px;font-weight:900;color:#1C1C1E">INVOICE</div>'
-      +'<div style="font-size:14px;color:#888;margin-top:4px"># '+invNum+'</div>'
+      +'<div style="font-size:14px;color:#888;margin-top:4px"># '+escapeHtmlText(invNum)+'</div>'
       +'<div style="font-size:13px;color:#888;margin-top:2px">'+today+'</div>'
       +'</div>'
       +'</div>'
@@ -6320,16 +6320,16 @@ function checkInvoiceView(){
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">'
       +'<div>'
       +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Bill To</div>'
-      +'<div style="font-size:16px;font-weight:700;color:#1C1C1E">'+p.client+'</div>'
-      +(p.address?'<div style="font-size:13px;color:#666;margin-top:4px">'+p.address+'</div>':'')
-      +(p.clientEmail?'<div style="font-size:13px;color:#666;margin-top:2px">'+p.clientEmail+'</div>':'')
+      +'<div style="font-size:16px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(p.client)+'</div>'
+      +(p.address?'<div style="font-size:13px;color:#666;margin-top:4px">'+escapeHtmlText(p.address)+'</div>':'')
+      +(p.clientEmail?'<div style="font-size:13px;color:#666;margin-top:2px">'+escapeHtmlText(p.clientEmail)+'</div>':'')
       +'</div>'
       +'<div>'
       +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Project Details</div>'
       +'<div style="font-size:13px;color:#555;line-height:1.8">'
-      +'<div><span style="color:#888">Project:</span> '+p.type+'</div>'
-      +(p.jobNum?'<div><span style="color:#888">Job #:</span> '+p.jobNum+'</div>':'')
-      +(p.poNum?'<div><span style="color:#888">PO #:</span> '+p.poNum+'</div>':'')
+      +'<div><span style="color:#888">Project:</span> '+escapeHtmlText(p.type)+'</div>'
+      +(p.jobNum?'<div><span style="color:#888">Job #:</span> '+escapeHtmlText(p.jobNum)+'</div>':'')
+      +(p.poNum?'<div><span style="color:#888">PO #:</span> '+escapeHtmlText(p.poNum)+'</div>':'')
       +(p.startDate?'<div><span style="color:#888">Start:</span> '+fmt(p.startDate)+'</div>':'')
       +'</div>'
       +'</div>'
@@ -6343,8 +6343,8 @@ function checkInvoiceView(){
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr auto;padding:16px;align-items:center">'
       +'<div>'
-      +'<div style="font-size:15px;font-weight:700;color:#1C1C1E">'+m.name+'</div>'
-      +(m.pct?'<div style="font-size:12px;color:#888;margin-top:2px">'+m.pct+'% of contract</div>':'')
+      +'<div style="font-size:15px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>'
+      +(m.pct?'<div style="font-size:12px;color:#888;margin-top:2px">'+escapeHtmlText(m.pct)+'% of contract</div>':'')
       +(m.dueDate?'<div style="font-size:12px;color:#E83A6C;margin-top:2px;font-weight:600">Due: '+fmt(m.dueDate)+'</div>':'')
       +'</div>'
       +'<div style="font-size:22px;font-weight:900;color:#1C1C1E">$'+parseFloat(m.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'
@@ -6363,7 +6363,7 @@ function checkInvoiceView(){
       // Payment instructions
       +(!paid?'<div style="background:#FFF8E7;border:1.5px solid #E8B43A;border-radius:10px;padding:16px;margin-bottom:24px">'
       +'<div style="font-size:13px;font-weight:700;color:#8A6000;margin-bottom:6px">Payment Instructions</div>'
-      +'<div style="font-size:13px;color:#8A6000;line-height:1.6">'+coPayInstr+'</div>'
+      +'<div style="font-size:13px;color:#8A6000;line-height:1.6">'+escapeHtmlText(coPayInstr)+'</div>'
       +'</div>':'')
 
       // Footer
@@ -6371,11 +6371,11 @@ function checkInvoiceView(){
       +'<div style="margin-bottom:8px">Thank you for your business.</div>'
       +(coPhone||coEmail||coAddress?
         '<div style="font-size:12px;color:#888;line-height:1.8">'
-        +(coPhone?'&#128222; '+coPhone+'<br>':'')
-        +(coEmail?'&#9993; '+coEmail+'<br>':'')
-        +(coAddress?'&#128205; '+coAddress:'')
+        +(coPhone?'&#128222; '+escapeHtmlText(coPhone)+'<br>':'')
+        +(coEmail?'&#9993; '+escapeHtmlText(coEmail)+'<br>':'')
+        +(coAddress?'&#128205; '+escapeHtmlText(coAddress):'')
         +'</div>'
-      :'Questions? Contact '+co+'.')
+      :'Questions? Contact '+escapeHtmlText(co)+'.')
       +'</div>'
 
       +'<div style="text-align:center;padding:16px 0;margin-top:16px;border-top:1px solid #F0F0F0"><img src="'+CD_LOGO+'" style="height:18px;vertical-align:middle;margin-right:6px;opacity:0.55"/><img src="'+(typeof CD_LOGO!=='undefined'?CD_LOGO:'')+'" style="height:16px;vertical-align:middle;margin-right:4px;opacity:0.6"/><span style="font-size:11px;color:#aaa;font-family:sans-serif">Powered by Contractor Desk</span></div>'
@@ -6385,7 +6385,7 @@ function checkInvoiceView(){
       +'<style>@media print{body{background:#fff}#invoiceWrapper>div:first-child{display:none}.btn-dark{display:none}}</style>';
 
   }).catch(function(err){
-    wrap.innerHTML='<div style="padding:40px;color:#E83A6C">Error: '+err.message+'</div>';
+    wrap.innerHTML='<div style="padding:40px;color:#E83A6C">Error: '+escapeHtmlText(err.message)+'</div>';
   });
   return true;
 }
