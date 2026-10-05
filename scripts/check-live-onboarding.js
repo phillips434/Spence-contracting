@@ -2,7 +2,7 @@
  * Passwords and tokens exist only in memory during this run and are never logged or saved.
  * Keep the clearly labelled QA account/records; never touch pre-existing business records.
  */
-async function run({client,frontendSource,crypto,assert,apiKey,email,nativeFetch}){
+async function run({client,frontendSource,crypto,assert,apiKey,email,nativeFetch,afterOnboarding}){
  const app='https://app.getcontractordesk.com';
  const report={at:new Date().toISOString(),email,provider:'live Firebase',application:'live production HTTP API',browserUI:false,credentialsStored:false,checks:[]};
  const password=crypto.randomBytes(32).toString('base64url');let token='',refreshToken='',uid='',companyId='';
@@ -12,7 +12,7 @@ async function run({client,frontendSource,crypto,assert,apiKey,email,nativeFetch
  async function authCall(action,body){const r=await nativeFetch('https://identitytoolkit.googleapis.com/v1/accounts:'+action+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error('Firebase '+action+': '+(j.error?.message||r.status));return j;}
  async function request(path,method='GET',body){const r=await nativeFetch(app+path,{method,headers:{'content-type':'application/json',authorization:'Bearer '+token},...(body===undefined?{}:{body:JSON.stringify(body)})});const j=await r.json();return{status:r.status,body:j};}
  async function success(path,method='GET',body){const r=await request(path,method,body);if(r.status!==200)throw Error(path+': HTTP '+r.status+' '+r.body.error);return r.body;}
- function source(name){const a=frontendSource.indexOf('function '+name+'('),b=frontendSource.indexOf('\nfunction ',a+1);if(a<0)throw Error('Missing actual frontend function '+name);return frontendSource.slice(a,b).split('\nvar originalFirestoreBatch')[0];}
+ function source(name){const a=frontendSource.indexOf('function '+name+'('),b=frontendSource.indexOf('\nfunction ',a+1);if(a<0)throw Error('Missing actual frontend function '+name);return frontendSource.slice(a,b<0?undefined:b).split('\ndb.batch=')[0].split('\n// ── Hook loadTeamMembers into openSettings')[0];}
  try{
   const nodes=Object.fromEntries(['termsCheck','suName','suCompany','suEmail','suPassword','authError','authLoading'].map(n=>[n,{value:'',style:{}}]));
   nodes.termsCheck.value='1';nodes.suName.value='Automated Onboarding QA';nodes.suCompany.value='Automated Onboarding QA Full 2026-10-04';nodes.suEmail.value=email;nodes.suPassword.value=password;
@@ -45,6 +45,7 @@ async function run({client,frontendSource,crypto,assert,apiKey,email,nativeFetch
   await check('Firebase refresh obtains a valid session that reloads the PostgreSQL profile',async()=>{const r=await nativeFetch('https://securetoken.googleapis.com/v1/token?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:refreshToken})});const j=await r.json();if(!r.ok)throw Error('Refresh failed: '+(j.error?.message||r.status));token=j.id_token;assert.strictEqual(j.user_id,uid);assert.strictEqual((await success('/api/data/identity/self')).document.email,email);});
   await check('PostgreSQL normalized fields preserve first-project PO and first-estimate tax',async()=>{const p=(await client.query('select po_number from projects where company_id=$1 and legacy_id=$2',[companyId,projectId])).rows[0];const e=(await client.query('select tax_rate from estimates where company_id=$1 and legacy_id=$2',[companyId,estimateId])).rows[0];assert.strictEqual(p.po_number,'QA-PO-0001');assert.strictEqual(Number(e.tax_rate),8.25);});
   await check('company sequence row reloads the saved initial numbering',async()=>{const s=(await client.query('select next_job_number,next_estimate_number from company_sequences where company_id=$1',[companyId])).rows[0];assert.strictEqual(Number(s.next_job_number),2);assert.strictEqual(Number(s.next_estimate_number),2);});
+  if(afterOnboarding)await afterOnboarding({source,check,report,request,success,authCall,owner:{uid,email,companyId,getIdToken:async()=>token},frontendSource,nativeFetch,apiKey,crypto,assert});
  }catch(e){report.setupError=String(e.message).slice(0,700);}
  const after=await baseline();report.preexistingRowsUnchanged=Object.entries(before).every(([table,rows])=>{const observed=new Map(after[table].map(r=>[r.fingerprint,r.count]));return rows.every(r=>(observed.get(r.fingerprint)||0)>=r.count);});
  report.checkedTables=Object.keys(before);report.passed=report.checks.filter(c=>c.ok).length;report.failed=report.checks.filter(c=>!c.ok).length;report.ok=!report.setupError&&report.failed===0&&report.preexistingRowsUnchanged;
