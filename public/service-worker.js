@@ -1,4 +1,4 @@
-const CACHE='contractordesk-shell-customer-branding-v6';
+const CACHE='contractordesk-shell-client-layout-v7';
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/'])));
 });

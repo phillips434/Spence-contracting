@@ -88,3 +88,26 @@ for(const width of [390,1280])test('customer project header uses its company bra
  await page.evaluate(()=>{delete brandProject.logoData;renderProjectPortal(brandProject,null,document.getElementById('brandPortal'));});
  await expect(page.locator('.client-header')).toContainText('Spence Construction');await expect(page.locator('.client-header img')).toHaveCount(0);
 });
+
+for(const width of [320,390,600,1280])for(const view of ['preview','shared'])test('long customer work descriptions keep prices intact in '+view+' at '+width+'px',async({page})=>{
+ await page.setViewportSize({width,height:844});await page.setContent(viewport+'<style>'+css+'</style><main id="portalBody" style="padding:16px"></main>');
+ await page.evaluate(({code,view})=>{
+  window.projects=[];window.DD={companyName:'QA Contractor'};window.EST_SC={Draft:'#888'};window.fmt=()=>'';window.fmtTS=()=>'';window.generateContractText=()=>'';window.initSigCanvas=()=>{};
+  window.resolveEstimateProjectClass=()=> 'residential';window.renderResidentialNarrativeBlock=()=>'';window.renderCommercialNarrativeBlock=()=>'';window.getCanonicalCustomerScope=()=>({projectScope:'Scope'});
+  (0,eval)(code);
+  const record={id:'qa',client:'QA Client',companyName:'QA Contractor',status:'Draft',signedAt:1,lineItems:[{desc:"Conventional wood framing package: plates, studs, headers, beams, sheathing for 10' walls, 36x28 garage + 36x12 lean-to (preliminary, assumed SPF #2)",qty:1,total:25900},{desc:'LongUnbrokenDescription'.repeat(12),qty:80,unit:'hrs',total:9520}]};
+  if(view==='preview')renderPortalBody(record);else renderClientView(record,document.getElementById('portalBody'));
+ },{code:[...financial,view==='preview'?'renderPortalBody':'renderClientView'].map(source).join('\n'),view});
+ const rows=page.locator(view==='preview'?'.preview-line':'.customer-work-line');await expect(rows).toHaveCount(2);
+ for(const scale of [1,2]){
+  // Exercise enlarged text as well as narrow screens.
+  await rows.evaluateAll((elements,scale)=>elements.forEach(row=>row.querySelectorAll('strong,.li-name,.li-total').forEach(el=>el.style.fontSize=(15*scale)+'px')),scale);
+  const layout=await rows.evaluateAll(elements=>elements.map(row=>{
+   const amount=row.lastElementChild,desc=row.firstElementChild,r=amount.getBoundingClientRect(),d=desc.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(amount);
+   return {text:amount.textContent,fragments:range.getClientRects().length,inside:r.right<=innerWidth,stacked:r.top>=d.bottom,overflow:document.documentElement.scrollWidth>innerWidth};
+  }));
+  if(width===390&&scale===1)await page.screenshot({path:'/tmp/cd-client-'+view+'-layout.png',fullPage:true});
+  expect(layout.map(x=>x.text)).toEqual(['$25,900.00','$9,520.00']);
+  layout.forEach(x=>{expect(x.fragments).toBe(1);expect(x.inside).toBe(true);expect(x.overflow).toBe(false);if(width<=600)expect(x.stacked).toBe(true);});
+ }
+});
