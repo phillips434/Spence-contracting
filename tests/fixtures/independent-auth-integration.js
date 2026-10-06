@@ -28,10 +28,16 @@ const { PGlite } = require("@electric-sql/pglite");
   process.env.SMTP_USER = "fixture";
   process.env.SMTP_PASSWORD = "fixture";
   process.env.AUTH_EMAIL_FROM = "fixture@example.invalid";
+  process.env.CD_SIGNUP_ALERT_TO = 'owner@example.invalid';
   const emails = [];
+  let failAlert=false;
   require("nodemailer").createTransport = () => ({
-    sendMail: async (mail) => emails.push(mail),
+    sendMail: async (mail) => {
+      if (failAlert && mail.to==='owner@example.invalid') throw new Error('Synthetic mail outage');
+      emails.push(mail); return {accepted:[mail.to]};
+    },
   });
+  const {drainSignupAlerts}=require('../../lib/signupAlerts');
   const app = require("../../server").app;
   const nativeFetch=global.fetch;let providerCalls=0;
   process.env.OPENAI_API_KEY='fixture-key';process.env.ANTHROPIC_KEY='fixture-key';
@@ -81,6 +87,7 @@ const { PGlite } = require("@electric-sql/pglite");
       "unverified signup has no company access",
     );
     const signupToken = token();
+    assert.equal((await db.query('select * from signup_alerts')).rows.length,0,'unverified signup must not notify');
     r = await request("/api/auth/complete", { token: signupToken });
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert(r.cookie.includes("HttpOnly"));
@@ -88,6 +95,17 @@ const { PGlite } = require("@electric-sql/pglite");
     assert(r.cookie.includes("SameSite=Lax"));
     const cookie = r.cookie.split(";")[0],
       uid = r.body.user.uid;
+    let alerts=(await db.query('select * from signup_alerts')).rows;
+    assert.equal(alerts.length,1);assert.equal(alerts[0].payload.accountType,'New company');
+    assert.equal(alerts[0].recipient,'owner@example.invalid');
+    assert(!JSON.stringify(alerts).includes('passwordHash'),'alerts never contain credentials');
+    failAlert=true;await drainSignupAlerts();
+    assert.equal((await db.query('select sent_at from signup_alerts')).rows[0].sent_at,null,'mail outage retains pending alert');
+    assert.equal((await request('/api/data/session',null,cookie)).status,200,'mail outage never blocks account access');
+    failAlert=false;await db.query('update signup_alerts set next_attempt_at=now()');await drainSignupAlerts();
+    assert((await db.query('select sent_at from signup_alerts')).rows[0].sent_at);
+    assert(emails.at(-1).text.includes('Test Owner'));assert(emails.at(-1).text.includes('New company'));
+    const sentCount=emails.length;await drainSignupAlerts();assert.equal(emails.length,sentCount,'delivered alerts are not resent');
     assert.equal((await db.query("select * from companies")).rows.length, 1);
     assert.equal(
       (await db.query("select * from company_memberships")).rows.length,
@@ -102,6 +120,7 @@ const { PGlite } = require("@electric-sql/pglite");
       400,
       "one-time token cannot be replayed",
     );
+    assert.equal((await db.query('select * from signup_alerts')).rows.length,1,'replay cannot queue another alert');
     assert.equal(
       (
         await request("/api/auth/login", {
@@ -141,6 +160,9 @@ const { PGlite } = require("@electric-sql/pglite");
     r = await request("/api/auth/complete", { token: token() });
     assert.equal(r.status, 200, JSON.stringify(r.body));
     const memberCookie = r.cookie.split(";")[0];
+    alerts=(await db.query('select * from signup_alerts order by created_at')).rows;
+    assert.equal(alerts.length,2);assert.equal(alerts[1].payload.accountType,'Invited team member');
+    await drainSignupAlerts();assert(emails.at(-1).text.includes('Invited team member'));
     assert.equal(
       (await db.query("select * from companies")).rows.length,
       1,
@@ -233,6 +255,7 @@ const { PGlite } = require("@electric-sql/pglite");
       401,
     );
     assert.equal((await db.query("select * from companies")).rows.length, 1);
+    assert.equal((await db.query('select * from signup_alerts')).rows.length,2,'password reset and legacy setup do not create signup alerts');
     console.log(
       "Independent auth database integration passed: verified signup, invited membership, legacy password setup, session revocation, CSRF and one-time tokens.",
     );

@@ -2236,6 +2236,7 @@ app.use((req, res) => {
 });
 
 if (require.main === module) {
+require('./lib/signupAlerts').startSignupAlertWorker();
 app.listen(PORT, "0.0.0.0", () => {
     console.log("Server running on port", PORT);
   });
