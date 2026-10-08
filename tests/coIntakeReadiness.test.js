@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const http = require('http');
-const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('../server');
+const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('./helpers/providerApp');
 
 
 function runBrowserSnippet(snippet, context) {
@@ -528,7 +528,7 @@ describe('coIntakeReadiness', () => {
     experimentalModule.filename = serverPath;
     experimentalModule.paths = module.paths;
     experimentalModule._compile(fs.readFileSync(serverPath, 'utf8').replace('const AI_BREAKDOWN_EXPERIMENT = false;', 'const AI_BREAKDOWN_EXPERIMENT = true;'), serverPath);
-    const serverApp = experimentalModule.exports.app;
+    const serverApp = require('./helpers/providerApp').providerTestApp(experimentalModule.exports);
 
     const providerResponse = {
       action: 'add',

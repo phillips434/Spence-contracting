@@ -1,9 +1,33 @@
 const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
-function api(query,fetchImpl){const context={process:{env:{}},fetch:fetchImpl,module:{exports:{}},console,URLSearchParams,require:name=>name==='../db/postgres'?{getPool:()=>({query})}:name==='./documentStore'?{}:name==='./legacySerialization'?require('../lib/legacySerialization'):require(name)};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/publicPortalApi'),'utf8'),context);return context.module.exports;}
+function api(query,fetchImpl){const context={process:{env:{}},fetch:fetchImpl,module:{exports:{}},console,URLSearchParams,require:name=>name==='../db/postgres'?{getPool:()=>({query})}:name==='./documentStore'?{}:name==='./estimatePaymentSafety'?require('../lib/estimatePaymentSafety'):name==='./legacySerialization'?require('../lib/legacySerialization'):require(name)};vm.runInNewContext(fs.readFileSync(require.resolve('../lib/publicPortalApi'),'utf8'),context);return context.module.exports;}
 const signature='data:image/png;base64,YQ==';
 describe('PostgreSQL public portals',()=>{
+ it('uses current company branding without rewriting saved business records',()=>{
+   const record={companyName:'Old company',logoData:'old-logo',budget:120},before=JSON.stringify(record);
+   const p=api().applyCompanyBrand(record,{companyName:'Spence Construction',logoData:'new-logo'});
+   assert.strictEqual(p.companyName,'Spence Construction');assert.strictEqual(p.logoData,'new-logo');assert.strictEqual(p.budget,120);assert.strictEqual(JSON.stringify(record),before);
+   assert.strictEqual(api().applyCompanyBrand(record,{logoData:''}).logoData,'');
+ });
+ it('blocks a stale payment schedule before accepting a signature or changing a record',()=>{
+   const p={status:'Draft',lineItems:[{total:170,markup:20}],paymentMilestones:[{amount:170}]},before=JSON.stringify(p);
+   assert.throws(()=>api().applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'QA',signature},10),/Payment schedule needs review/);
+   assert.strictEqual(JSON.stringify(p),before);
+   p.paymentMilestones[0].amount=204;api().applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'QA',signature},10);assert.strictEqual(p.status,'Approved');
+ });
+ it('accepts a prepared change order without representing composer opening as delivery',()=>{
+   const p={changeOrders:[{id:'qa',title:'QA',status:'Ready for Client Review',budgetImpact:25}],scopeItems:[],paymentMilestones:[]};
+   api().applyPortalAction(p,{mode:'portal'},{action:'co-sign',index:0,coId:'qa',title:'QA',amount:25,name:'QA',signature},10);
+   assert.strictEqual(p.changeOrders[0].status,'Approved');assert.strictEqual(p.paymentMilestones[0].amount,25);
+ });
+ it('rejects malformed photo payloads without appending a daily log',()=>{
+  const p={scopeItems:[{assignTo:'Crew'}],dailyLogs:[]},access={mode:'sub',scope:{scope:0}},a=api();
+  for(const photo of ['data:image/png;base64,YQ==" onerror="alert(1)','data:image/png;base64,','data:image/png;base64,not base64','data:image/svg+xml;base64,YQ==']){
+   assert.throws(()=>a.applyPortalAction(p,access,{action:'sub-log',index:0,entry:{work:'Fixture work',photos:[photo]}}),/Invalid log photos/);assert.strictEqual(p.dailyLogs.length,0);
+  }
+  a.applyPortalAction(p,access,{action:'sub-log',index:0,entry:{work:'Fixture work',photos:[signature]}});assert.strictEqual(p.dailyLogs[0].photos[0],signature);
+ });
  it('preserves customer scope, prices and existing signatures in estimate views',()=>{const p={id:'e',customerScope:{projectScope:'Agreed scope'},lineItems:[{total:100,markup:20}],signedAt:5,signatureData:signature,privateMemo:'secret'};const d=api().projection(p,'estimates','est',{});assert.deepStrictEqual(d.customerScope,p.customerScope);assert.deepStrictEqual(d.lineItems,p.lineItems);assert.strictEqual(d.signatureData,signature);assert.strictEqual(d.privateMemo,undefined);});
  it('shows only the assigned invoice and subcontractor scope',()=>{const p={id:'p',budget:1000,spent:500,costs:[{}],paymentMilestones:[{amount:100},{amount:200}],scopeItems:[{desc:'one'},{desc:'two'}],dailyLogs:[{subScopeIdx:0},{subScopeIdx:1}]};const a=api();const invoice=a.projection(p,'projects','invoice',{ms:1});assert.strictEqual(invoice.paymentMilestones[0],null);assert.strictEqual(invoice.paymentMilestones[1].amount,200);assert.strictEqual(invoice.budget,undefined);const sub=a.projection(p,'projects','sub',{scope:1});assert.strictEqual(sub.scopeItems[0],null);assert.strictEqual(sub.scopeItems[1].desc,'two');assert.strictEqual(sub.dailyLogs.length,1);assert.strictEqual(sub.spent,undefined);});
  it('signs an estimate without changing amounts, attachments or unrelated fields, then rejects a second signature',()=>{const p={status:'Sent to Client',lineItems:[{total:100}],attachments:['photo'],notes:'existing'};const a=api();a.applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'Client',signature},10);assert.strictEqual(p.status,'Approved');assert.strictEqual(p.signedAt,10);assert.deepStrictEqual(p.lineItems,[{total:100}]);assert.deepStrictEqual(p.attachments,['photo']);assert.throws(()=>a.applyPortalAction(p,{mode:'est'},{action:'estimate-sign',name:'Other',signature},20),/again/);});

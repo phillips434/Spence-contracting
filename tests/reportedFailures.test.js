@@ -2,7 +2,7 @@ const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
 const http=require('http');
-const {app,removeAnsweredIntakeQuestions}=require('../server');
+const {app,removeAnsweredIntakeQuestions}=require('./helpers/providerApp');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);assert(a>=0&&b>a);return html.slice(a,b);}
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -20,7 +20,7 @@ describe('payment schedule rounding',()=>{
     for(const total of [1632,7405.20,53,100.01]){
       const estimate={id:'qa'};let saved;
       const c={ger:()=>estimate,calcEstimate:()=>({grandTotal:total}),eCol:{doc:()=>({set:async e=>{saved=clone(e);}})},T(){},renderEstDetailBody(){}};
-      vm.createContext(c);vm.runInContext(source('autoGenMilestones'),c);c.autoGenMilestones();
+      vm.createContext(c);vm.runInContext(source('milestonePaid')+'\n'+source('autoGenMilestones'),c);c.autoGenMilestones();
       await new Promise(resolve=>setImmediate(resolve));
       assert.strictEqual(Math.round(saved.paymentMilestones.reduce((sum,m)=>sum+m.amount,0)*100),Math.round(total*100));
     }
@@ -180,7 +180,7 @@ describe('estimate sending without a recipient',()=>{
   it('keeps a draft unsent and does not save when contact details are missing',()=>{
     const record={id:'qa',status:'Draft',type:'Test'};let writes=0,alerts=0;
     const c={ger:()=>record,window:{location:{href:'https://example.com'}},calcEstimate:()=>({grandTotal:500}),DD:{},alert:()=>alerts++,eCol:{doc:()=>({set:()=>writes++})}};
-    vm.runInNewContext(source('sendEstimate'),c);c.sendEstimate();
+    vm.runInNewContext(['estimateScheduleState','ensureEstimateSchedule','sendEstimate'].map(source).join('\n'),c);c.sendEstimate();
     assert.strictEqual(record.status,'Draft');assert.strictEqual(writes,0);assert.strictEqual(alerts,1);
   });
 });

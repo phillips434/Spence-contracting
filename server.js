@@ -4,7 +4,10 @@ const { installDataRoutes } = require('./lib/dataApi');
 const cors = require("cors");
 const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
+const { dimensionCatalog, applyAreaTakeoffs, takeoffPrompt } = require('./lib/flatAreaTakeoff');
 const app = express();
+// Railway terminates HTTPS at its edge proxy. Trust only the immediate proxy.
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 const APP_BUILD_INFO = {
   environment: process.env.APP_ENVIRONMENT || process.env.NODE_ENV || 'local',
@@ -47,6 +50,30 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+function buildFlatPricingContractText(){
+  return " Flat line-item pricing: Keep Labor, Materials, Subcontractor, Equipment, Permits & Fees, Allowance, and Other as separate cost categories. " +
+    "For work the contractor supplies and installs, include both the complete Materials package and separate Labor rows; a priced material row does not pay for installation. " +
+    "Labor rows use total person-hours as qty, hrs as unit, and the supplied company hourly labor rate as unitCost. " +
+    "Only Materials rows use direct material acquisition cost as unitCost; exclude labor and markup from material prices. " +
+    "Subcontractor, Equipment, Permits & Fees, Allowance, and Other rows use the direct cost of that service, rental, fee, or allowance, never a material-only price. " +
+    "Do not double-count installation labor already included in an explicitly subcontracted installed price. Honor explicit owner-supplied materials or excluded labor. " +
+    "All unit costs are before markup, profit, and tax; total = qty * unitCost. Markup is applied once by Contractor Desk. " +
+    buildMaterialCompletenessContractText();
+}
+
+function normalizeFlatGeneratedItems(parsed, laborRate){
+  const rate=Number(laborRate);
+  for(const item of Array.isArray(parsed.lineItems)?parsed.lineItems:[]){
+    if(!Number.isFinite(item.qty)||item.qty<=0||!Number.isFinite(item.unitCost)||item.unitCost<0)throw new Error('Invalid generated quantity or direct cost');
+    if(item.category==='Labor'){
+      if(!Number.isFinite(rate)||rate<=0||!/^(hrs?|hours?)$/i.test(item.unit))throw new Error('Generated labor must use person-hours and the company rate');
+      item.unitCost=rate;
+    }
+    item.total=_round2(item.qty*item.unitCost);
+  }
+  return parsed;
+}
+
 function buildFlatEstimateGenerateSchema(){
   return {
     type: 'json_schema',
@@ -59,6 +86,7 @@ function buildFlatEstimateGenerateSchema(){
         required: [
           'action',
           'lineItems',
+          'quantityTakeoffs',
           'deleteIndexes',
           'updateItems',
           'residentialSummary',
@@ -71,6 +99,18 @@ function buildFlatEstimateGenerateSchema(){
         ],
         properties: {
           action: { type: 'string', enum: ['add', 'update', 'ready'] },
+          quantityTakeoffs: {
+            type: 'array', items: {
+              type: 'object', additionalProperties: false,
+              required: ['lineItemIndex','dimensionIndexes','subtractDimensionIndexes','wastePercent'],
+              properties: {
+                lineItemIndex: {type:'integer'},
+                dimensionIndexes: {type:'array',items:{type:'integer'}},
+                subtractDimensionIndexes: {type:'array',items:{type:'integer'}},
+                wastePercent: {type:'number'}
+              }
+            }
+          },
           lineItems: {
             type: 'array',
             items: {
@@ -1196,7 +1236,7 @@ app.get("/api/build-info", function (req, res) {
   });
 });
 
-app.post("/api/daily-log", async (req, res) => {
+async function dailyLogHandler(req, res) {
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
@@ -1276,9 +1316,9 @@ app.post("/api/daily-log", async (req, res) => {
     console.error("[AI DAILY LOG] failed", err);
     return res.status(500).json({ error: err && err.message ? err.message : "Daily log AI failed" });
   }
-});
+}
 
-app.post("/api/estimate", async (req, res) => {
+async function estimateHandler(req, res) {
   const routeStart = Date.now();
   const contentLength = req.headers && req.headers['content-length'] ? req.headers['content-length'] : null;
   const messageCount = Array.isArray(req.body && req.body.messages) ? req.body.messages.length : 0;
@@ -1345,7 +1385,7 @@ app.post("/api/estimate", async (req, res) => {
         if (isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest) {
           const items = body.items || "[]";
           const existingExcls = body.excls || "[]";
-          const markup = body.markup || 20;
+          const markup = body.markup == null ? 20 : body.markup;
           const laborRate = body.laborRate || 85;
           const location = body.location || "";
           const histCtx = body.histCtx || "";
@@ -1444,7 +1484,7 @@ app.post("/api/estimate", async (req, res) => {
               " Start your response with { and end with }." +
               " You are a construction estimator." +
               ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"residentialSummary":"","projectScope":"","workIncluded":[],"conditionsAssumptions":[],"exclusions":[],"message":"what was done"}' +
-              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildMaterialPricingContractText() +
+              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildFlatPricingContractText() +
               " Current items: " +
               items +
               " Current exclusions: " +
@@ -1472,6 +1512,12 @@ app.post("/api/estimate", async (req, res) => {
               " IMPORTANT: AI must never infer or invent contractual exclusions merely because work was not mentioned in the contractor's scope. Exclusions may only be returned when the contractor/user explicitly states something is excluded, not included, by owner/customer, outside the scope, or otherwise clearly not part of the contract, or when that exclusion already exists in the current exclusions list. The absence of work from the scope is not evidence that it is contractually excluded. Examples: 'Existing appliances stay' does not imply appliance replacement or relocation is excluded; 'Keep existing plumbing locations' does not imply plumbing or electrical relocation is excluded. If flooring, permits, structural work, electrical work, or similar items are merely unmentioned, do not create exclusions for them." +
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
+            let flatCurrentItems;
+            if(mode==='estimate-generate')systemPrompt+=takeoffPrompt(dimensionCatalog(prompt+followUpContext));
+            try{flatCurrentItems=typeof items==='string'?JSON.parse(items):items;}catch(_){}
+            if(Array.isArray(flatCurrentItems)&&flatCurrentItems.length===0){
+              systemPrompt += " INITIAL ESTIMATE RULE: Current items is empty. The answers in follow-up context describe the initial requested scope, not revisions to existing priced work. Generate the entire specified scope in lineItems, including all component materials and labor, with isNewWork:true on every row. Do not use updateItems because there are no existing item indexes. Populate all requested narrative sections; existing-estimate preservation rules apply only when Current items contains priced rows.";
+            }
           }
           if(mode==='estimate-exclusions'){
             systemPrompt='Return only JSON with action:"exclusions", exclusions (array of strings), and message. Draft proposed exclusions for contractor review for the explicitly requested project. Do not change pricing, line items, scope, or assumptions. Do not duplicate current exclusions. Clearly describe suggestions as proposed exclusions requiring contractor review. Current priced items: '+items+'. Existing exclusions: '+existingExcls;
@@ -1838,11 +1884,25 @@ app.post("/api/estimate", async (req, res) => {
               }
               let currentEstimateItems = [];
               try { currentEstimateItems = typeof body.items === 'string' ? JSON.parse(body.items) : body.items; } catch (_) {}
+              if(parsedEstimate && !AI_BREAKDOWN_EXPERIMENT){
+                try{
+                  const questionContext=body.questionContext;
+                  const source=(body.prompt||'')+(questionContext?' FOLLOW-UP CONTEXT: Original request: '+(questionContext.originalPrompt||'')+'. Question history: '+JSON.stringify(questionContext.history||[]):'');
+                  applyAreaTakeoffs(parsedEstimate,dimensionCatalog(source));
+                  normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);
+                }
+                catch(err){return res.status(502).json({error:'generation_failed',message:err.message});}
+                if(Array.isArray(currentEstimateItems)&&currentEstimateItems.length===0){
+                  for(const item of parsedEstimate.lineItems||[])item.isNewWork=true;
+                }
+                data.content[0].text=JSON.stringify(parsedEstimate);
+              }
               const validExistingUpdate = Array.isArray(currentEstimateItems) && Array.isArray(parsedEstimate?.updateItems) && parsedEstimate.updateItems.some(item =>
                 Number.isInteger(item.index) && item.index >= 0 && item.index < currentEstimateItems.length &&
                 ['qty', 'unitCost', 'total', 'markup'].every(key => typeof item[key] === 'number' && Number.isFinite(item[key])) &&
                 typeof item.desc === 'string' && item.desc.trim().length > 0);
-              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0) && !validExistingUpdate) {
+              const validGeneratedItem=Array.isArray(parsedEstimate?.lineItems)&&parsedEstimate.lineItems.some(item=>item&&item.isNewWork!==false);
+              if (parsedEstimate && !validGeneratedItem && !validExistingUpdate) {
                 console.error('[AI ESTIMATE SERVER] estimate-generate returned zero lineItems in a valid structured response', {
                   mode,
                   parsedEstimateKeys: parsedEstimate && typeof parsedEstimate === 'object' ? Object.keys(parsedEstimate) : [],
@@ -2158,10 +2218,17 @@ app.post("/api/estimate", async (req, res) => {
     }
     return res.status(500).json({ error: "Failed to reach AI provider." });
   }
-});
+}
+
+// Paid AI endpoints require a valid account and an active company membership.
+const {requireAppUser,trustedOrigin}=require('./lib/authApi');
+const {requireCompany}=require('./lib/companySupportApi');
+app.post('/api/estimate',requireAppUser,requireCompany,trustedOrigin,estimateHandler);
+app.post('/api/daily-log',requireAppUser,requireCompany,trustedOrigin,dailyLogHandler);
 
 // Register data APIs before the SPA fallback so API responses remain JSON.
 installPostgresRoutes(app);
+require('./lib/authApi').installAuthRoutes(app);
 installDataRoutes(app);
 
 app.use((req, res) => {
@@ -2169,6 +2236,7 @@ app.use((req, res) => {
 });
 
 if (require.main === module) {
+require('./lib/signupAlerts').startSignupAlertWorker();
 app.listen(PORT, "0.0.0.0", () => {
     console.log("Server running on port", PORT);
   });
@@ -2176,6 +2244,8 @@ app.listen(PORT, "0.0.0.0", () => {
 
 module.exports = {
   app,
+  estimateHandler,
+  dailyLogHandler,
   removeAnsweredIntakeQuestions,
   buildEstimateExclusionsSchema,
   validateCOIntakeReadiness,
@@ -2190,6 +2260,8 @@ module.exports = {
   alignLineItemQuantityToPrimaryMaterial,
   buildMaterialCompletenessContractText,
   buildMaterialPricingContractText,
+  buildFlatPricingContractText,
+  normalizeFlatGeneratedItems,
   MATERIAL_PRICE_CATALOG,
   normalizeMaterialDescription,
   normalizeMaterialUnit,
@@ -2213,5 +2285,3 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
-
-
