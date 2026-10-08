@@ -4068,6 +4068,7 @@ function renderTabBody(p){
       var paidPct=Math.round(totalPaid/totalAmt*100);
       html+='<div class="wcard" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px"><span style="font-weight:700">Payment Progress</span><span style="color:#2EAA72;font-weight:700">'+paidPct+'%</span></div><div style="background:#EEE;border-radius:8px;height:10px"><div style="height:100%;width:'+paidPct+'%;background:#2EAA72;border-radius:8px"></div></div></div>';
     }
+    html+='<button class="btn-dark" style="margin-bottom:14px" onclick="openProjectInvoiceItems(-1)">+ Create line-item invoice</button>';
     html+='<div class="sec-label">Payment Schedule</div>';
     if(!milestones.length){
       html+='<div style="text-align:center;padding:20px;color:#bbb;font-size:13px">No payment milestones yet. Add them below.</div>';
@@ -4083,6 +4084,7 @@ function renderTabBody(p){
       html+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:'+(paid?'#2EAA72':'#2858BD')+'">$'+parseFloat(m.amount).toLocaleString()+'</div>';
       html+='<div style="font-size:11px;font-weight:700;color:'+(paid?'#2EAA72':'#E8B43A')+'">'+(paid?'&#10003; PAID':'OUTSTANDING')+'</div></div>';
       html+='</div>';
+      html+='<button class="btn-ghost" style="margin-bottom:8px" onclick="openProjectInvoiceItems('+i+')">'+((m.lineItems||[]).length?'Review line-item invoice':'Add invoice line items')+'</button>';
       html+='<div style="display:flex;gap:8px">';
       if(!paid){
         html+='<button style="flex:2;padding:10px;background:#2858BD;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer" onclick="sendProjectInvoice('+i+')">&#128228; Send Invoice</button>';
@@ -4091,6 +4093,7 @@ function renderTabBody(p){
         html+='<div style="font-size:12px;color:#2EAA72;padding:8px 0">Paid '+(m.paidAt?fmtTS(m.paidAt):'')+'</div>';
         html+='<button style="padding:8px 12px;background:none;border:1px solid #ddd;border-radius:8px;color:#aaa;font-size:12px;cursor:pointer" onclick="unmarkMilestonePaid('+i+')">Undo</button>';
       }
+      html+='<button class="btn-ghost" onclick="previewProjectInvoice('+i+')">Preview</button>';
       html+='<button class="del-btn" onclick="delProjectMilestone('+i+')">&#215;</button>';
       html+='</div></div>';
     });
@@ -6029,6 +6032,59 @@ function renderOnboarding(){
 }
 
 
+var projectInvoiceDraft=null;
+function validateProjectInvoiceItems(items,amount){
+  if(!Array.isArray(items)||!items.length)throw new Error('Add at least one invoice line item.');
+  var clean=items.map(function(x){var n=Number(x.amount);if(!String(x.desc||'').trim()||!Number.isFinite(n)||n<0)throw new Error('Each line needs a description and a valid nonnegative amount.');return {desc:String(x.desc).trim(),amount:Math.round(n*100)/100};});
+  var cents=clean.reduce(function(a,x){return a+Math.round(x.amount*100);},0);
+  if(cents<=0)throw new Error('Invoice total must be greater than zero.');
+  if(amount!==null&&cents!==Math.round(Number(amount)*100))throw new Error('Line items must total the existing invoice amount: $'+moneyAmount(amount)+'. Adjust the items before saving.');
+  return {items:clean,amount:cents/100};
+}
+function projectInvoiceRows(m){
+  var rows=(m.lineItems||[]).length?m.lineItems:[{desc:m.name,amount:m.amount}];
+  return '<div style="margin-bottom:24px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">'+escapeHtmlText(m.name)+'</div>'+rows.map(function(x){return '<div style="display:flex;flex-wrap:wrap;gap:8px;padding:14px 0;border-bottom:1px solid #ddd"><div style="flex:1 1 220px;overflow-wrap:anywhere">'+escapeHtmlText(x.desc)+'</div><div style="margin-left:auto;white-space:nowrap;font-weight:700">$'+moneyAmount(x.amount)+'</div></div>';}).join('')+'</div>';
+}
+function openProjectInvoiceItems(index){
+  var p=gpr();if(!p)return;var m=(p.paymentMilestones||[])[index];
+  if(index>=0&&!m)return;
+  if(m&&m.paid){alert('Paid invoices cannot be edited.');return;}
+  projectInvoiceDraft={projectId:p.id,index:index,original:m?JSON.stringify(m):null,items:m&&m.lineItems&&m.lineItems.length?JSON.parse(JSON.stringify(m.lineItems)):[{desc:m?m.name:'',amount:m?m.amount:0}]};
+  var old=document.getElementById('projectInvoiceEditor');if(old)old.remove();
+  var el=document.createElement('div');el.id='projectInvoiceEditor';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Line-item invoice');el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;overflow:auto;padding:20px';
+  el.innerHTML='<div style="max-width:640px;margin:20px auto;background:white;border-radius:16px;padding:20px"><h2>Line-item invoice</h2><label class="fl">Invoice name</label><input class="fi" id="projectInvoiceName" value="'+escapeHtmlText(m?m.name:'Project invoice')+'"><label class="fl">Due date</label><input class="fi" type="date" id="projectInvoiceDue" value="'+escapeHtmlText(m?m.dueDate||'':'')+'"><p style="font-size:13px">'+(m?'Items must total $'+moneyAmount(m.amount)+' for this payment.':'Create a new bill only for an amount not already included in your payment schedule.')+'</p><div id="projectInvoiceItems"></div><button class="btn-ghost" onclick="addProjectInvoiceItem()">+ Add line item</button>'+(p.estimateId?'<button class="btn-ghost" onclick="importProjectInvoiceEstimate()">Import estimate items</button>':'')+'<p id="projectInvoiceTotal"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-ghost" onclick="closeProjectInvoiceItems()">Cancel</button><button class="btn-dark" onclick="saveProjectInvoiceItems()">Save invoice</button></div></div>';
+  document.body.appendChild(el);renderProjectInvoiceItems();
+}
+function closeProjectInvoiceItems(){var el=document.getElementById('projectInvoiceEditor');if(el)el.remove();projectInvoiceDraft=null;}
+function renderProjectInvoiceItems(){
+  if(!projectInvoiceDraft)return;
+  document.getElementById('projectInvoiceItems').innerHTML=projectInvoiceDraft.items.map(function(x,i){return '<div style="border-bottom:1px solid #ddd;padding:12px 0"><label class="fl">Description</label><textarea class="fi" onchange="projectInvoiceDraft.items['+i+'].desc=this.value">'+escapeHtmlText(x.desc)+'</textarea><label class="fl">Client amount ($)</label><input class="fi" type="number" min="0" step="0.01" value="'+escapeHtmlText(x.amount)+'" onchange="projectInvoiceDraft.items['+i+'].amount=this.value;updateProjectInvoiceTotal()"><button class="btn-ghost" onclick="removeProjectInvoiceItem('+i+')">Remove</button></div>';}).join('');updateProjectInvoiceTotal();
+}
+function updateProjectInvoiceTotal(){if(projectInvoiceDraft)document.getElementById('projectInvoiceTotal').textContent='Invoice total: $'+moneyAmount(projectInvoiceDraft.items.reduce(function(a,x){return a+(Number(x.amount)||0);},0));}
+function addProjectInvoiceItem(){if(projectInvoiceDraft){projectInvoiceDraft.items.push({desc:'',amount:0});renderProjectInvoiceItems();}}
+function removeProjectInvoiceItem(i){if(projectInvoiceDraft){projectInvoiceDraft.items.splice(i,1);renderProjectInvoiceItems();}}
+function importProjectInvoiceEstimate(){
+  var p=gpr(),draft=projectInvoiceDraft;if(!p||!draft||p.id!==draft.projectId||!p.estimateId)return;
+  if(!confirm('Replace the draft items with client prices from the linked estimate? For a progress invoice, adjust them to the amount being billed.'))return;
+  eCol.doc(p.estimateId).get().then(function(doc){if(projectInvoiceDraft!==draft)return;if(!doc.exists)throw new Error('Linked estimate not found.');var e=doc.data();draft.items=(e.lineItems||[]).map(function(li){return {desc:(li.desc||'Work')+(li.qty?' ('+li.qty+' '+(li.unit||'')+')':''),amount:Math.round(calcLineItemTotal(li)*100)/100};});var tax=calcEstimate(e).taxAmt;if(tax)draft.items.push({desc:'Sales tax',amount:Math.round(tax*100)/100});renderProjectInvoiceItems();}).catch(function(err){alert(err.message);});
+}
+function saveProjectInvoiceItems(){
+  var p=gpr(),draft=projectInvoiceDraft;if(!p||!draft||p.id!==draft.projectId)return;
+  var m=(p.paymentMilestones||[])[draft.index];
+  if(draft.index>=0&&(!m||m.paid||JSON.stringify(m)!==draft.original)){alert('This payment changed. Close the editor and reopen it before saving.');return;}
+  try{var checked=validateProjectInvoiceItems(draft.items,m?m.amount:null);var name=document.getElementById('projectInvoiceName').value.trim();if(!name)throw new Error('Enter an invoice name.');}catch(err){alert(err.message);return;}
+  var copy=JSON.parse(JSON.stringify(p));copy.paymentMilestones=copy.paymentMilestones||[];
+  var invoice=Object.assign({},m||{paid:false,createdAt:Date.now()},{name:name,dueDate:document.getElementById('projectInvoiceDue').value,lineItems:checked.items,amount:checked.amount});
+  if(m)copy.paymentMilestones[draft.index]=invoice;else copy.paymentMilestones.push(invoice);
+  persistProjectChanges(copy,p._savedProjectSnapshot).then(function(saved){Object.assign(p,saved||copy);rememberProjectSnapshot(p);closeProjectInvoiceItems();renderTabBody(p);T('Line-item invoice saved. Use Send Invoice to share it.');}).catch(function(err){alert('Invoice was not saved: '+err.message);});
+}
+
+function previewProjectInvoice(i){
+  var p=gpr();if(!p||!(p.paymentMilestones||[])[i])return;
+  if(CD_USE_POSTGRES&&prepareSharedLink('invoice',p.id,{ms:i},function(){previewProjectInvoice(i);}))return;
+  var url=CD_USE_POSTGRES?preparedSharedLink('invoice',p.id,{ms:i}):window.location.origin+window.location.pathname+'?invoice='+p.id+'&ms='+i;
+  window.location.href=url;
+}
 function sendProjectInvoice(i){
   var p=gpr();if(!p)return;
   var m=(p.paymentMilestones||[])[i];if(!m)return;
@@ -6466,21 +6522,8 @@ function checkInvoiceView(){
       +'</div>'
       +'</div>'
 
-      // Invoice line item
-      +'<div style="background:#F8F9FB;border-radius:10px;padding:0;margin-bottom:24px;overflow:hidden">'
-      +'<div style="display:grid;grid-template-columns:1fr auto;padding:12px 16px;background:#1C1C1E;color:#fff">'
-      +'<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Description</div>'
-      +'<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Amount</div>'
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:1fr auto;padding:16px;align-items:center">'
-      +'<div>'
-      +'<div style="font-size:15px;font-weight:700;color:#1C1C1E">'+escapeHtmlText(m.name)+'</div>'
-      +(m.pct?'<div style="font-size:12px;color:#888;margin-top:2px">'+escapeHtmlText(m.pct)+'% of contract</div>':'')
-      +(m.dueDate?'<div style="font-size:12px;color:#E83A6C;margin-top:2px;font-weight:600">Due: '+fmt(m.dueDate)+'</div>':'')
-      +'</div>'
-      +'<div style="font-size:22px;font-weight:900;color:#1C1C1E">$'+parseFloat(m.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'
-      +'</div>'
-      +'</div>'
+      // Itemized client prices, never internal project costs.
+      +projectInvoiceRows(m)
 
       // Total
       +'<div style="display:flex;justify-content:flex-end;margin-bottom:24px">'
