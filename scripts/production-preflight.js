@@ -1,4 +1,4 @@
-const fs=require("fs"),assert=require("node:assert/strict"),{getPool}=require("./db/postgres");
+const path=require("node:path"),fs=require("fs"),assert=require("node:assert/strict"),{getPool}=require("../db/postgres");
 (async()=>{
 const port=Number(process.env.SMTP_PORT||465);
 const t=require("nodemailer").createTransport({host:process.env.SMTP_HOST,port,secure:port===465,requireTLS:port!==465,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASSWORD},connectionTimeout:10000,socketTimeout:15000});
@@ -13,8 +13,8 @@ await c.query("LOCK TABLE projects, estimates IN SHARE MODE");
 const sql="select (select count(*)::int from projects) as projects,(select count(*)::int from estimates) as estimates,(select md5(string_agg(row_to_json(p)::text,'' order by p.id)) from projects p) as project_hash,(select md5(string_agg(row_to_json(e)::text,'' order by e.id)) from estimates e) as estimate_hash";
 const before=(await c.query(sql)).rows[0];assert(before.projects>0&&before.estimates>0,"Production workspace unexpectedly empty");
 console.log("Current production records:",before.projects,before.estimates);
-await c.query(fs.readFileSync("db/migrations/009_independent_auth.sql","utf8"));
-await c.query(fs.readFileSync("db/migrations/010_signup_alerts.sql","utf8"));
+await c.query(fs.readFileSync(path.join(__dirname,"../db/migrations/009_independent_auth.sql"),"utf8"));
+await c.query(fs.readFileSync(path.join(__dirname,"../db/migrations/010_signup_alerts.sql"),"utf8"));
 await c.query("create table if not exists schema_migrations(filename text primary key,applied_at timestamptz not null default now())");
 await c.query("insert into schema_migrations(filename) values($1) on conflict(filename) do nothing",["009_independent_auth.sql"]);
 await c.query("insert into schema_migrations(filename) values($1) on conflict(filename) do nothing",["010_signup_alerts.sql"]);
