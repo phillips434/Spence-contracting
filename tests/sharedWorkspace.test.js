@@ -37,7 +37,7 @@ function fixture(uid = 'office') {
   };
   c.ger = () => c.estimates.find(e => e.id === c.currentEstId);
   c.gpr = () => c.projects.find(p => p.id === c.currentId);
-  vm.createContext(c);
+  c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);
   for (const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','normalizeProjectClass', 'resolveCurrentOwnerUid', 'withSharedOwnerMetadata', 'saveEstimate', 'saveProject', 'recordBelongsToWorkspace','_startSyncWithOwner']) vm.runInContext(source(name), c);
   return { c, records, nodes };
 }
@@ -102,7 +102,7 @@ describe('company settings persistence', () => {
     const c={currentUser:{uid:'office'},DD:{companyName:'Saved company',team:[]},Promise,T(){},
       db:{collection:()=>({doc:()=>({get:async()=>({exists:true,data:()=>({plan:'team',ownerUid:owner})})})})},
       sCol:{doc:id=>({set:async data=>writes.push({id,data:JSON.parse(JSON.stringify(data))})})}};
-    vm.createContext(c);
+    c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);
     for(const name of ['resolveWorkspaceUidForSession','workspaceSettingsDoc','saveSettingsSilent','saveSettings'])vm.runInContext(source(name),c);
     return {c,writes};
   }

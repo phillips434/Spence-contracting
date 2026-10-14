@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(require.resolve('../public/index.html'),'utf8');
 const server=require('../lib/estimatePaymentSafety');
 function source(name){const start=html.indexOf('function '+name+'('),end=html.indexOf('\nfunction ',start+1);assert(start>=0&&end>start,name);return html.slice(start,end);}
-function load(names,extras={}){const c={...extras};vm.createContext(c);vm.runInContext(names.map(source).join('\n'),c);return c;}
+function load(names,extras={}){const c={...extras};c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);vm.runInContext(names.map(source).join('\n'),c);return c;}
 const base=['rememberRecordSnapshot','calcLineItemTotal','calcEstimate','milestonePaid','moneyAmount','estimateScheduleState'];
 const estimate=()=>({id:'qa',lineItems:[{total:11817.96,markup:20}],paymentMilestones:[{name:'Deposit',amount:4254,paid:true,paidAt:1},{name:'Progress',amount:5673,dueDate:'2026-12-01'},{name:'Final',amount:4254.55}]});
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -44,8 +44,8 @@ describe('beta review financial regressions',()=>{
  });
  it('counts only open unsigned unexpired estimates including drafts prepared for review',()=>{
   const c=load(['isOpenEstimate']),today='2026-10-05';
-  for(const status of ['Draft','Sent to Client','Ready for Client Review','Approved'])assert.equal(c.isOpenEstimate({status},today),true);
-  for(const status of ['Declined','Rejected','Expired','Converted'])assert.equal(c.isOpenEstimate({status},today),false);
+  for(const status of ['Draft','Sent to Client','Ready for Client Review'])assert.equal(c.isOpenEstimate({status},today),true);
+  for(const status of ['Declined','Rejected','Expired','Converted','Approved'])assert.equal(c.isOpenEstimate({status},today),false);
   assert.equal(c.isOpenEstimate({status:'Approved',signedAt:1},today),false);
   assert.equal(c.isOpenEstimate({status:'Draft',validUntil:'2026-10-04'},today),false);
   assert.equal(c.isOpenEstimate({status:'Draft',converted:true},today),false);

@@ -20,7 +20,7 @@ describe('payment schedule rounding',()=>{
     for(const total of [1632,7405.20,53,100.01]){
       const estimate={id:'qa'};let saved;
       const c={ger:()=>estimate,calcEstimate:()=>({grandTotal:total}),eCol:{doc:()=>({set:async e=>{saved=clone(e);}})},T(){},renderEstDetailBody(){}};
-      vm.createContext(c);vm.runInContext(source('milestonePaid')+'\n'+source('autoGenMilestones'),c);c.autoGenMilestones();
+      c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);vm.runInContext(source('milestonePaid')+'\n'+source('autoGenMilestones'),c);c.autoGenMilestones();
       await new Promise(resolve=>setImmediate(resolve));
       assert.strictEqual(Math.round(saved.paymentMilestones.reduce((sum,m)=>sum+m.amount,0)*100),Math.round(total*100));
     }
@@ -30,7 +30,7 @@ describe('open estimate recovery after sync loss',()=>{
   function fixture(record){
     const c={currentEstId:'deck',currentUser:{uid:'office'},estimates:[],resolveCurrentOwnerUid:async()=> 'owner',
       eCol:{doc:()=>({get:async()=>({id:'deck',exists:!!record,data:()=>clone(record)})})}};
-    vm.createContext(c);vm.runInContext(source('recoverOpenEstimate'),c);return c;
+    c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);vm.runInContext(source('recoverOpenEstimate'),c);return c;
   }
   it('restores the visible company estimate after its cached list is cleared',async()=>{
     const c=fixture({client:'Phillip',type:'Deck',userId:'owner',lineItems:[]});
@@ -48,7 +48,7 @@ describe('reported selection loss',()=>{
   function fixture(){
     let stored={id:'p1',client:'Client',notes:'',choices:[{category:'Cabinet',item:'Oak'},{category:'Countertop',item:'Quartz'}]};
     const c={CD_USE_POSTGRES:false,col:{doc:id=>({id,set:async value=>{stored=clone(value);}})},db:{runTransaction:async fn=>fn({get:async()=>({exists:true,data:()=>clone(stored)}),update:(_ref,patch)=>{stored=Object.assign(stored,clone(patch));}})}};
-    vm.createContext(c);for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges'])vm.runInContext(source(name),c);
+    c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges'])vm.runInContext(source(name),c);
     return {c,read:()=>clone(stored),remote:patch=>{stored=Object.assign(stored,clone(patch));}};
   }
   it('preserves a newer backsplash selection when an older office view saves notes',async()=>{
@@ -128,7 +128,7 @@ describe('reported communication and daily log failures',()=>{
   it('subcontractor log resolves the crew from the assigned scope without an undefined variable',async()=>{
     let saved;const nodes={sWork:{value:'Wiring complete'},sWeather:{value:'Clear'},sIssues:{value:''},sDate:{value:'2026-10-02'},sPhoto:{files:[]},sStatus:{style:{}}};
     const c={document:{getElementById:id=>nodes[id]},alert(){},col:{doc:()=>({get:async()=>({exists:true,data:()=>({id:'p1',scopeItems:[{assignTo:'Alex'}]})})})},persistProjectChanges:async p=>{saved=clone(p);}};
-    vm.createContext(c);vm.runInContext(source('rememberProjectSnapshot'),c);vm.runInContext(source('submitSubLog'),c);
+    c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);vm.runInContext(source('rememberProjectSnapshot'),c);vm.runInContext(source('submitSubLog'),c);
     c.submitSubLog('p1',0);await new Promise(resolve=>setImmediate(resolve));
     assert.strictEqual(saved.dailyLogs[0].crew,'Alex');assert.strictEqual(saved.dailyLogs[0].work,'Wiring complete');assert.strictEqual(nodes.sWork.value,'');
   });
@@ -142,7 +142,7 @@ describe('estimate browser request routing',()=>{
       eCol:{doc:()=>({update:async patch=>patches.push(clone(patch)),set:async()=>{}})},
       renderEstDetailBody(){},AbortController:class{abort(){}},setTimeout:()=>0,clearTimeout(){},
       fetch:async(_url,options)=>{calls.push(JSON.parse(options.body));return {ok:true,json:async()=>response};}};
-    vm.createContext(c);
+    c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);
     for(const name of ['normalizeProjectClass','shouldUseIntakeGate','generateAIEstimate'])vm.runInContext(source(name),c);
     return {c,calls,patches};
   }
@@ -166,13 +166,13 @@ describe('safe project attachment saves',()=>{
   it('retains older daily photos when saving a large project',async()=>{
     const record={dailyLogs:Array.from({length:4},()=>({photos:['x'.repeat(180000)]}))};let saved;
     const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async value=>{saved=clone(value);return value;},rememberProjectSnapshot(){},T(){}};
-    c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await c.saveP(record);
+    c.window=c;c.CDFinance=require('../public/financial-rules');c.rememberProjectSnapshot=()=>{};c.renderAll=()=>{};c.currentId=null;c.document={getElementById:()=>({classList:{contains:()=>false}})};c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await c.saveP(record);
     assert.strictEqual(saved.dailyLogs.length,4);assert(saved.dailyLogs.every(log=>log.photos[0].length===180000));
   });
   it('rejects an oversized project without removing any photo or writing it',async()=>{
     const record={dailyLogs:[{photos:['x'.repeat(960000)]}]};let writes=0;
     const c={setSS(){},withSharedOwnerMetadata:async()=>record,persistProjectChanges:async()=>writes++,T(){}};
-    c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await assert.rejects(c.saveP(record),/too large/);
+    c.window=c;c.CDFinance=require('../public/financial-rules');c.rememberProjectSnapshot=()=>{};c.renderAll=()=>{};c.currentId=null;c.document={getElementById:()=>({classList:{contains:()=>false}})};c.syncProjectCostLedger=()=>{};vm.runInNewContext(source('saveP'),c);await assert.rejects(c.saveP(record),/too large/);
     assert.strictEqual(writes,0);assert.strictEqual(record.dailyLogs[0].photos[0].length,960000);
   });
 });

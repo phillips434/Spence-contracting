@@ -42,6 +42,7 @@ const { PGlite } = require("@electric-sql/pglite");
   const nativeFetch=global.fetch;let providerCalls=0;
   process.env.OPENAI_API_KEY='fixture-key';process.env.ANTHROPIC_KEY='fixture-key';
   global.fetch=async(url,options)=>{
+    if(String(url).startsWith('https://api.pwnedpasswords.com/range/'))return{ok:true,text:async()=>''};
     providerCalls++;
     if(String(url)==='https://api.openai.com/v1/chat/completions')return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:'OK'}}]})};
     if(String(url)==='https://api.anthropic.com/v1/messages')return {ok:true,status:200,text:async()=>JSON.stringify({content:[{text:JSON.stringify({workCompleted:'Fixture daily log'})}]})};

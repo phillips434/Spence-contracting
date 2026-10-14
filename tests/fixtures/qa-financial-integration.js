@@ -1,0 +1,30 @@
+const assert=require('node:assert/strict'),fs=require('fs'),path=require('path'),{createHash}=require('crypto'),{PGlite}=require('@electric-sql/pglite');
+(async()=>{
+ const db=new PGlite();const client={query:async(sql,args)=>{const r=await db.query(sql,args);return{rows:r.rows,rowCount:r.rows.length||r.affectedRows||0};},release(){}};require('../../db/postgres').getPool=()=>({query:client.query,connect:async()=>client});
+ for(const file of fs.readdirSync(path.join(__dirname,'../../db/migrations')).filter(x=>x.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(__dirname,'../../db/migrations',file),'utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;',''));
+ process.env.CD_APP_ORIGIN='https://integration.example';
+ const profile={name:'QA Owner',plan:'paid',status:'active',agreedToTerms:true};
+ const company=(await db.query("insert into companies(legacy_owner_uid,name) values('cd_qa','QA') returning id")).rows[0].id;
+ async function user(uid,role,p){const id=(await db.query('insert into users(firebase_uid,email,legacy_payload) values($1,$2,$3::jsonb) returning id',[uid,uid+'@example.invalid',JSON.stringify(p)])).rows[0].id;await db.query("insert into company_memberships(company_id,user_id,role,status) values($1,$2,$3,'active')",[company,id,role]);await db.query('insert into auth_accounts(uid,email,password_hash) values($1,$2,$3)',[uid,uid+'@example.invalid','fixture']);const token=(uid==='cd_qa'?'a':'b').repeat(64);await db.query("insert into auth_sessions(token_hash,uid,expires_at) values($1,$2,now()+interval '1 day')",[createHash('sha256').update(token).digest('hex'),uid]);return '__Host-cd_session='+token;}
+ const owner=await user('cd_qa','owner',profile),member=await user('cd_member','field',{plan:'team',ownerUid:'cd_qa'});
+ await db.query('insert into company_settings(company_id,settings_payload) values($1,$2::jsonb)',[company,JSON.stringify({companyName:'QA'})]);
+ const server=require('../../server').app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const origin='http://127.0.0.1:'+server.address().port;
+ async function request(url,method='GET',body,cookie=owner){const r=await fetch(origin+url,{method,headers:{Origin:process.env.CD_APP_ORIGIN,'Content-Type':'application/json',cookie},body:body?JSON.stringify(body):undefined});return{status:r.status,body:await r.json()};}
+ try{
+  assert.equal((await request('/api/data/projects','GET',null,'')).status,401);
+  assert.equal((await request('/api/data/client-diagnostic/latest')).status,403);
+  const project={id:'p-qa',client:'QA',type:'Addition',jobNum:'JOB-QA',budget:10000,clientTotal:12500,spent:1400,costs:[{id:'demo',description:'Demo',budgetAmt:1000,actualAmt:1400}],scopeItems:[],paymentMilestones:[{id:'deposit',name:'Deposit',amount:5000,paid:false}],changeOrders:[{id:'co1',title:'Addition',budgetImpact:1500,status:'Pending'}]};
+  let r=await request('/api/data/projects/p-qa','PUT',project);assert.equal(r.status,200,JSON.stringify(r.body));r=await request('/api/data/projects/p-qa','PUT',project);assert.equal(r.status,200);assert.equal((await db.query('select count(*)::int as n from projects')).rows[0].n,1,'retry must reuse one record');assert.equal((await db.query('select count(*)::int as n from project_costs')).rows[0].n,1,'retry must reuse one expense');
+  r=await request('/api/data/projects/p-qa','PATCH',{patch:{changeOrders:[{...project.changeOrders[0],status:'Approved'}]}});assert.equal(r.status,200,JSON.stringify(r.body));const approved=r.body.document;assert.equal(approved.budget,11500);assert.equal(approved.clientTotal,14000);assert.equal(approved.paymentMilestones.length,2);assert.equal(approved.scopeItems.length,1);
+  r=await request('/api/data/projects/p-qa','PATCH',{patch:{changeOrders:approved.changeOrders}});assert.equal(r.body.document.clientTotal,14000);assert.equal(r.body.document.paymentMilestones.length,2);
+  r=await request('/api/data/projects/p-qa','PATCH',{patch:{costs:[...approved.costs,approved.costs[0]]}});assert.equal(r.status,400);assert.match(r.body.error,/Duplicate/);
+  for(const patch of [{spent:'abc'},{clientEmail:'not-an-email'},{clientPhone:'abc'},{startDate:'2026-10-20',endDate:'2026-10-19'},{changeOrders:[]}]){r=await request('/api/data/projects/p-qa','PATCH',{patch});assert.equal(r.status,400,JSON.stringify(patch));}
+  r=await request('/api/data/estimates/e-qa','PUT',{id:'e-qa',client:'QA',type:'Addition',lineItems:[{desc:'Exploit',qty:1,unitCost:-500,total:-500,markup:-200}]});assert.equal(r.status,400);assert.equal((await db.query('select count(*)::int as n from estimates')).rows[0].n,0);
+  r=await request('/api/data/projects/p-qa','PATCH',{patch:{paymentMilestones:approved.paymentMilestones.map((m,i)=>i?m:{...m,paid:true,paidAt:Date.now()})}});assert.equal(r.status,200);const loaded=await request('/api/data/projects/p-qa');assert.equal(loaded.status,200,JSON.stringify(loaded));assert.equal(loaded.body.document.paymentMilestones[0].paid,true);
+  assert.equal((await request('/api/data/projects','GET',null,member)).status,200);
+  const expired={...profile,plan:'trial',trialEnd:Date.now()-1};await db.query('update users set legacy_payload=$2::jsonb where firebase_uid=$1',['cd_qa',JSON.stringify(expired)]);
+  for(const cookie of [owner,member]){assert.equal((await request('/api/data/projects','GET',null,cookie)).status,403);assert.equal((await request('/api/estimate','POST',{prompt:'Bypass attempt'},cookie)).status,403);}
+  r=await request('/api/data/identity/self','PUT',{...expired,plan:'paid'});assert.equal(r.status,403);assert.equal((await db.query("select legacy_payload from users where firebase_uid='cd_qa'")).rows[0].legacy_payload.plan,'trial');
+  console.log('Actual PostgreSQL routes: financial transitions, retry deduplication, validation, paid persistence, diagnostic authorization, subscription expiry and privilege escalation passed.');
+ }finally{await new Promise(r=>server.close(r));await db.close();}
+})().catch(e=>{console.error(e);process.exit(1);});

@@ -9,8 +9,8 @@ const {
 } = require("../lib/authApi");
 describe("independent authentication security", function () {
   it("salts passwords and rejects wrong passwords", async () => {
-    const a = await passwordHash("a secure test password"),
-      b = await passwordHash("a secure test password");
+    const a = await passwordHash("a secure test password",async()=>{}),
+      b = await passwordHash("a secure test password",async()=>{});
     assert.notEqual(a, b);
     assert(await passwordMatches("a secure test password", a));
     assert(!(await passwordMatches("wrong password", a)));
