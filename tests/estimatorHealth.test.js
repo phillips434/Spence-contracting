@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
-const {estimateHandler}=require('../server');
+const {estimateHandler,dailyLogHandler}=require('../server');
 describe('estimator provider health',()=>{
   let originalFetch,oldKey;
   beforeEach(()=>{originalFetch=global.fetch;oldKey=process.env.OPENAI_API_KEY;process.env.OPENAI_API_KEY='  existing-test-key\n';});
@@ -18,6 +18,16 @@ describe('estimator provider health',()=>{
   });
   it('does not fall back to Claude if the estimator key is missing',async()=>{
     process.env.OPENAI_API_KEY='   ';global.fetch=async()=>{throw Error('Provider must not be called');};const result=await request({mode:'ai-health'});assert.equal(result.status,503);
+  });
+  it('routes legacy punch-list payloads to OpenAI even if they request Claude',async()=>{
+    let sent;global.fetch=async(url,opts)=>{sent={url,body:JSON.parse(opts.body)};return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:'["Check paint"]'}}]})};};
+    const result=await request({model:'claude-haiku-4-5-20251001',system:'Return a JSON array',messages:[{role:'user',content:'Punch list'}]});
+    assert.equal(result.status,200);assert.equal(sent.url,'https://api.openai.com/v1/chat/completions');assert.equal(sent.body.model,'gpt-4.1');assert.match(result.data.content[0].text,/Check paint/);
+  });
+  it('writes fact-only daily logs through OpenAI with the same key',async()=>{
+    let sent,result;global.fetch=async(url,opts)=>{sent={url,...opts};return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:JSON.stringify({workCompleted:'Installed trim.'})}}]})};};
+    await dailyLogHandler({body:{workCompleted:'installed trim'}},{status(){return this;},json(data){result=data;}});
+    assert.equal(result.workCompleted,'Installed trim.');assert.equal(sent.url,'https://api.openai.com/v1/chat/completions');assert.equal(sent.headers.Authorization,'Bearer existing-test-key');assert.equal(JSON.parse(sent.body).model,'gpt-4.1');
   });
   it('the settings test cannot show success when estimator authentication fails',async()=>{
     const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');const a=html.indexOf('async function testAIConnection(){'),b=html.indexOf('\nfunction saveCompanyName',a);const el={style:{}};let payload;

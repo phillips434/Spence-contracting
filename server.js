@@ -1237,9 +1237,9 @@ app.get("/api/build-info", function (req, res) {
 });
 
 async function dailyLogHandler(req, res) {
-  const apiKey = process.env.ANTHROPIC_KEY;
+  const apiKey = String(process.env.OPENAI_API_KEY || '').trim();
   if (!apiKey) {
-    return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
+    return res.status(500).json({ error: "OPENAI_API_KEY is not configured." });
   }
 
   const daily = req.body || {};
@@ -1267,24 +1267,26 @@ async function dailyLogHandler(req, res) {
   ].join("\n");
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": "Bearer " + apiKey,
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "gpt-4.1",
         max_tokens: 200,
-        system: "Return only valid JSON with one key named workCompleted. The value must be a concise, fact-only Work Completed summary. Do not include assistant text, questions, schedules, recommendations, invented facts, project status, categories, or unrelated project details.",
-        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: "Return only valid JSON with one key named workCompleted. The value must be a concise, fact-only Work Completed summary. Do not include assistant text, questions, schedules, recommendations, invented facts, project status, categories, or unrelated project details." },
+          { role: "user", content: prompt }
+        ],
       }),
     });
 
     const responseText = await response.text();
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Daily log AI failed", detail: responseText.slice(0, 200) });
+      return res.status(response.status === 401 ? 503 : 502).json({ error: response.status === 401 ? "ai_authentication_failed" : "ai_provider_failed", message: "Daily log OpenAI request failed. No log changes were applied.", provider: "openai", providerStatus: response.status });
     }
 
     let data;
@@ -1294,7 +1296,7 @@ async function dailyLogHandler(req, res) {
       return res.status(500).json({ error: "Daily log AI returned invalid JSON", detail: responseText.slice(0, 200) });
     }
 
-    const contentText = data && data.content && data.content[0] && typeof data.content[0].text === "string" ? data.content[0].text : "";
+    const contentText = data && data.choices && data.choices[0] && data.choices[0].message && typeof data.choices[0].message.content === "string" ? data.choices[0].message.content : "";
     if (!contentText) {
       return res.status(500).json({ error: "Daily log AI returned no text" });
     }
@@ -1348,7 +1350,7 @@ async function estimateHandler(req, res) {
       const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
       const isEstimateRequest = mode === "estimate" || mode === "estimate-generate" || mode === "estimate-exclusions";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
-      const isOpenAIRequiredRoute = mode === "ai-health" || isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
+
       const openaiKey = String(process.env.OPENAI_API_KEY || '').trim();
       console.log("STEP 3 - Internal mode determined", {
         mode,
@@ -1357,27 +1359,21 @@ async function estimateHandler(req, res) {
         isCOIntakeRequest,
         isEstimateRequest,
         isChangeOrderGenerateRequest,
-        isOpenAIRequiredRoute
+        provider: "openai"
       });
 
-      if (isOpenAIRequiredRoute && !openaiKey) {
+      if (!openaiKey) {
         console.error("[/api/estimate] Provider configuration error: OPENAI_API_KEY missing for estimator/change-order route.");
         return res.status(503).json({
           error: "OPENAI_API_KEY is not configured for the estimator/change-order route. This endpoint requires OpenAI GPT-4.1 and must not silently fall back to Anthropic."
         });
       }
 
-      const apiKey = process.env.ANTHROPIC_KEY;
-      if (!isOpenAIRequiredRoute && !apiKey) {
-        console.error("STEP 1 ERROR - Missing Anthropic API key");
-        return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
-      }
-
       const title = body.title || "";
       const description = body.description || "";
 
-      let anthropicBody = {
-        model: body.model || "claude-haiku-4-5-20251001",
+      let providerBody = {
+        model: body.model || "gpt-4.1",
         max_tokens: body.max_tokens || 2000,
         messages: body.messages || [{ role: "user", content: body.prompt || "" }],
       };
@@ -1392,7 +1388,7 @@ async function estimateHandler(req, res) {
           const histCtx = body.histCtx || "";
           const prompt = body.prompt || "";
           const originalEstimateContext = body.originalEstimateContext || "";
-          const model = body.model || "claude-haiku-4-5-20251001";
+          const model = body.model || "gpt-4.1";
           const maxTok = mode === "estimate-generate" ? 8000 : (body.max_tokens || 2000);
           const questionContext = body.questionContext || null;
           const followUpContext = questionContext
@@ -1523,14 +1519,14 @@ async function estimateHandler(req, res) {
           if(mode==='estimate-exclusions'){
             systemPrompt='Return only JSON with action:"exclusions", exclusions (array of strings), and message. Draft proposed exclusions for contractor review for the explicitly requested project. Do not change pricing, line items, scope, or assumptions. Do not duplicate current exclusions. Clearly describe suggestions as proposed exclusions requiring contractor review. Current priced items: '+items+'. Existing exclusions: '+existingExcls;
           }
-          anthropicBody = {
+          providerBody = {
             model: model,
             max_tokens: maxTok,
             system: systemPrompt,
             messages: [{ role: "user", content: prompt + followUpContext }],
           };
         }
-        console.log("STEP 4 - Anthropic payload built", { mode, hasSystem: !!anthropicBody.system });
+        console.log("STEP 4 - AI payload built", { mode, hasSystem: !!providerBody.system });
       } catch (err) {
         console.error("STEP 4 ERROR - Anthropic payload build failed", err);
         if (err && err.stack) {
@@ -1547,14 +1543,14 @@ async function estimateHandler(req, res) {
         let data;
 
         // Estimator and change-order routes must use OpenAI GPT-4.1 explicitly and must not silently fall back to Anthropic.
-        if (isOpenAIRequiredRoute) {
+        {
           const openaiModel = "gpt-4.1";
-          const openaiMaxTokens = mode === "estimate-generate" ? 8000 : ((anthropicBody && anthropicBody.max_tokens) || 2000);
+          const openaiMaxTokens = mode === "estimate-generate" ? 8000 : ((providerBody && providerBody.max_tokens) || 2000);
           const openaiBody = {
             model: openaiModel,
             messages: [
-              { role: "system", content: (anthropicBody && anthropicBody.system) || "" },
-              { role: "user", content: (anthropicBody && anthropicBody.messages && anthropicBody.messages[0] && anthropicBody.messages[0].content) || "" }
+              { role: "system", content: (providerBody && providerBody.system) || "" },
+              { role: "user", content: (providerBody && providerBody.messages && providerBody.messages[0] && providerBody.messages[0].content) || "" }
             ],
             max_tokens: openaiMaxTokens,
             temperature: 0
@@ -1938,47 +1934,13 @@ async function estimateHandler(req, res) {
           if (!response.ok) {
             console.error("[/api/estimate] OpenAI non-OK response", { status: response.status, body: responseText, mode: mode });
           }
-        } else {
-          // Default: Anthropic
-          console.log("[AI ESTIMATE SERVER] anthropic start", { ts: new Date().toISOString(), mode: mode });
-          const anthropicStart = Date.now();
-          response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify(anthropicBody),
-          });
-          console.log("[AI ESTIMATE SERVER] anthropic response", {
-            elapsedMs: Date.now() - anthropicStart,
-            status: response && response.status,
-            ok: response && response.ok,
-            ts: new Date().toISOString()
-          });
-          console.log("STEP 6 - Anthropic response received", { status: response.status, ok: response.ok });
-          responseText = await response.text();
-          try {
-            data = responseText ? JSON.parse(responseText) : {};
-          } catch (parseErr) {
-            data = { rawText: responseText };
-          }
-          console.log("STEP 7 - Anthropic response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
-          if (!response.ok) {
-            console.error("[/api/estimate] Anthropic non-OK response", {
-              status: response.status,
-              body: responseText,
-              mode: mode,
-            });
-          }
         }
         const generationFailure = detectGenerationFailure(data, mode);
         if (generationFailure.failed) {
           console.error("[AI ESTIMATE SERVER] generation failed due to truncation", {
             mode,
             stopReason: data && data.stop_reason,
-            provider: process.env.OPENAI_API_KEY ? 'openai' : 'anthropic'
+            provider: 'openai'
           });
           return res.status(502).json({
             error: generationFailure.error,
@@ -2047,7 +2009,7 @@ async function estimateHandler(req, res) {
               httpStatus: response && response.status,
               parseError: err && err.message ? err.message : err
             }, null, 0));
-            // Fall back to the standard Anthropic response if the model does not follow the intake format.
+            // Fall back to the standard provider response if the model does not follow the intake format.
           }
         }
         // If experiment flag is enabled and this is an estimate or CO generation run, normalize the AI breakdown server-side
@@ -2201,7 +2163,7 @@ async function estimateHandler(req, res) {
         console.log("STEP 8 - Returning response to client");
         return res.status(response.status).json(data);
       } catch (err) {
-        console.error("STEP 5/6/7 ERROR - Anthropic request/response failed", err);
+        console.error("STEP 5/6/7 ERROR - OpenAI request/response failed", err);
         if (err && err.stack) {
           console.error(err.stack);
         }

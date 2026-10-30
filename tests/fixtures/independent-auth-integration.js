@@ -40,12 +40,11 @@ const { PGlite } = require("@electric-sql/pglite");
   const {drainSignupAlerts}=require('../../lib/signupAlerts');
   const app = require("../../server").app;
   const nativeFetch=global.fetch;let providerCalls=0;
-  process.env.OPENAI_API_KEY='fixture-key';process.env.ANTHROPIC_KEY='fixture-key';
+  process.env.OPENAI_API_KEY='fixture-key';delete process.env.ANTHROPIC_KEY;
   global.fetch=async(url,options)=>{
     if(String(url).startsWith('https://api.pwnedpasswords.com/range/'))return{ok:true,text:async()=>''};
     providerCalls++;
-    if(String(url)==='https://api.openai.com/v1/chat/completions')return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:'OK'}}]})};
-    if(String(url)==='https://api.anthropic.com/v1/messages')return {ok:true,status:200,text:async()=>JSON.stringify({content:[{text:JSON.stringify({workCompleted:'Fixture daily log'})}]})};
+    if(String(url)==='https://api.openai.com/v1/chat/completions'){const body=JSON.parse(options.body);return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:body.response_format&&body.response_format.type==='json_object'?JSON.stringify({workCompleted:'Fixture daily log'}):'OK'}}]})};}
     throw Error('Unexpected provider network request');
   };
   const server = app.listen(0, "127.0.0.1");

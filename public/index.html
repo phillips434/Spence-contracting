@@ -4740,7 +4740,7 @@ function generatePunchListAI(btnEl){
   fetch('/api/estimate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,system:sp,
+    body:JSON.stringify({model:'gpt-4.1',max_tokens:800,system:sp,
       messages:[{role:'user',content:'Project type: '+p.type+'. Scope: '+scope}]}),
     signal:_plCtrl.signal
   }).then(function(r){clearTimeout(_plTimeout);return r.json();})
@@ -5271,7 +5271,7 @@ auth.onAuthStateChanged(function(user){
           fetch('/api/estimate',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
+            body:JSON.stringify({model:'gpt-4.1',max_tokens:5,messages:[{role:'user',content:'ping'}]})
           }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
         }, 3000);
         var tl = document.getElementById('topbarLogo');
@@ -5316,7 +5316,7 @@ auth.onAuthStateChanged(function(user){
           fetch('/api/estimate',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'ping'}]})
+            body:JSON.stringify({model:'gpt-4.1',max_tokens:5,messages:[{role:'user',content:'ping'}]})
           }).then(function(){console.info('[AI] Server pre-warmed');}).catch(function(){});
         }, 3000);
         var tl = document.getElementById('topbarLogo');
