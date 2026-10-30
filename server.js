@@ -1348,7 +1348,8 @@ async function estimateHandler(req, res) {
       const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
       const isEstimateRequest = mode === "estimate" || mode === "estimate-generate" || mode === "estimate-exclusions";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
-      const isOpenAIRequiredRoute = isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
+      const isOpenAIRequiredRoute = mode === "ai-health" || isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
+      const openaiKey = String(process.env.OPENAI_API_KEY || '').trim();
       console.log("STEP 3 - Internal mode determined", {
         mode,
         isIntakeRequest,
@@ -1359,7 +1360,7 @@ async function estimateHandler(req, res) {
         isOpenAIRequiredRoute
       });
 
-      if (isOpenAIRequiredRoute && !process.env.OPENAI_API_KEY) {
+      if (isOpenAIRequiredRoute && !openaiKey) {
         console.error("[/api/estimate] Provider configuration error: OPENAI_API_KEY missing for estimator/change-order route.");
         return res.status(503).json({
           error: "OPENAI_API_KEY is not configured for the estimator/change-order route. This endpoint requires OpenAI GPT-4.1 and must not silently fall back to Anthropic."
@@ -1849,7 +1850,7 @@ async function estimateHandler(req, res) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": "Bearer " + process.env.OPENAI_API_KEY
+              "Authorization": "Bearer " + openaiKey
             },
             body: JSON.stringify(openaiBody),
           });
@@ -1858,6 +1859,14 @@ async function estimateHandler(req, res) {
           }
           console.log("STEP 6 - OpenAI response received", { status: response.status, ok: response.ok });
           responseText = await response.text();
+          if (!response.ok) {
+            console.error('[AI provider] OpenAI request failed', { status: response.status, mode });
+            const error = response.status === 401 ? 'ai_authentication_failed' : 'ai_provider_failed';
+            const message = response.status === 401
+              ? 'The estimator OpenAI API key was rejected. An administrator must verify the existing key in Railway. No estimate changes were applied.'
+              : 'The estimator AI provider returned HTTP ' + response.status + '. No estimate changes were applied.';
+            return res.status(response.status === 401 ? 503 : 502).json({ error, message, provider: 'openai', providerStatus: response.status });
+          }
           try {
             const openaiJson = responseText ? JSON.parse(responseText) : {};
             if (mode === "change-order-generate") {

@@ -1456,63 +1456,37 @@ function applyTradeTemplate(trade){
 function saveSettings(){
   return saveSettingsSilent().then(function(){if(currentUser)T('Saved!');}).catch(function(){});
 }
-function testAIConnection(){
+async function testAIConnection(){
   var el=document.getElementById('aiTestResult');
   el.style.display='block';
   el.style.color='#2858BD';
-  var t0=Date.now();
-  el.textContent='Testing... (connecting to app server)';
-
-  // Step 1: Try a simple HEAD/GET to see if server is alive at all
-  var pingCtrl=new AbortController();
-  var pingTimeout=setTimeout(function(){pingCtrl.abort();},8000);
-
-fetch('/api/estimate',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:20,messages:[{role:'user',content:'Say OK'}]}),
-    signal:pingCtrl.signal
-  }).then(function(r){
-    clearTimeout(pingTimeout);
-    var elapsed=Date.now()-t0;
-    if(!r.ok){
+  el.textContent='Testing estimator connection (OpenAI GPT-4.1)...';
+  var ctrl=new AbortController();
+  var timeout=setTimeout(function(){ctrl.abort();},30000);
+  var started=Date.now();
+  try{
+    var response=await fetch('/api/estimate',{
+      method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl.signal,
+      body:JSON.stringify({mode:'ai-health',max_tokens:20,messages:[{role:'user',content:'Reply with OK only.'}]})
+    });
+    var data=await response.json();
+    if(!response.ok){
       el.style.color='#E83A6C';
-      el.textContent='✗ Server reached but returned HTTP '+r.status+' ('+elapsed+'ms). Check server logs for errors.';
-      return null;
+      el.textContent=data.error==='ai_authentication_failed'
+        ? '✗ Estimator unavailable: OpenAI rejected the configured API key. Verify the existing key in Railway.'
+        : '✗ Estimator connection failed (HTTP '+response.status+'). '+(data.message||'Check server configuration.');
+      return;
     }
-    el.textContent='Connected ('+elapsed+'ms) — parsing AI response...';
-    return r.json();
-  }).then(function(data){
-    if(!data)return;
-    var elapsed=Date.now()-t0;
     var text=data.content&&data.content[0]&&data.content[0].text;
-    if(text){
-      el.style.color='#2EAA72';
-      el.textContent='✓ AI working! Response in '+elapsed+'ms: "'+text.slice(0,50)+'"';
-    } else if(data.error){
-      el.style.color='#E83A6C';
-      el.textContent='Anthropic API error: '+(data.error.message||JSON.stringify(data.error)).slice(0,100);
-    } else if(data.type==='error'){
-      el.style.color='#E83A6C';
-      el.textContent='API error type: '+JSON.stringify(data).slice(0,120);
-    } else {
-      el.style.color='#E8B43A';
-      el.textContent='Unexpected response shape: '+JSON.stringify(data).slice(0,100);
-    }
-  }).catch(function(err){
-    clearTimeout(pingTimeout);
-    var elapsed=Date.now()-t0;
+    if(!text||text.trim()!=='OK')throw new Error('Unexpected estimator test response.');
+    el.style.color='#2EAA72';
+    el.textContent='✓ Estimator connection working (OpenAI GPT-4.1, '+(Date.now()-started)+'ms).';
+  }catch(err){
     el.style.color='#E83A6C';
-    var diagnosis='';
-    if(err.name==='AbortError'){
-      diagnosis='Server did not respond in 8 seconds. Check server status and try again.';
-    } else if(err.message==='Load failed'||err.message==='Failed to fetch'){
-      diagnosis='Cannot reach the app server. Check your connection and server status.';
-    } else {
-      diagnosis='Error: '+err.message;
-    }
-    el.textContent='✗ '+diagnosis+' ('+elapsed+'ms)';
-  });
+    el.textContent=err.name==='AbortError'
+      ? '✗ Estimator connection timed out after 30 seconds. Try again.'
+      : '✗ Estimator connection could not be verified. Check your connection and try again.';
+  }finally{clearTimeout(timeout);}
 }
 function saveCompanyName(){DD.companyName=document.getElementById("companyName").value.trim()||"Contractor Desk";saveSettings();}
 function saveCompanyInfo(){
