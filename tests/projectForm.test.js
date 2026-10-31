@@ -5,7 +5,7 @@ const vm = require('vm');
 const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
 const source = html.slice(html.indexOf('function openAdd(){'), html.indexOf('function openSettings(){'));
 function fixture() {
-  const ids = ['fClient', 'fClientPhone', 'fClientEmail', 'fJobNum', 'fPO', 'fType', 'fAddress', 'fPm', 'fStart', 'fEnd', 'fBudget', 'fSpent', 'fNotes', 'fStatus', 'addPageTitle', 'addPage'];
+  const ids = ['fClient', 'fClientPhone', 'fClientEmail', 'fJobNum', 'fPO', 'fType', 'fAddress', 'fPm', 'fStart', 'fEnd', 'fBudget', 'fContract', 'fSpent', 'fNotes', 'fStatus', 'addPageTitle', 'addPage'];
   const nodes = Object.fromEntries(ids.map(id => [id, { value: '', classList: { add() {}, remove() {} } }]));
   const c = { projects: [], currentUser: { uid: 'owner' }, editId: null, currentId: null, selColor: 0, COLORS: ['blue'], DD: {},
     document: { getElementById: id => nodes[id] }, populateStatus() {}, renderCP() {}, nextJobNumber: () => 'JOB-NEW',
@@ -13,7 +13,7 @@ function fixture() {
     col: { doc: () => ({ set: async () => {} }) } };
   c.gpr = () => c.projects.find(p => p.id === c.currentId);
   c.openDetail = id => { c.openedProject = c.projects.find(p => p.id === id); };
-  vm.createContext(c);
+  c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);
   for(const name of ['rememberProjectSnapshot','projectFieldEqual','persistProjectChanges','reconcileProjectSpent','syncProjectCostLedger']){
     const start=html.indexOf('function '+name+'('),end=html.indexOf('\nfunction ',start+1);
     vm.runInContext(html.slice(start,end),c);

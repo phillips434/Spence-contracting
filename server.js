@@ -4,7 +4,10 @@ const { installDataRoutes } = require('./lib/dataApi');
 const cors = require("cors");
 const path = require("path");
 const { verifyAndComputeCanonical, applyPrimaryMaterialOverrides } = require("./lib/geometryPhase1");
+const { dimensionCatalog, applyAreaTakeoffs, takeoffPrompt } = require('./lib/flatAreaTakeoff');
 const app = express();
+// Railway terminates HTTPS at its edge proxy. Trust only the immediate proxy.
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 const APP_BUILD_INFO = {
   environment: process.env.APP_ENVIRONMENT || process.env.NODE_ENV || 'local',
@@ -47,6 +50,30 @@ function buildMaterialPricingContractText(){
     buildMaterialCompletenessContractText();
 }
 
+function buildFlatPricingContractText(){
+  return " Flat line-item pricing: Keep Labor, Materials, Subcontractor, Equipment, Permits & Fees, Allowance, and Other as separate cost categories. " +
+    "For work the contractor supplies and installs, include both the complete Materials package and separate Labor rows; a priced material row does not pay for installation. " +
+    "Labor rows use total person-hours as qty, hrs as unit, and the supplied company hourly labor rate as unitCost. " +
+    "Only Materials rows use direct material acquisition cost as unitCost; exclude labor and markup from material prices. " +
+    "Subcontractor, Equipment, Permits & Fees, Allowance, and Other rows use the direct cost of that service, rental, fee, or allowance, never a material-only price. " +
+    "Do not double-count installation labor already included in an explicitly subcontracted installed price. Honor explicit owner-supplied materials or excluded labor. " +
+    "All unit costs are before markup, profit, and tax; total = qty * unitCost. Markup is applied once by Contractor Desk. " +
+    buildMaterialCompletenessContractText();
+}
+
+function normalizeFlatGeneratedItems(parsed, laborRate){
+  const rate=Number(laborRate);
+  for(const item of Array.isArray(parsed.lineItems)?parsed.lineItems:[]){
+    if(!Number.isFinite(item.qty)||item.qty<=0||!Number.isFinite(item.unitCost)||item.unitCost<0)throw new Error('Invalid generated quantity or direct cost');
+    if(item.category==='Labor'){
+      if(!Number.isFinite(rate)||rate<=0||!/^(hrs?|hours?)$/i.test(item.unit))throw new Error('Generated labor must use person-hours and the company rate');
+      item.unitCost=rate;
+    }
+    item.total=_round2(item.qty*item.unitCost);
+  }
+  return parsed;
+}
+
 function buildFlatEstimateGenerateSchema(){
   return {
     type: 'json_schema',
@@ -59,6 +86,7 @@ function buildFlatEstimateGenerateSchema(){
         required: [
           'action',
           'lineItems',
+          'quantityTakeoffs',
           'deleteIndexes',
           'updateItems',
           'residentialSummary',
@@ -71,6 +99,18 @@ function buildFlatEstimateGenerateSchema(){
         ],
         properties: {
           action: { type: 'string', enum: ['add', 'update', 'ready'] },
+          quantityTakeoffs: {
+            type: 'array', items: {
+              type: 'object', additionalProperties: false,
+              required: ['lineItemIndex','dimensionIndexes','subtractDimensionIndexes','wastePercent'],
+              properties: {
+                lineItemIndex: {type:'integer'},
+                dimensionIndexes: {type:'array',items:{type:'integer'}},
+                subtractDimensionIndexes: {type:'array',items:{type:'integer'}},
+                wastePercent: {type:'number'}
+              }
+            }
+          },
           lineItems: {
             type: 'array',
             items: {
@@ -1196,10 +1236,10 @@ app.get("/api/build-info", function (req, res) {
   });
 });
 
-app.post("/api/daily-log", async (req, res) => {
-  const apiKey = process.env.ANTHROPIC_KEY;
+async function dailyLogHandler(req, res) {
+  const apiKey = String(process.env.OPENAI_API_KEY || '').trim();
   if (!apiKey) {
-    return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
+    return res.status(500).json({ error: "OPENAI_API_KEY is not configured." });
   }
 
   const daily = req.body || {};
@@ -1227,24 +1267,26 @@ app.post("/api/daily-log", async (req, res) => {
   ].join("\n");
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": "Bearer " + apiKey,
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "gpt-4.1",
         max_tokens: 200,
-        system: "Return only valid JSON with one key named workCompleted. The value must be a concise, fact-only Work Completed summary. Do not include assistant text, questions, schedules, recommendations, invented facts, project status, categories, or unrelated project details.",
-        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: "Return only valid JSON with one key named workCompleted. The value must be a concise, fact-only Work Completed summary. Do not include assistant text, questions, schedules, recommendations, invented facts, project status, categories, or unrelated project details." },
+          { role: "user", content: prompt }
+        ],
       }),
     });
 
     const responseText = await response.text();
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Daily log AI failed", detail: responseText.slice(0, 200) });
+      return res.status(response.status === 401 ? 503 : 502).json({ error: response.status === 401 ? "ai_authentication_failed" : "ai_provider_failed", message: "Daily log OpenAI request failed. No log changes were applied.", provider: "openai", providerStatus: response.status });
     }
 
     let data;
@@ -1254,7 +1296,7 @@ app.post("/api/daily-log", async (req, res) => {
       return res.status(500).json({ error: "Daily log AI returned invalid JSON", detail: responseText.slice(0, 200) });
     }
 
-    const contentText = data && data.content && data.content[0] && typeof data.content[0].text === "string" ? data.content[0].text : "";
+    const contentText = data && data.choices && data.choices[0] && data.choices[0].message && typeof data.choices[0].message.content === "string" ? data.choices[0].message.content : "";
     if (!contentText) {
       return res.status(500).json({ error: "Daily log AI returned no text" });
     }
@@ -1276,9 +1318,9 @@ app.post("/api/daily-log", async (req, res) => {
     console.error("[AI DAILY LOG] failed", err);
     return res.status(500).json({ error: err && err.message ? err.message : "Daily log AI failed" });
   }
-});
+}
 
-app.post("/api/estimate", async (req, res) => {
+async function estimateHandler(req, res) {
   const routeStart = Date.now();
   const contentLength = req.headers && req.headers['content-length'] ? req.headers['content-length'] : null;
   const messageCount = Array.isArray(req.body && req.body.messages) ? req.body.messages.length : 0;
@@ -1308,7 +1350,8 @@ app.post("/api/estimate", async (req, res) => {
       const isIntakeRequest = isEstimateIntakeRequest || isCOIntakeRequest;
       const isEstimateRequest = mode === "estimate" || mode === "estimate-generate" || mode === "estimate-exclusions";
       const isChangeOrderGenerateRequest = mode === "change-order-generate";
-      const isOpenAIRequiredRoute = isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest || mode === "estimate" || mode === "change-order";
+
+      const openaiKey = String(process.env.OPENAI_API_KEY || '').trim();
       console.log("STEP 3 - Internal mode determined", {
         mode,
         isIntakeRequest,
@@ -1316,27 +1359,21 @@ app.post("/api/estimate", async (req, res) => {
         isCOIntakeRequest,
         isEstimateRequest,
         isChangeOrderGenerateRequest,
-        isOpenAIRequiredRoute
+        provider: "openai"
       });
 
-      if (isOpenAIRequiredRoute && !process.env.OPENAI_API_KEY) {
+      if (!openaiKey) {
         console.error("[/api/estimate] Provider configuration error: OPENAI_API_KEY missing for estimator/change-order route.");
         return res.status(503).json({
           error: "OPENAI_API_KEY is not configured for the estimator/change-order route. This endpoint requires OpenAI GPT-4.1 and must not silently fall back to Anthropic."
         });
       }
 
-      const apiKey = process.env.ANTHROPIC_KEY;
-      if (!isOpenAIRequiredRoute && !apiKey) {
-        console.error("STEP 1 ERROR - Missing Anthropic API key");
-        return res.status(500).json({ error: "ANTHROPIC_KEY secret is not configured." });
-      }
-
       const title = body.title || "";
       const description = body.description || "";
 
-      let anthropicBody = {
-        model: body.model || "claude-haiku-4-5-20251001",
+      let providerBody = {
+        model: body.model || "gpt-4.1",
         max_tokens: body.max_tokens || 2000,
         messages: body.messages || [{ role: "user", content: body.prompt || "" }],
       };
@@ -1345,13 +1382,13 @@ app.post("/api/estimate", async (req, res) => {
         if (isIntakeRequest || isEstimateRequest || isChangeOrderGenerateRequest) {
           const items = body.items || "[]";
           const existingExcls = body.excls || "[]";
-          const markup = body.markup || 20;
+          const markup = body.markup == null ? 20 : body.markup;
           const laborRate = body.laborRate || 85;
           const location = body.location || "";
           const histCtx = body.histCtx || "";
           const prompt = body.prompt || "";
           const originalEstimateContext = body.originalEstimateContext || "";
-          const model = body.model || "claude-haiku-4-5-20251001";
+          const model = body.model || "gpt-4.1";
           const maxTok = mode === "estimate-generate" ? 8000 : (body.max_tokens || 2000);
           const questionContext = body.questionContext || null;
           const followUpContext = questionContext
@@ -1444,7 +1481,7 @@ app.post("/api/estimate", async (req, res) => {
               " Start your response with { and end with }." +
               " You are a construction estimator." +
               ' Format: {"action":"add","lineItems":[{"category":"Labor","desc":"description","qty":1,"unit":"hrs","unitCost":85,"total":85,"markup":20}],"deleteIndexes":[],"updateItems":[],"residentialSummary":"","projectScope":"","workIncluded":[],"conditionsAssumptions":[],"exclusions":[],"message":"what was done"}' +
-              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildMaterialPricingContractText() +
+              " IMPORTANT: total = qty * unitCost. markup = percentage for client price. " + buildFlatPricingContractText() +
               " Current items: " +
               items +
               " Current exclusions: " +
@@ -1472,18 +1509,24 @@ app.post("/api/estimate", async (req, res) => {
               " IMPORTANT: AI must never infer or invent contractual exclusions merely because work was not mentioned in the contractor's scope. Exclusions may only be returned when the contractor/user explicitly states something is excluded, not included, by owner/customer, outside the scope, or otherwise clearly not part of the contract, or when that exclusion already exists in the current exclusions list. The absence of work from the scope is not evidence that it is contractually excluded. Examples: 'Existing appliances stay' does not imply appliance replacement or relocation is excluded; 'Keep existing plumbing locations' does not imply plumbing or electrical relocation is excluded. If flooring, permits, structural work, electrical work, or similar items are merely unmentioned, do not create exclusions for them." +
               " When adding exclusions, return them as plain strings in the exclusions array." +
               " Do not repeat exclusions already in the current exclusions list.";
+            let flatCurrentItems;
+            if(mode==='estimate-generate')systemPrompt+=takeoffPrompt(dimensionCatalog(prompt+followUpContext));
+            try{flatCurrentItems=typeof items==='string'?JSON.parse(items):items;}catch(_){}
+            if(Array.isArray(flatCurrentItems)&&flatCurrentItems.length===0){
+              systemPrompt += " INITIAL ESTIMATE RULE: Current items is empty. The answers in follow-up context describe the initial requested scope, not revisions to existing priced work. Generate the entire specified scope in lineItems, including all component materials and labor, with isNewWork:true on every row. Do not use updateItems because there are no existing item indexes. Populate all requested narrative sections; existing-estimate preservation rules apply only when Current items contains priced rows.";
+            }
           }
           if(mode==='estimate-exclusions'){
             systemPrompt='Return only JSON with action:"exclusions", exclusions (array of strings), and message. Draft proposed exclusions for contractor review for the explicitly requested project. Do not change pricing, line items, scope, or assumptions. Do not duplicate current exclusions. Clearly describe suggestions as proposed exclusions requiring contractor review. Current priced items: '+items+'. Existing exclusions: '+existingExcls;
           }
-          anthropicBody = {
+          providerBody = {
             model: model,
             max_tokens: maxTok,
             system: systemPrompt,
             messages: [{ role: "user", content: prompt + followUpContext }],
           };
         }
-        console.log("STEP 4 - Anthropic payload built", { mode, hasSystem: !!anthropicBody.system });
+        console.log("STEP 4 - AI payload built", { mode, hasSystem: !!providerBody.system });
       } catch (err) {
         console.error("STEP 4 ERROR - Anthropic payload build failed", err);
         if (err && err.stack) {
@@ -1500,14 +1543,14 @@ app.post("/api/estimate", async (req, res) => {
         let data;
 
         // Estimator and change-order routes must use OpenAI GPT-4.1 explicitly and must not silently fall back to Anthropic.
-        if (isOpenAIRequiredRoute) {
+        {
           const openaiModel = "gpt-4.1";
-          const openaiMaxTokens = mode === "estimate-generate" ? 8000 : ((anthropicBody && anthropicBody.max_tokens) || 2000);
+          const openaiMaxTokens = mode === "estimate-generate" ? 8000 : ((providerBody && providerBody.max_tokens) || 2000);
           const openaiBody = {
             model: openaiModel,
             messages: [
-              { role: "system", content: (anthropicBody && anthropicBody.system) || "" },
-              { role: "user", content: (anthropicBody && anthropicBody.messages && anthropicBody.messages[0] && anthropicBody.messages[0].content) || "" }
+              { role: "system", content: (providerBody && providerBody.system) || "" },
+              { role: "user", content: (providerBody && providerBody.messages && providerBody.messages[0] && providerBody.messages[0].content) || "" }
             ],
             max_tokens: openaiMaxTokens,
             temperature: 0
@@ -1803,7 +1846,7 @@ app.post("/api/estimate", async (req, res) => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": "Bearer " + process.env.OPENAI_API_KEY
+              "Authorization": "Bearer " + openaiKey
             },
             body: JSON.stringify(openaiBody),
           });
@@ -1812,6 +1855,14 @@ app.post("/api/estimate", async (req, res) => {
           }
           console.log("STEP 6 - OpenAI response received", { status: response.status, ok: response.ok });
           responseText = await response.text();
+          if (!response.ok) {
+            console.error('[AI provider] OpenAI request failed', { status: response.status, mode });
+            const error = response.status === 401 ? 'ai_authentication_failed' : 'ai_provider_failed';
+            const message = response.status === 401
+              ? 'The estimator OpenAI API key was rejected. An administrator must verify the existing key in Railway. No estimate changes were applied.'
+              : 'The estimator AI provider returned HTTP ' + response.status + '. No estimate changes were applied.';
+            return res.status(response.status === 401 ? 503 : 502).json({ error, message, provider: 'openai', providerStatus: response.status });
+          }
           try {
             const openaiJson = responseText ? JSON.parse(responseText) : {};
             if (mode === "change-order-generate") {
@@ -1838,11 +1889,25 @@ app.post("/api/estimate", async (req, res) => {
               }
               let currentEstimateItems = [];
               try { currentEstimateItems = typeof body.items === 'string' ? JSON.parse(body.items) : body.items; } catch (_) {}
+              if(parsedEstimate && !AI_BREAKDOWN_EXPERIMENT){
+                try{
+                  const questionContext=body.questionContext;
+                  const source=(body.prompt||'')+(questionContext?' FOLLOW-UP CONTEXT: Original request: '+(questionContext.originalPrompt||'')+'. Question history: '+JSON.stringify(questionContext.history||[]):'');
+                  applyAreaTakeoffs(parsedEstimate,dimensionCatalog(source));
+                  normalizeFlatGeneratedItems(parsedEstimate,body.laborRate||85);
+                }
+                catch(err){return res.status(502).json({error:'generation_failed',message:err.message});}
+                if(Array.isArray(currentEstimateItems)&&currentEstimateItems.length===0){
+                  for(const item of parsedEstimate.lineItems||[])item.isNewWork=true;
+                }
+                data.content[0].text=JSON.stringify(parsedEstimate);
+              }
               const validExistingUpdate = Array.isArray(currentEstimateItems) && Array.isArray(parsedEstimate?.updateItems) && parsedEstimate.updateItems.some(item =>
                 Number.isInteger(item.index) && item.index >= 0 && item.index < currentEstimateItems.length &&
                 ['qty', 'unitCost', 'total', 'markup'].every(key => typeof item[key] === 'number' && Number.isFinite(item[key])) &&
                 typeof item.desc === 'string' && item.desc.trim().length > 0);
-              if (parsedEstimate && (!Array.isArray(parsedEstimate.lineItems) || parsedEstimate.lineItems.length === 0) && !validExistingUpdate) {
+              const validGeneratedItem=Array.isArray(parsedEstimate?.lineItems)&&parsedEstimate.lineItems.some(item=>item&&item.isNewWork!==false);
+              if (parsedEstimate && !validGeneratedItem && !validExistingUpdate) {
                 console.error('[AI ESTIMATE SERVER] estimate-generate returned zero lineItems in a valid structured response', {
                   mode,
                   parsedEstimateKeys: parsedEstimate && typeof parsedEstimate === 'object' ? Object.keys(parsedEstimate) : [],
@@ -1869,47 +1934,13 @@ app.post("/api/estimate", async (req, res) => {
           if (!response.ok) {
             console.error("[/api/estimate] OpenAI non-OK response", { status: response.status, body: responseText, mode: mode });
           }
-        } else {
-          // Default: Anthropic
-          console.log("[AI ESTIMATE SERVER] anthropic start", { ts: new Date().toISOString(), mode: mode });
-          const anthropicStart = Date.now();
-          response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify(anthropicBody),
-          });
-          console.log("[AI ESTIMATE SERVER] anthropic response", {
-            elapsedMs: Date.now() - anthropicStart,
-            status: response && response.status,
-            ok: response && response.ok,
-            ts: new Date().toISOString()
-          });
-          console.log("STEP 6 - Anthropic response received", { status: response.status, ok: response.ok });
-          responseText = await response.text();
-          try {
-            data = responseText ? JSON.parse(responseText) : {};
-          } catch (parseErr) {
-            data = { rawText: responseText };
-          }
-          console.log("STEP 7 - Anthropic response parsed", { status: response.status, mode, hasContent: !!(data && data.content) });
-          if (!response.ok) {
-            console.error("[/api/estimate] Anthropic non-OK response", {
-              status: response.status,
-              body: responseText,
-              mode: mode,
-            });
-          }
         }
         const generationFailure = detectGenerationFailure(data, mode);
         if (generationFailure.failed) {
           console.error("[AI ESTIMATE SERVER] generation failed due to truncation", {
             mode,
             stopReason: data && data.stop_reason,
-            provider: process.env.OPENAI_API_KEY ? 'openai' : 'anthropic'
+            provider: 'openai'
           });
           return res.status(502).json({
             error: generationFailure.error,
@@ -1978,7 +2009,7 @@ app.post("/api/estimate", async (req, res) => {
               httpStatus: response && response.status,
               parseError: err && err.message ? err.message : err
             }, null, 0));
-            // Fall back to the standard Anthropic response if the model does not follow the intake format.
+            // Fall back to the standard provider response if the model does not follow the intake format.
           }
         }
         // If experiment flag is enabled and this is an estimate or CO generation run, normalize the AI breakdown server-side
@@ -2132,7 +2163,7 @@ app.post("/api/estimate", async (req, res) => {
         console.log("STEP 8 - Returning response to client");
         return res.status(response.status).json(data);
       } catch (err) {
-        console.error("STEP 5/6/7 ERROR - Anthropic request/response failed", err);
+        console.error("STEP 5/6/7 ERROR - OpenAI request/response failed", err);
         if (err && err.stack) {
           console.error(err.stack);
         }
@@ -2158,10 +2189,17 @@ app.post("/api/estimate", async (req, res) => {
     }
     return res.status(500).json({ error: "Failed to reach AI provider." });
   }
-});
+}
+
+// Paid AI endpoints require a valid account and an active company membership.
+const {requireAppUser,trustedOrigin}=require('./lib/authApi');
+const {requireCompany}=require('./lib/companySupportApi');
+app.post('/api/estimate',requireAppUser,requireCompany,trustedOrigin,estimateHandler);
+app.post('/api/daily-log',requireAppUser,requireCompany,trustedOrigin,dailyLogHandler);
 
 // Register data APIs before the SPA fallback so API responses remain JSON.
 installPostgresRoutes(app);
+require('./lib/authApi').installAuthRoutes(app);
 installDataRoutes(app);
 
 app.use((req, res) => {
@@ -2169,6 +2207,7 @@ app.use((req, res) => {
 });
 
 if (require.main === module) {
+require('./lib/signupAlerts').startSignupAlertWorker();
 app.listen(PORT, "0.0.0.0", () => {
     console.log("Server running on port", PORT);
   });
@@ -2176,6 +2215,8 @@ app.listen(PORT, "0.0.0.0", () => {
 
 module.exports = {
   app,
+  estimateHandler,
+  dailyLogHandler,
   removeAnsweredIntakeQuestions,
   buildEstimateExclusionsSchema,
   validateCOIntakeReadiness,
@@ -2190,6 +2231,8 @@ module.exports = {
   alignLineItemQuantityToPrimaryMaterial,
   buildMaterialCompletenessContractText,
   buildMaterialPricingContractText,
+  buildFlatPricingContractText,
+  normalizeFlatGeneratedItems,
   MATERIAL_PRICE_CATALOG,
   normalizeMaterialDescription,
   normalizeMaterialUnit,
@@ -2213,5 +2256,3 @@ module.exports = {
   getCompanyLaborRate,
   detectGenerationFailure,
 };
-
-

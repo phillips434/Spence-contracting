@@ -9,7 +9,7 @@ const helpers=['rememberProjectSnapshot','projectFieldEqual','persistProjectChan
   return html.slice(a,b);
 }).join('\n');
 const source = helpers+'\n'+html.slice(start, end);
-const fields = ['fClient', 'fClientPhone', 'fClientEmail', 'fJobNum', 'fPO', 'fType', 'fAddress', 'fPm', 'fStart', 'fEnd', 'fBudget', 'fSpent', 'fNotes', 'fStatus'];
+const fields = ['fClient', 'fClientPhone', 'fClientEmail', 'fJobNum', 'fPO', 'fType', 'fAddress', 'fPm', 'fStart', 'fEnd', 'fBudget', 'fContract', 'fSpent', 'fNotes', 'fStatus'];
 
 test.beforeEach(async ({ page }) => {
   await page.setContent(fields.map(id => `<input id="${id}">`).join('') + '<div id="addPageTitle"></div><div id="addPage"></div>');

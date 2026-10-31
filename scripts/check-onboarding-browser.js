@@ -16,7 +16,7 @@ async function run({chromium,assert,frontendSource}){
   await page.route('**/*',route=>{const url=new URL(route.request().url());return url.hostname==='127.0.0.1'||url.protocol==='data:'?route.continue():route.abort();});
   await page.goto('http://127.0.0.1:'+server.address().port);
   await page.evaluate(s=>{
-   window.providerCalls=0;window.auth={createUserWithEmailAndPassword:async()=>{providerCalls++;throw Error('Synthetic provider failure');}};
+   window.providerCalls=0;window.auth={register:async()=>{providerCalls++;throw Error('Synthetic provider failure');}};
    window.normalizeInviteEmail=s=>String(s).trim().toLowerCase();
    window.DD={};window.CD_LOGO_FULL='';window.projects=[];window.activeFilter='All';window.projectWorkView='work';window.CD_USE_POSTGRES=true;window.estimatesSyncReady=true;window.inWorkView=()=>false;
    window.openSettings=()=>{window.settingsOpened=true;};window.openAdd=()=>{window.newProjectOpened=true;};window.renderAll=()=>renderCards();

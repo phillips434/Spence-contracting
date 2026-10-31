@@ -3,7 +3,7 @@ const fs=require('fs');
 const vm=require('vm');
 const html=fs.readFileSync(require('path').join(__dirname,'../public/index.html'),'utf8');
 function source(name){const a=html.indexOf('function '+name+'('),b=html.indexOf('\nfunction ',a+1);return html.slice(a,b);}
-function fixture(p){const c={gpr:()=>p,saveP(){},confirm:()=>true};vm.createContext(c);for(const name of ['prepareProjectCostLedger','linkProjectCost','syncProjectCostLedger','reconcileProjectSpent','updateCostAmt','delCost'])vm.runInContext(source(name),c);return c;}
+function fixture(p){const c={gpr:()=>p,saveP(){},confirm:()=>true};c.window=c.window||c;c.CDFinance=require("../public/financial-rules");vm.createContext(c);for(const name of ['prepareProjectCostLedger','linkProjectCost','syncProjectCostLedger','reconcileProjectSpent','updateCostAmt','delCost'])vm.runInContext(source(name),c);return c;}
 describe('one project cost ledger',()=>{
   it('does not attach a manual expense edit to an older selection',()=>{const p={spent:100,costs:[{actualAmt:100}],choices:[{item:'Old tile',actualAmt:300}]};const c=fixture(p);c.updateCostAmt(0,'actualAmt','125');assert.strictEqual(p.choices[0].actualAmt,300);});
   it('preserves an explicitly edited total through later saves',()=>{const p={spent:100,costs:[{actualAmt:100}]};const c=fixture(p);c.prepareProjectCostLedger(p);p.spent=175;c.reconcileProjectSpent(p);c.syncProjectCostLedger(p);assert.strictEqual(p.spent,175);assert.strictEqual(p.costLedgerOpeningBalance,75);});

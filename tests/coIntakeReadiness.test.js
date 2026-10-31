@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const http = require('http');
-const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('../server');
+const { app, validateCOIntakeReadiness, buildAuthoritativeLaborFact, applyCOAuthoritativeLabor, buildMaterialCompletenessContractText, buildMaterialPricingContractText } = require('./helpers/providerApp');
 
 
 function runBrowserSnippet(snippet, context) {
@@ -528,7 +528,7 @@ describe('coIntakeReadiness', () => {
     experimentalModule.filename = serverPath;
     experimentalModule.paths = module.paths;
     experimentalModule._compile(fs.readFileSync(serverPath, 'utf8').replace('const AI_BREAKDOWN_EXPERIMENT = false;', 'const AI_BREAKDOWN_EXPERIMENT = true;'), serverPath);
-    const serverApp = experimentalModule.exports.app;
+    const serverApp = require('./helpers/providerApp').providerTestApp(experimentalModule.exports);
 
     const providerResponse = {
       action: 'add',
@@ -2568,7 +2568,7 @@ describe('coIntakeReadiness', () => {
     const scope = context.getCanonicalCustomerScope(estimate);
     assert.strictEqual(scope.residentialSummary, 'Kitchen remodel for a small family home.');
     assert.strictEqual(scope.projectScope, 'Replace the kitchen cabinetry and refresh the painted surfaces.');
-    assert.deepStrictEqual(scope.workIncluded, ['Remove old cabinets', 'Paint walls']);
+    assert.deepStrictEqual(Array.from(scope.workIncluded), ['Remove old cabinets', 'Paint walls']);
     assert.deepStrictEqual(scope.conditionsAssumptions, ['Existing plumbing remains in place.']);
     assert.deepStrictEqual(scope.exclusions, ['Structural repairs beyond the visible scope.']);
   });
@@ -2670,7 +2670,7 @@ describe('coIntakeReadiness', () => {
     };
 
     const scope = context.getCanonicalCustomerScope(estimate);
-    assert.deepStrictEqual(scope.workIncluded, ['Work A', 'Work B']);
+    assert.deepStrictEqual(Array.from(scope.workIncluded), ['Work A', 'Work B']);
     assert.deepStrictEqual(scope.conditionsAssumptions, ['Condition A']);
     assert.deepStrictEqual(scope.exclusions, ['Exclusion A']);
     assert.strictEqual(scope.projectScope, 'Legacy scope preserved.');
