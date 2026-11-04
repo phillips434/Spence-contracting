@@ -5302,41 +5302,17 @@ function injectPWAManifest(logoDataUrl){
 
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;
-  var hadController = !!navigator.serviceWorker.controller;
   try{
     navigator.serviceWorker.register('/service-worker.js', {scope:'/',updateViaCache:'none'}).then(function(reg){
-      // If there's an active waiting worker, prompt user to update
-      try{
-        if(reg.waiting){ showSWUpdateBanner(reg); }
-        reg.addEventListener('updatefound',function(){
-          var nw = reg.installing;
-          if(!nw) return;
-          nw.addEventListener('statechange',function(){
-            if(nw.state==='installed' && navigator.serviceWorker.controller){ showSWUpdateBanner(reg); }
-          });
-        });
-        navigator.serviceWorker.addEventListener('controllerchange',function(){ if(hadController) window.location.reload(); });
-      }catch(e){console.warn('[PWA] update handling error',e);}
-      }).catch(function(err){
-      console.warn('[PWA] SW skipped:', err.message);
-    });
-
-    // Create a minimal update banner UI and handler
-    function showSWUpdateBanner(reg){
-      if(document.getElementById('swUpdateBanner')) return; // already shown
-      var b = document.createElement('div');
-      b.id = 'swUpdateBanner';
-      b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;padding:12px 14px;background:#111;color:#fff;border-radius:10px;display:flex;gap:10px;align-items:center;z-index:99999;box-shadow:0 6px 18px rgba(0,0,0,0.2)';
-      b.innerHTML = '<div style="flex:1;font-size:14px;font-weight:700">A new version is available</div>'+
-        '<button id="swRefreshBtn" style="background:#2EAA72;border:none;padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer">Refresh</button>'+
-        '<button id="swDismissBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.12);padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer">Dismiss</button>';
-      document.body.appendChild(b);
-      document.getElementById('swRefreshBtn').onclick = function(){
-        if(reg && reg.waiting) reg.waiting.postMessage('skipWaiting');
-      };
-      document.getElementById('swDismissBtn').onclick = function(){ b.remove(); };
-    }
-  } catch(e){ console.warn('[PWA] SW error:', e); }
+      // Check for a new version on launch; never interrupt an active editing session.
+      reg.update().catch(function(err){ console.warn('[PWA] update check failed:',err); });
+      // Let a waiting update activate only as this page is being left.
+      // Do not reload on controllerchange: doing so can discard unsaved work.
+      window.addEventListener('pagehide',function(){
+        if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+      });
+    }).catch(function(err){ console.warn('[PWA] SW skipped:',err.message); });
+  }catch(e){ console.warn('[PWA] SW error:',e); }
 }
 
 function handleLogoUpload(event){
