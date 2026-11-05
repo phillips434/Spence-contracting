@@ -1,6 +1,6 @@
-const CACHE='contractordesk-shell-qa-corrections-v8';
+const CACHE='contractordesk-shell-brand-v9';
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/financial-rules.js'])));
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/financial-rules.js','/brand/cd-icon-192-v1.png','/brand/cd-icon-512-v1.png','/brand/cd-logo-full-v1.png'])));
 });
 self.addEventListener('activate',event=>{
   event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('contractordesk-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
